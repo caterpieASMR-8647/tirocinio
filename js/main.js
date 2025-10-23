@@ -165,6 +165,7 @@ let currentComposer = composerPersp;
 
 let hovering = false;
 
+// Creates 2 Meshes with proper TransformControls, Origin and EventListeners
 function createMesh(  ) {
 
     let myMesh1 = new THREE.Group();
@@ -304,51 +305,24 @@ function createMesh(  ) {
 
 }
 
-// Merges Group of Meshes into Single Mesh
-function groupToMesh ( group ) {
-
-    if ( ! group.isGroup ) return;
-
-    let geoms = [];
-    let meshes = [];
-    group.children.forEach( e => {
-        if ( e.geometry.attributes.uv1 ) { delete e.geometry.attributes.uv1; }
-        e.isMesh && meshes.push( e ) && ( geoms.push( ( e.geometry.index ) ? e.geometry.toNonIndexed() : e.geometry.clone() ) ) 
-    } );
-    geoms.forEach( ( g, i ) => g.applyMatrix4( meshes[i].matrixWorld ) );
-    let gg = BufferGeometryUtils.mergeGeometries( geoms );
-    gg.applyMatrix4( group.matrix.clone().invert() );
-    gg.userData.materials = meshes.map( m => m.material );
-    // return new THREE.Mesh( gg , new THREE.MeshStandardMaterial( gg.userData.materials ) );
-    gg.computeBoundingSphere();
-    let boundingSphere = gg.boundingSphere;
-    console.log( boundingSphere );
-    let ret = [];
-    ret.push( boundingSphere.center );
-    ret.push( boundingSphere.radius );
-    
-    return ret;
-
-}
-
-// Transizione Smooth Camera con Effetto Hitchcock
+// Start Hitchcock Effect
 let isTransitioning = false;
 let transitionProgress = 0;
-const transitionDuration = 0.3; // seconds
+const transitionDuration = 0.25; // seconds
 
-// Funzione per interpolare tra due valori
+// Interpolates 2 Values
 function lerp( start, end, t ) {
     return start + ( end - start ) * t;
 }
 
-// Funzione di easing per una transizione più fluida
+// Eases Transition for better Smoothness
 function easeInOutCubic( t ) {
     return t < 0.5 
         ? 4 * t * t * t 
         : 1 - Math.pow( -2 * t + 2, 3 ) / 2;
 }
 
-// Funzione per animare la transizione della camera con effetto Hitchcock
+// Animates Camera Transition with Hitchcock Effect
 function animateCameraTransition(fromCamera, toCamera, duration, onComplete) {
     if (isTransitioning) return;
     
@@ -365,15 +339,15 @@ function animateCameraTransition(fromCamera, toCamera, duration, onComplete) {
     const startTime = performance.now();
     
     let startFov, targetFov, startDistance, targetDistance;
-    let visibleHeight; // 🔥 DICHIARATA QUI (visibile in tutto il blocco)
+    let visibleHeight;
     
     if (toCamera.isOrthographicCamera) {
-        // Da prospettiva → ortografica
+        // Perspective → Orthographic
         startFov = fromCamera.fov;
-        targetFov = 2; // FOV piccolo = zoom in
+        targetFov = 2;
         
         const startVFov = THREE.MathUtils.degToRad(startFov);
-        visibleHeight = 2 * Math.tan(startVFov / 2) * distance; // 🔥 ORA È NELLO SCOPE ESTERNO
+        visibleHeight = 2 * Math.tan(startVFov / 2) * distance;
         
         startDistance = distance;
         
@@ -393,8 +367,8 @@ function animateCameraTransition(fromCamera, toCamera, duration, onComplete) {
         console.log("Visible Height:", visibleHeight);
         
     } else {
-        // Da ortografica → prospettiva
-        visibleHeight = (frustumSize * 2) / fromCamera.zoom; // 🔥 ORA È NELLO SCOPE ESTERNO
+        // Orthographic → Perspective
+        visibleHeight = (frustumSize * 2) / fromCamera.zoom;
         
         startFov = 2;
         targetFov = 75;
@@ -416,7 +390,6 @@ function animateCameraTransition(fromCamera, toCamera, duration, onComplete) {
         console.log("Visible Height:", visibleHeight);
     }
     
-    // 🔧 updateTransition usa ora visibleHeight correttamente
     function updateTransition() {
         const currentTime = performance.now();
         const elapsed = (currentTime - startTime) / 1000;
@@ -428,7 +401,7 @@ function animateCameraTransition(fromCamera, toCamera, duration, onComplete) {
         let currentDistance;
 
         if (toCamera.isPerspectiveCamera) {
-            // Da ortografica → prospettica
+            // Orthographic → Perspective
             toCamera.fov = currentFov;
             const currentVFov = THREE.MathUtils.degToRad(currentFov);
             currentDistance = visibleHeight / (2 * Math.tan(currentVFov / 2));
@@ -441,7 +414,7 @@ function animateCameraTransition(fromCamera, toCamera, duration, onComplete) {
             toCamera.lookAt(orbit.target);
 
         } else {
-            // Da prospettica → ortografica
+            // Perspective → Orthographic
             fromCamera.fov = currentFov;
             const currentVFov = THREE.MathUtils.degToRad(currentFov);
             currentDistance = visibleHeight / (2 * Math.tan(currentVFov / 2));
@@ -471,7 +444,6 @@ function animateCameraTransition(fromCamera, toCamera, duration, onComplete) {
 
     updateTransition();
 }
-
 
 // ########################################### Keybinds ########################################### //
 
@@ -508,11 +480,11 @@ window.addEventListener( 'keydown', function(event) {
 
         // Change Camera ~ Perspective / Orthogonal
         case 'c':
-            if ( isTransitioning ) break; // Previeni transizioni multiple
+            if ( isTransitioning ) break; // Prevents Multiple Transitions
 
             const oldCamera = currentCamera;
             
-            // Determina quale sarà la nuova camera (ma NON cambiarla ancora!)
+            // Determines New Camera ( does not change it yet )
             const newCamera = currentCamera.isPerspectiveCamera ? cameraOrtho : cameraPersp;
             const newComposer = currentCamera.isPerspectiveCamera ? composerOrtho : composerPersp;
             
@@ -521,15 +493,14 @@ window.addEventListener( 'keydown', function(event) {
                 currentComposer = newComposer;
             }
 
-            // Avvia l'animazione con callback
+            // Starts Animation with Callback
             animateCameraTransition( oldCamera, newCamera, transitionDuration, () => {
-                // Callback alla fine dell'animazione
                 if ( currentCamera.isPerspectiveCamera ) {
                     currentCamera = newCamera;
                     currentComposer = newComposer;
                 }
                 
-                // Aggiorna i controlli DOPO l'animazione
+                // Updates Controls AFTER Animation
                 orbit.object = currentCamera;
                 control1.camera = currentCamera;
                 control2.camera = currentCamera;
