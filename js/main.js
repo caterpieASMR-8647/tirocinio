@@ -27,7 +27,12 @@ import { Vector4 } from 'three/webgpu';
 //     }
 // }
 
+// ########################################## Elements ########################################### //
+
+document.getElementById("transformState").addEventListener( 'click', transformState );
+
 // ########################################### Renderer ########################################## //
+
 const renderer = new THREE.WebGLRenderer( {canvas: unCanvas , antialias : true});
 document.body.appendChild( renderer.domElement );
 
@@ -162,11 +167,10 @@ let currentComposer = composerPersp;
 
 // ############################################ Funcs ############################################ //
 
-
 let hovering = false;
 
 // Creates 2 Meshes with proper TransformControls, Origin and EventListeners
-function createMesh(  ) {
+function createInitialMeshes(  ) {
 
     let myMesh1 = new THREE.Group();
     let myMesh2 = new THREE.Group();
@@ -305,6 +309,53 @@ function createMesh(  ) {
 
 }
 
+function createAnimationMesh(  ) {
+    // let myMesh = new THREE.Group();
+
+    // //Loader for FBX Meshes, NO MOUSE HOVER
+    // const loader = new FBXLoader();
+    // loader.load('../../../../../meshes/J10B-TSF.fbx',
+    //     ( mesh ) => {
+    //         // mesh.traverse(function (child) {
+    //         //     if (child.isMesh) {
+    //         //         (child).material = material;
+    //         //         if (child.material) {
+    //         //             child.material.transparent = false;
+    //         //         }
+    //         //     }
+    //         // })
+            
+    //         mesh.scale.copy( scene.children[10].scale );
+    //         mesh.position.copy( scene.children[10].position );
+    //         mesh.rotation.copy( scene.children[10].rotation );
+
+    //         const box = new THREE.Box3().setFromObject( mesh );
+    //         const center = new THREE.Vector3();
+    //         box.getCenter( center );
+            
+    //         // Translates Mesh so that its Mass Center is in the Center of the Group
+    //         mesh.position.sub( center );
+
+    //         myMesh.add( mesh );
+            
+    //         // myMesh.position.set( -1 , 0, 0 );
+
+    //         scene.add( myMesh );
+    //         console.log( myMesh );
+
+    //     },
+    //     (xhr) => {
+    //         console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+    //     },
+    //     (error) => {
+    //         console.log(error);
+    //     }
+    // )
+    if ( scene.children.length == 13 ) { return; }
+
+    
+}
+
 // Start Hitchcock Effect
 let isTransitioning = false;
 let transitionProgress = 0;
@@ -323,7 +374,7 @@ function easeInOutCubic( t ) {
 }
 
 // Animates Camera Transition with Hitchcock Effect
-function animateCameraTransition(fromCamera, toCamera, duration, onComplete) {
+function animateCameraTransition( fromCamera, toCamera, duration, onComplete ) {
     if (isTransitioning) return;
     
     isTransitioning = true;
@@ -444,6 +495,28 @@ function animateCameraTransition(fromCamera, toCamera, duration, onComplete) {
 
     updateTransition();
 }
+
+// Transformation Matrix
+function matrixTransformation( startMesh, endMesh, animationMesh ) {
+    let translation = startMesh.position - endMesh.position;
+    let rotation = startMesh.getWorldQuarterion().multiply( endMesh.getWorldQuarterion().inverse );
+    let scale = endMesh.scale / startMesh.scale;
+    
+}
+
+export function transformState() {
+    scene.children.forEach( element => {
+        if ( element.type == "Group" || element.type == "Object3D" ) {
+            element.visible = ! element.visible;
+        }
+    } );
+
+    control1.enabled = ! control1.enabled;
+    control2.enabled = ! control2.enabled;
+
+    createAnimationMesh();
+    console.log(scene);
+};
 
 // ########################################### Keybinds ########################################### //
 
@@ -680,7 +753,8 @@ function animate(){
 }
 
 // Start Functions
-createMesh();
+createInitialMeshes();
+console.log(scene);
 
 render();
 animate();
