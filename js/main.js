@@ -9,7 +9,7 @@ import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectio
 import { computeMorphedAttributes } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { element, getParallaxCorrectNormal } from 'three/tsl';
 import { BufferGeometryUtils } from 'three/examples/jsm/Addons.js';
-import { Vector4 } from 'three/webgpu';
+import { Group, Vector4 } from 'three/webgpu';
 
 // ########################################### Classes ########################################### //
 
@@ -29,7 +29,8 @@ import { Vector4 } from 'three/webgpu';
 
 // ########################################## Elements ########################################### //
 
-document.getElementById("transformState").addEventListener( 'click', transformState );
+let changeModeButton = document.getElementById("transformState");
+changeModeButton.addEventListener( 'click', transformState );
 
 // ########################################### Renderer ########################################## //
 
@@ -167,13 +168,14 @@ let currentComposer = composerPersp;
 
 // ############################################ Funcs ############################################ //
 
+let myMesh1 = new THREE.Group(), myMesh2 = new THREE.Group();
 let hovering = false;
 
 // Creates 2 Meshes with proper TransformControls, Origin and EventListeners
 function createInitialMeshes(  ) {
 
-    let myMesh1 = new THREE.Group();
-    let myMesh2 = new THREE.Group();
+    // let myMesh1 = new THREE.Group();
+    // let myMesh2 = new THREE.Group();
 
     //Loader for FBX Meshes + adds Events for mouse hover
     const loader = new FBXLoader();
@@ -196,7 +198,7 @@ function createInitialMeshes(  ) {
             // Translates Mesh so that its Mass Center is in the Center of the Group
             mesh.position.sub( center );
 
-            mesh.scale.set( .001, .001, .001);
+            mesh.scale.set( .001, .001, .001 );
             myMesh1.add( mesh );
             
             myMesh1.position.set( -1 , 0, 0 );
@@ -229,44 +231,9 @@ function createInitialMeshes(  ) {
             scene.add( myMesh1 );
             control1.attach( myMesh1 );
 
-            console.log( mesh );
-            console.log( myMesh1 );
-
-        },
-        (xhr) => {
-            console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
-        },
-        (error) => {
-            console.log(error);
-        }
-    )
-    // After Adding Mesh to TransformControls, adds TransformControl to Scene (Gizmo)
-    scene.add( control1.getHelper() );
-
-    loader.load('../../../../../meshes/J10B-TSF.fbx',
-        ( mesh ) => {
-            // mesh.traverse(function (child) {
-            //     if (child.isMesh) {
-            //         (child).material = material;
-            //         if (child.material) {
-            //             child.material.transparent = false;
-            //         }
-            //     }
-            // })
-
-            mesh.scale.set(.001, .001, .001 );
-            const box = new THREE.Box3().setFromObject( mesh );
-            const center = new THREE.Vector3();
-            box.getCenter( center );
-            
-            // Translates Mesh so that its Mass Center is in the Center of the Group
-            mesh.position.sub( center );
-
-            mesh.scale.set(.001, .001, .001);
-            myMesh2.add( mesh );
-            
+            myMesh2 = myMesh1.clone();
             myMesh2.position.set( 1 , 0, 0 );
-        
+
             myMesh2.addEventListener('mouseover', (event) => {
                 let selectedObjects = [];
                 selectedObjects[0] = event.target;
@@ -295,6 +262,8 @@ function createInitialMeshes(  ) {
             scene.add( myMesh2 );
             control2.attach( myMesh2 );
 
+            if (myMesh1 && myMesh2) createAnimationMesh(  );
+
             render();
         },
         (xhr) => {
@@ -305,55 +274,21 @@ function createInitialMeshes(  ) {
         }
     )
     // After Adding Mesh to TransformControls, adds TransformControl to Scene (Gizmo)
+    scene.add( control1.getHelper() );
     scene.add( control2.getHelper() );
-
 }
 
 function createAnimationMesh(  ) {
-    // let myMesh = new THREE.Group();
+    // if ( scene.children.length == 13 ) { return; }
 
-    // //Loader for FBX Meshes, NO MOUSE HOVER
-    // const loader = new FBXLoader();
-    // loader.load('../../../../../meshes/J10B-TSF.fbx',
-    //     ( mesh ) => {
-    //         // mesh.traverse(function (child) {
-    //         //     if (child.isMesh) {
-    //         //         (child).material = material;
-    //         //         if (child.material) {
-    //         //             child.material.transparent = false;
-    //         //         }
-    //         //     }
-    //         // })
-            
-    //         mesh.scale.copy( scene.children[10].scale );
-    //         mesh.position.copy( scene.children[10].position );
-    //         mesh.rotation.copy( scene.children[10].rotation );
+    startMesh = myMesh1;
+    endMesh = myMesh2;
 
-    //         const box = new THREE.Box3().setFromObject( mesh );
-    //         const center = new THREE.Vector3();
-    //         box.getCenter( center );
-            
-    //         // Translates Mesh so that its Mass Center is in the Center of the Group
-    //         mesh.position.sub( center );
+    let animationMesh = startMesh.clone();
+    animationMesh.visible = ! animationMesh.visible;
+    scene.add( animationMesh );
 
-    //         myMesh.add( mesh );
-            
-    //         // myMesh.position.set( -1 , 0, 0 );
-
-    //         scene.add( myMesh );
-    //         console.log( myMesh );
-
-    //     },
-    //     (xhr) => {
-    //         console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
-    //     },
-    //     (error) => {
-    //         console.log(error);
-    //     }
-    // )
-    if ( scene.children.length == 13 ) { return; }
-
-    
+    // animationMesh = scene.children[12];
 }
 
 // Start Hitchcock Effect
@@ -361,7 +296,7 @@ let isTransitioning = false;
 let transitionProgress = 0;
 const transitionDuration = 0.25; // seconds
 
-// Interpolates 2 Values
+// Linearly Interpolates 2 Values
 function lerp( start, end, t ) {
     return start + ( end - start ) * t;
 }
@@ -496,27 +431,172 @@ function animateCameraTransition( fromCamera, toCamera, duration, onComplete ) {
     updateTransition();
 }
 
-// Transformation Matrix
-function matrixTransformation( startMesh, endMesh, animationMesh ) {
-    let translation = startMesh.position - endMesh.position;
-    let rotation = startMesh.getWorldQuarterion().multiply( endMesh.getWorldQuarterion().inverse );
-    let scale = endMesh.scale / startMesh.scale;
-    
+// Transformation Matrix 
+let isPlaying = false;
+let progress = 0;
+let duration = 3.0; // seconds
+let lastTime = 0;
+
+let order = 'TRS';
+const transformNames = {
+    T: "Translation",
+    R: "Rotation",
+    S: "Scale"
+};
+
+let startMesh, endMesh, animationMesh;
+
+// UI Elements
+const playButton = document.getElementById( 'playButton' );
+const progressBar = document.getElementById( 'progressBar' );
+const orderContainer = document.getElementById('orderContainer');
+const transformUI = document.getElementById( 'transformUI' );
+
+playButton.addEventListener('click', () => {
+    isPlaying = !isPlaying;
+    playButton.textContent = isPlaying ? 'Stop' : 'Play';
+    lastTime = performance.now();
+});
+
+progressBar.addEventListener('input', (e) => {
+    progress = parseFloat( e.target.value );
+    matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+});
+
+function updateTransformation() {
+    if ( isPlaying ) {
+        const now = performance.now();
+        const delta = ( now - lastTime ) / 1000;
+        lastTime = now;
+
+        progress += delta / duration;
+        if ( progress > 1 ) {
+            progress = 1;
+            isPlaying = false;
+            playButton.textContent = 'Play';
+        }
+
+        progressBar.value = progress;
+        matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+    }
+
+    requestAnimationFrame( updateTransformation );
 }
 
-export function transformState() {
+function matrixTransformation( meshA, meshB, animationMesh, t, order = 'TRS' ) {
+    // Interpolates Position
+    const position = new THREE.Vector3().lerpVectors( meshA.position, meshB.position, t );
+
+    // Interpolates Rotation (quaternion)
+    const quatA = meshA.quaternion;
+    const quatB = meshB.quaternion;
+    const rotation = new THREE.Quaternion().slerpQuaternions( quatA, quatB, t );
+
+    // Interpolates Scale
+    const scale = new THREE.Vector3().lerpVectors( meshA.scale, meshB.scale, t );
+
+    // Creates Single Transformation Matrixes
+    const translationMatrix = new THREE.Matrix4().makeTranslation( position.x, position.y, position.z );
+    const rotationMatrix = new THREE.Matrix4().makeRotationFromQuaternion( rotation );
+    const scaleMatrix = new THREE.Matrix4().makeScale( scale.x, scale.y, scale.z );
+
+    // Constructs Composite Matrix in Desired Order
+    let finalMatrix = new THREE.Matrix4();
+    for ( let c of order ) {
+        if ( c === 'T' ) finalMatrix.multiply( translationMatrix );
+        if ( c === 'R' ) finalMatrix.multiply( rotationMatrix );
+        if ( c === 'S' ) finalMatrix.multiply( scaleMatrix );
+    }
+
+    // Applies Matrix
+    animationMesh.matrix.copy( finalMatrix );
+    animationMesh.matrix.decompose( animationMesh.position, animationMesh.quaternion, animationMesh.scale );
+}
+
+export function transformState(  ) {
     scene.children.forEach( element => {
         if ( element.type == "Group" || element.type == "Object3D" ) {
             element.visible = ! element.visible;
         }
     } );
 
+    if ( changeModeButton.value == "Animation Mode" ) { // Goes into Animation Mode
+        changeModeButton.value = "Move Mode";
+        transformUI.style.display = "block";
+    }
+    else { // Goes into Move Mode
+        changeModeButton.value = "Animation Mode";
+        transformUI.style.display = "none";
+
+        // Resets Animation
+        isPlaying = false;
+        progress = 0;
+        playButton.textContent = "Play";
+        progressBar.value = 0;
+        // Actual Animation Reset
+        if (startMesh && endMesh && animationMesh) {
+            matrixTransformation(startMesh, endMesh, animationMesh, 0, order);
+        }
+    }
+
     control1.enabled = ! control1.enabled;
     control2.enabled = ! control2.enabled;
 
-    createAnimationMesh();
-    console.log(scene);
+    animationMesh = scene.children[12];
+
+    console.log( scene );
 };
+
+// Sets up Dragging to Select Order of Transformations
+let draggedItem = null;
+
+// Activates Drag & Drop
+orderContainer.querySelectorAll('.order-item').forEach(item => {
+  item.addEventListener('dragstart', () => {
+    draggedItem = item;
+    item.classList.add('dragging');
+  });
+  
+  item.addEventListener('dragend', () => {
+    draggedItem.classList.remove('dragging');
+    draggedItem = null;
+
+    updateOrder();
+  });
+});
+
+orderContainer.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  const afterElement = getDragAfterElement(orderContainer, e.clientY);
+  if (afterElement == null) {
+    orderContainer.appendChild(draggedItem);
+  } else {
+    orderContainer.insertBefore(draggedItem, afterElement);
+  }
+});
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.order-item:not(.dragging)')];
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+// Updates the global variable "order" used in the animation
+function updateOrder() {
+  const items = Array.from(orderContainer.querySelectorAll('.order-item'));
+  order = items.map(i => i.dataset.key).join(''); // usa data-key
+  console.log('Nuovo ordine:', order);
+
+  // Aggiorna subito la mesh animata
+  matrixTransformation(startMesh, endMesh, animationMesh, progress, order);
+}
 
 // ########################################### Keybinds ########################################### //
 
@@ -754,7 +834,10 @@ function animate(){
 
 // Start Functions
 createInitialMeshes();
+startMesh = scene.children[10];
+endMesh = scene.children[11];
 console.log(scene);
 
 render();
 animate();
+updateTransformation();

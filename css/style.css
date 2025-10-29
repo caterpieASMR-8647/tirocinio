@@ -14,3 +14,17 @@ table {
 td {
     text-align: center;
 }
+.order-item {
+  background: #333;
+  border: 1px solid #666;
+  margin: 3px 0;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: grab;
+  transition: background 0.2s;
+}
+
+.order-item.dragging {
+  opacity: 0.4;
+  background: #555;
+}
