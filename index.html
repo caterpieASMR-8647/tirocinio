@@ -1,13 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
+
   <head>
     <meta charset="utf-8">
     <title>My first three.js app</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
+
   <body>
     <canvas width="1200" height="800" id="unCanvas"></canvas>
-    <table>
+
+    <div id="uiContainer">
+      <input type="button" value="Animation Mode" id="transformState">
+      <input type="button" value="Toggle Gizmos" id="gizmoToggle">
+      <input type="button" value="Change Perspective" id="perspectiveChange">
+    </div>
+
+    <div id="transformUI" hidden>
+      <button id="playButton">Play</button>
+      <input id="progressBar" type="range" min="0" max="1" step="0.001" value="0" style="width:200px;">
+      <div id="orderContainer">
+        <div class="order-item" draggable="true" data-key="T">Translation</div>
+        <div class="order-item" draggable="true" data-key="R">Rotation</div>
+        <div class="order-item" draggable="true" data-key="S">Scale</div>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+
+</html>
+
+<!-- <table>
       <tr>
         <td>
           W : Traslate
@@ -39,29 +63,4 @@
           Esc: Cancel Transformation
         </td>
       </tr>
-    </table>
-    <input type="button" value="Animation Mode" id="transformState">
-    <div id="transformUI" style="position:fixed; display: none;">
-      <button id="playButton">Play</button>
-      <input id="progressBar" type="range" min="0" max="1" step="0.001" value="0" style="width:200px;">
-      <div id="orderContainer" style="
-        display: flex;
-        flex-direction: column;
-        width: 80px;
-        border: 1px solid #555;
-        padding: 5px;
-        border-radius: 5px;
-        background: #222;
-        color: white;
-        text-align: center;
-        user-select: none;
-      ">
-        <div class="order-item" draggable="true" data-key="T">Translation</div>
-        <div class="order-item" draggable="true" data-key="R">Rotation</div>
-        <div class="order-item" draggable="true" data-key="S">Scale</div>
-      </div>
-    </div>
-
-    <script type="module" src="js/main.js"></script>
-    </body>
-</html>
+    </table> -->

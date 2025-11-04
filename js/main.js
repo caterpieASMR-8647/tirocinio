@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { EffectComposer, OrbitControls, RenderPass, SceneUtils, ShaderPass, ThreeMFLoader } from 'three/examples/jsm/Addons.js';
-import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { InteractionManager } from '../node_modules/THREE.Interactive-1.8.0/build/three.interactive'
 import { OutlinePass } from 'three/examples/jsm/Addons.js';
 import { FXAAShader } from 'three/examples/jsm/Addons.js';
@@ -13,19 +13,7 @@ import { Group, Vector4 } from 'three/webgpu';
 
 // ########################################### Classes ########################################### //
 
-// Enables the use of Right and Middle Mouse click for Transformations
-// class MultiButtonTransformControls extends TransformControls {
-//     pointerDown(pointer) {
-//         // If the original implementation already uses this._dragging check, keep it:
-//         if ( this._dragging ) return;
 
-//         // Create a pointer object that is identical but with button = 0
-//         const fakePointer = Object.assign( {}, pointer, { button: 0 } );
-
-//         // Call the original pointerDown with the fake pointer so all internal logic runs
-//         super.pointerDown( fakePointer );
-//     }
-// }
 
 // ########################################## Elements ########################################### //
 
@@ -66,7 +54,7 @@ const ambientLight = new THREE.AmbientLight();
 scene.add(ambientLight);
 
 // ########################################### Cameras ########################################### //
-let aspect = 4 / 3;
+let aspect = window.innerWidth / window.innerHeight;
 const frustumSize = 5;
 
 const cameraPersp = new THREE.PerspectiveCamera(
@@ -99,16 +87,22 @@ orbit.update();
 orbit.addEventListener( 'change', render );
 
 let control1 = new TransformControls( currentCamera, renderer.domElement );
+control1.showX = control1.showY = control1.showZ = false;
 control1.addEventListener( 'change', render );
 control1.addEventListener( 'dragging-changed', function (event) {
     orbit.enabled = ! event.value;
 } );
 
 let control2 = new TransformControls( currentCamera, renderer.domElement );
+control2.showX = control2.showY = control2.showZ = false;
 control2.addEventListener( 'change', render );
 control2.addEventListener( 'dragging-changed', function (event) {
     orbit.enabled = ! event.value;
 } );
+
+// Defaults to NO
+
+let showGizmo = false;
 
 // ####################################### Hover and Click ####################################### //
 
@@ -165,6 +159,8 @@ composerPersp.addPass( fxaaShader );
 composerOrtho.addPass( fxaaShader );
 
 let currentComposer = composerPersp;
+
+onWindowResize();
 
 // ############################################ Funcs ############################################ //
 
@@ -431,6 +427,47 @@ function animateCameraTransition( fromCamera, toCamera, duration, onComplete ) {
     updateTransition();
 }
 
+// Changes Camera Perspective
+function changeCamera(  ) {
+    if ( isTransitioning ) return; // Prevents Multiple Transitions
+
+    const oldCamera = currentCamera;
+    
+    // Determines New Camera ( does not change it yet )
+    const newCamera = currentCamera.isPerspectiveCamera ? cameraOrtho : cameraPersp;
+    const newComposer = currentCamera.isPerspectiveCamera ? composerOrtho : composerPersp;
+    
+    if ( currentCamera.isOrthographicCamera ) {
+        currentCamera = newCamera;
+        currentComposer = newComposer;
+    }
+
+    // Starts Animation with Callback
+    animateCameraTransition( oldCamera, newCamera, transitionDuration, () => {
+        if ( currentCamera.isPerspectiveCamera ) {
+            currentCamera = newCamera;
+            currentComposer = newComposer;
+        }
+        
+        // Updates Controls AFTER Animation
+        orbit.object = currentCamera;
+        control1.camera = currentCamera;
+        control2.camera = currentCamera;
+        interactionManager.camera = currentCamera;
+        
+        console.log( "Transizione completata - Persp: ", cameraPersp.zoom, "~ Ortho: ", cameraOrtho.zoom );
+    });
+}
+
+// Toggles Gizmos On/Off
+function toggleGizmo(  ) {
+    // control.enabled = ! control.enabled;
+    showGizmo = ! showGizmo;
+
+    control1.showX = control1.showY = control1.showZ = ! control1.showX;
+    control2.showX = control2.showY = control2.showZ = ! control2.showX;
+}
+
 // Transformation Matrix 
 let isPlaying = false;
 let progress = 0;
@@ -451,9 +488,14 @@ const playButton = document.getElementById( 'playButton' );
 const progressBar = document.getElementById( 'progressBar' );
 const orderContainer = document.getElementById('orderContainer');
 const transformUI = document.getElementById( 'transformUI' );
+const gizmoButton = document.getElementById( 'gizmoToggle' );
+const perspectiveButton = document.getElementById( 'perspectiveChange' );
 
 playButton.addEventListener('click', () => {
-    isPlaying = !isPlaying;
+    // If Animation is Concluded, Restart
+    if ( ! isPlaying && progress == 1 ) progress = 0;
+
+    isPlaying = ! isPlaying;
     playButton.textContent = isPlaying ? 'Stop' : 'Play';
     lastTime = performance.now();
 });
@@ -461,6 +503,14 @@ playButton.addEventListener('click', () => {
 progressBar.addEventListener('input', (e) => {
     progress = parseFloat( e.target.value );
     matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+});
+
+perspectiveButton.addEventListener('click', () => {
+    changeCamera();
+});
+
+gizmoButton.addEventListener('click', () => {
+    toggleGizmo();
 });
 
 function updateTransformation() {
@@ -513,9 +563,15 @@ function matrixTransformation( meshA, meshB, animationMesh, t, order = 'TRS' ) {
     animationMesh.matrix.decompose( animationMesh.position, animationMesh.quaternion, animationMesh.scale );
 }
 
-export function transformState(  ) {
+function transformState(  ) {
     scene.children.forEach( element => {
-        if ( element.type == "Group" || element.type == "Object3D" ) {
+        if ( element.type == "Group" ) {
+            element.visible = ! element.visible;
+            // element.children.forEach( mesh => {
+            //     mesh.MeshStandardMaterial
+            // } );
+        }
+        if ( element.type == "Object3D" ) {
             element.visible = ! element.visible;
         }
     } );
@@ -591,16 +647,14 @@ function getDragAfterElement(container, y) {
 // Updates the global variable "order" used in the animation
 function updateOrder() {
   const items = Array.from(orderContainer.querySelectorAll('.order-item'));
-  order = items.map(i => i.dataset.key).join(''); // usa data-key
+  order = items.map(i => i.dataset.key).join(''); // use data-key
   console.log('Nuovo ordine:', order);
 
-  // Aggiorna subito la mesh animata
+  // Updates mesh animation
   matrixTransformation(startMesh, endMesh, animationMesh, progress, order);
 }
 
 // ########################################### Keybinds ########################################### //
-
-let showGizmo = true;
 
 window.addEventListener( 'keydown', function(event) {
     switch ( event.key ) {
@@ -632,36 +686,8 @@ window.addEventListener( 'keydown', function(event) {
             break;
 
         // Change Camera ~ Perspective / Orthogonal
-        case 'c':
-            if ( isTransitioning ) break; // Prevents Multiple Transitions
-
-            const oldCamera = currentCamera;
-            
-            // Determines New Camera ( does not change it yet )
-            const newCamera = currentCamera.isPerspectiveCamera ? cameraOrtho : cameraPersp;
-            const newComposer = currentCamera.isPerspectiveCamera ? composerOrtho : composerPersp;
-            
-            if ( currentCamera.isOrthographicCamera ) {
-                currentCamera = newCamera;
-                currentComposer = newComposer;
-            }
-
-            // Starts Animation with Callback
-            animateCameraTransition( oldCamera, newCamera, transitionDuration, () => {
-                if ( currentCamera.isPerspectiveCamera ) {
-                    currentCamera = newCamera;
-                    currentComposer = newComposer;
-                }
-                
-                // Updates Controls AFTER Animation
-                orbit.object = currentCamera;
-                control1.camera = currentCamera;
-                control2.camera = currentCamera;
-                interactionManager.camera = currentCamera;
-                
-                console.log( "Transizione completata - Persp: ", cameraPersp.zoom, "~ Ortho: ", cameraOrtho.zoom );
-            });
-            
+        case 'c': 
+            changeCamera();
             break;
 
         // Only Show X Gizmo
@@ -684,17 +710,9 @@ window.addEventListener( 'keydown', function(event) {
 
         // Disable / Enable Transformations
         case ' ':
-            // control.enabled = ! control.enabled;
-            showGizmo = ! showGizmo;
-
-            control1.showX = ! control1.showX;
-            control1.showY = ! control1.showY;
-            control1.showZ = ! control1.showZ;
-            control2.showX = ! control2.showX;
-            control2.showY = ! control2.showY;
-            control2.showZ = ! control2.showZ;
-
+            toggleGizmo();
             break;
+
         // Cancel Current Transformation
         case 'Escape':
             control1.reset();
@@ -719,99 +737,100 @@ window.addEventListener( 'keyup', function(event){
 // Drag Movement
 let isDragging = false;
 let currentButton = null;
+let activeControl = null;
 
 renderer.domElement.addEventListener( 'mousedown', (event) => {
-
-    switch ( control1.getMode() ) {
-        case 'translate': // left → translate
-            // control.setMode('translate');
-            control1.axis = 'XYZ';  // on screen plane translation
-            control2.axis = 'XYZ';
-            break;
-
-        case 'rotate': // right → rotate
-            // control.setMode('rotate');
-            control1.axis = 'XYZE';  // free rotation
-            control2.axis = 'XYZE';
-            break;
-
-        case 'scale': // middle (mouse wheel) → scale
-            // control.setMode('scale');
-            control1.axis = 'XYZ';  // uniform scale
-            control2.axis = 'XYZ';
-            break;
-    }
-
-    // if ( ! meshes || showGizmo ) return;
+    // If in Gizmo Mode, exit
     if ( showGizmo ) return;
-    switch ( hovering ) {
-        case 0:
-            break;
-        
-        case 1:
-            control1.pointerDown( control1._getPointer( event ) );
-            // Disable Camera
-            orbit.enabled = false;
+    if ( !hovering ) return;
+
+    // Saves pressed mouse button
+    currentButton = event.button; // 0 = left, 1 = middle, 2 = right
+    
+    // Determines which TransformControls to use ( which mesh is being hovered )
+    activeControl = (hovering === 1) ? control1 : control2;
+    
+    // Determines transformation mode depending on mouse button pressed
+    switch ( currentButton ) {
+        case 0: // Left mouse button → translate
+            activeControl.setMode( 'translate' );
+            activeControl.axis = 'XYZ';
             break;
 
-        case 2:
-            control2.pointerDown( control2._getPointer( event ) );
-            // Disable Camera
-            orbit.enabled = false;
+        case 1: // Middle mouse button → scale
+            activeControl.setMode( 'scale' );
+            activeControl.axis = 'XYZ';
+            event.preventDefault(); // prevents mouse scroll
+            break;
+
+        case 2: // Right mouse button → rotate
+            activeControl.setMode( 'rotate' );
+            activeControl.axis = 'XYZE';
+            event.preventDefault(); // prevents contextual menu
             break;
     }
 
+    // Enables TransformControls then calls pointerDown
+    activeControl.enabled = true;
+    orbit.enabled = false;
+    
+    activeControl.pointerDown( activeControl._getPointer( event ) );
+    
     isDragging = true;
 });
 
 renderer.domElement.addEventListener( 'mousemove', (event) => {
-
-    if ( isDragging ) {
-        switch ( hovering ) {
-            case 0:
-                break;
-            
-            case 1:
-                control1.pointerMove( control1._getPointer( event ) );
-                break;
-
-            case 2:
-                control2.pointerMove( control2._getPointer( event ) );
-                break;
-        }
+    if ( isDragging && activeControl ) {
+        activeControl.pointerMove( activeControl._getPointer( event ) );
     }
-
 });
 
 renderer.domElement.addEventListener( 'mouseup', (event) => {
-    if ( isDragging ) {
-        control1.pointerUp( control1._getPointer( event ) );
-        control2.pointerUp( control2._getPointer( event ) );
+    if ( isDragging && activeControl ) {
+        activeControl.pointerUp( activeControl._getPointer( event ) );
         isDragging = false;
         currentButton = null;
+        activeControl = null;
 
         // Enable Camera
         orbit.enabled = true;
     }
 });
 
-// ####################################### EventListeners ######################################## //
+window.addEventListener( 'resize', onWindowResize, false );
+function onWindowResize() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const aspect = width / height;
 
-// window.addEventListener('resize', onWindowResize, false);
-// function onWindowResize() {
-//     aspect = window.innerWidth / window.innerHeight;
+    // Aggiorna camera prospettica
+    cameraPersp.aspect = aspect;
+    cameraPersp.updateProjectionMatrix();
 
-//     cameraPersp.aspect = aspect;
-//     cameraPersp.updateProjectionMatrix();
+    // Aggiorna camera ortografica
+    cameraOrtho.left = -frustumSize * aspect;
+    cameraOrtho.right = frustumSize * aspect;
+    cameraOrtho.top = frustumSize;
+    cameraOrtho.bottom = -frustumSize;
+    cameraOrtho.updateProjectionMatrix();
 
-//     cameraOrtho.left = cameraOrtho.bottom * aspect;
-//     cameraOrtho.right = cameraOrtho.top * aspect;
-//     cameraOrtho.updateProjectionMatrix();
+    // Aggiorna renderer
+    renderer.setSize( width, height );
+    renderer.setPixelRatio( window.devicePixelRatio );
 
-//     renderer.setSize(window.innerWidth, window.innerHeight);
+    // Aggiorna entrambi i composer
+    composerPersp.setSize( width, height );
+    composerOrtho.setSize( width, height );
 
-//     render();
-// }
+    // Aggiorna entrambi gli OutlinePass
+    outlinePersp.setSize( width, height );
+    outlineOrtho.setSize( width, height );
+
+    // Aggiorna FXAA (per evitare pixelation)
+    fxaaShader.uniforms["resolution"].value.set( 1 / width, 1 / height );
+
+    render();
+}
 
 // ############################################ Other ############################################ //
 
