@@ -16,6 +16,13 @@ canvas {
   z-index: 0;
 }
 
+.inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
 /* buttons container */
 #uiContainer {
   position: fixed;
@@ -56,6 +63,81 @@ canvas {
   color: white;
 }
 
+/* Wrapper to keep slider and lines aligned */
+#progressWrapper {
+  position: relative;
+  width: 200px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#progressBar {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 1px;
+  background-color: #b1b1b1;
+  outline: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(115%);
+  z-index: 2;
+}
+#progressBar:hover {
+  background-color: #919191;
+}
+/* Chrome, Edge, Safari */
+#progressBar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 18px;
+  border-radius: 3px;
+  border: 2px solid #000000;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+/* Firefox */
+#progressBar::-moz-range-thumb {
+  width: 10px;
+  height: 18px;
+  border-radius: 3px;
+  border: 2px solid #000000;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+/* Vertical phase lines */
+#phaseMarkers {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: calc(100% - 4px); /* evita differenza ai bordi */
+  height: 6px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 5;
+}
+.phase-line {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.phase-line:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: scaleY(1.2);
+}
+
 /* Drag & drop container */
 #orderContainer {
   display: flex;
@@ -70,13 +152,6 @@ canvas {
   text-align: center;
   user-select: none;
   margin-top: 10px;
-}
-
-table {
-    width: 100%;
-}
-td {
-    text-align: center;
 }
 
 /* Ordered Items */

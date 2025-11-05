@@ -18,7 +18,10 @@ import { Group, Vector4 } from 'three/webgpu';
 // ########################################## Elements ########################################### //
 
 let changeModeButton = document.getElementById("transformState");
-changeModeButton.addEventListener( 'click', transformState );
+changeModeButton.addEventListener( 'click', (e) => {
+    e.target.blur();
+    transformState();
+} );
 
 // ########################################### Renderer ########################################## //
 
@@ -200,6 +203,8 @@ function createInitialMeshes(  ) {
             myMesh1.position.set( -1 , 0, 0 );
         
             myMesh1.addEventListener('mouseover', (event) => {
+                if ( isAnimationMode ) return;
+
                 let selectedObjects = [];
                 selectedObjects[0] = event.target;
                 outlinePersp.selectedObjects = selectedObjects;
@@ -208,6 +213,8 @@ function createInitialMeshes(  ) {
                 hovering = 1;
             });
             myMesh1.addEventListener('mouseout', (event) => {
+                if ( isAnimationMode ) return;
+
                 outlinePersp.selectedObjects = [];
                 outlineOrtho.selectedObjects = [];
                 document.body.style.cursor = 'default';
@@ -231,6 +238,8 @@ function createInitialMeshes(  ) {
             myMesh2.position.set( 1 , 0, 0 );
 
             myMesh2.addEventListener('mouseover', (event) => {
+                if ( isAnimationMode ) return;
+
                 let selectedObjects = [];
                 selectedObjects[0] = event.target;
                 outlinePersp.selectedObjects = selectedObjects;
@@ -239,6 +248,8 @@ function createInitialMeshes(  ) {
                 hovering = 2;
             });
             myMesh2.addEventListener('mouseout', (event) => {
+                if ( isAnimationMode ) return;
+
                 outlinePersp.selectedObjects = [];
                 outlineOrtho.selectedObjects = [];
                 document.body.style.cursor = 'default';
@@ -274,17 +285,49 @@ function createInitialMeshes(  ) {
     scene.add( control2.getHelper() );
 }
 
-function createAnimationMesh(  ) {
-    // if ( scene.children.length == 13 ) { return; }
-
+function createAnimationMesh() {
+    // Define start and end meshes
     startMesh = myMesh1;
     endMesh = myMesh2;
 
-    let animationMesh = startMesh.clone();
-    animationMesh.visible = ! animationMesh.visible;
+    // Create a deep clone of the starting mesh
+    animationMesh = startMesh.clone();
+
+    // Clean and prepare all mesh materials and data
+    animationMesh.traverse( ( child ) => {
+        if ( child.isMesh ) {
+            // Remove user data to prevent unwanted inheritance
+            child.userData = {};
+
+            // Safely clone the material
+            if ( child.material && typeof child.material.clone === "function" ) {
+                child.material = child.material.clone();
+                child.material.transparent = false;
+                child.material.opacity = 1.0;
+                child.material.depthWrite = true;
+            }
+        }
+    });
+
+    animationMesh.position.copy( myMesh1.position );
+
+    // Remove possible event listeners from the clone
+    animationMesh.children.forEach( ( child ) => {
+        if ( child.removeEventListener ) {
+            child.removeEventListener( "mouseover", () => {} );
+            child.removeEventListener( "mouseout", () => {} );
+            child.removeEventListener( "mousedown", () => {} );
+            child.removeEventListener( "mouseup", () => {} );
+        }
+    });
+
+    // Place animation mesh at the scene center
+    animationMesh.visible = false;
+
+    // Add the mesh to the scene
     scene.add( animationMesh );
 
-    // animationMesh = scene.children[12];
+    console.log( "Animation mesh created:", animationMesh );
 }
 
 // Start Hitchcock Effect
@@ -486,32 +529,94 @@ let startMesh, endMesh, animationMesh;
 // UI Elements
 const playButton = document.getElementById( 'playButton' );
 const progressBar = document.getElementById( 'progressBar' );
-const orderContainer = document.getElementById('orderContainer');
+const phaseMarkersContainer = document.getElementById( 'phaseMarkers' );
+const orderContainer = document.getElementById( 'orderContainer' );
 const transformUI = document.getElementById( 'transformUI' );
 const gizmoButton = document.getElementById( 'gizmoToggle' );
 const perspectiveButton = document.getElementById( 'perspectiveChange' );
+const indipendentTransformations = document.getElementById( 'indipendentTransforms' );
 
-playButton.addEventListener('click', () => {
+playButton.addEventListener('click', (e) => {
+    e.target.blur();
+    playAnim();
+});
+
+// Updates Progress Bar, text value, animation time
+function playAnim (  ) {
     // If Animation is Concluded, Restart
     if ( ! isPlaying && progress == 1 ) progress = 0;
 
     isPlaying = ! isPlaying;
     playButton.textContent = isPlaying ? 'Stop' : 'Play';
     lastTime = performance.now();
-});
+}
 
 progressBar.addEventListener('input', (e) => {
     progress = parseFloat( e.target.value );
     matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
 });
 
-perspectiveButton.addEventListener('click', () => {
+perspectiveButton.addEventListener('click', (e) => {
+    e.target.blur();
     changeCamera();
 });
 
-gizmoButton.addEventListener('click', () => {
+gizmoButton.addEventListener('click', (e) => {
+    e.target.blur();
     toggleGizmo();
 });
+
+indipendentTransformations.addEventListener('click', (e) => {
+    e.target.blur();
+    updatePhaseMarkers();
+});
+
+phaseMarkersContainer.addEventListener('click', (e) => {
+    if ( ! isAnimationMode || !indipendentTransformations.checked ) return;
+
+    const rect = phaseMarkersContainer.getBoundingClientRect();
+    const clickX = ( e.clientX - rect.left ) / rect.width;
+    const phases = [1/3, 2/3];
+    const tolerance = 0.05;
+
+    for ( const p of phases ) {
+        if ( Math.abs( clickX - p ) < tolerance ) {
+            progress = p;
+            progressBar.value = progress;
+            matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+            break;
+        }
+    }
+});
+
+let phaseLines = [];
+
+function updatePhaseMarkers() {
+    // Cancella vecchie linee
+    phaseMarkersContainer.innerHTML = '';
+    phaseLines = [];
+
+    // Mostra linee solo se in animation mode + trasformazioni indipendenti
+    if (!isAnimationMode || !indipendentTransformations.checked) return;
+
+    const phases = [1/3, 2/3];
+    phases.forEach((phase, i) => {
+        const line = document.createElement('div');
+        line.classList.add('phase-line');
+        line.style.left = `${phase * 100}%`;
+        line.dataset.value = phase;
+
+        // Area di tolleranza per il click (±0.03)
+        line.addEventListener('click', (e) => {
+            progress = parseFloat(line.dataset.value);
+            progressBar.value = progress;
+            matrixTransformation(startMesh, endMesh, animationMesh, progress, order);
+        });
+
+        phaseMarkersContainer.appendChild(line);
+        phaseLines.push(line);
+    });
+}
 
 function updateTransformation() {
     if ( isPlaying ) {
@@ -534,74 +639,179 @@ function updateTransformation() {
 }
 
 function matrixTransformation( meshA, meshB, animationMesh, t, order = 'TRS' ) {
-    // Interpolates Position
-    const position = new THREE.Vector3().lerpVectors( meshA.position, meshB.position, t );
+    const isIndependent = indipendentTransformations.checked;
 
-    // Interpolates Rotation (quaternion)
     const quatA = meshA.quaternion;
     const quatB = meshB.quaternion;
-    const rotation = new THREE.Quaternion().slerpQuaternions( quatA, quatB, t );
 
-    // Interpolates Scale
-    const scale = new THREE.Vector3().lerpVectors( meshA.scale, meshB.scale, t );
-
-    // Creates Single Transformation Matrixes
-    const translationMatrix = new THREE.Matrix4().makeTranslation( position.x, position.y, position.z );
-    const rotationMatrix = new THREE.Matrix4().makeRotationFromQuaternion( rotation );
-    const scaleMatrix = new THREE.Matrix4().makeScale( scale.x, scale.y, scale.z );
-
-    // Constructs Composite Matrix in Desired Order
     let finalMatrix = new THREE.Matrix4();
-    for ( let c of order ) {
-        if ( c === 'T' ) finalMatrix.multiply( translationMatrix );
-        if ( c === 'R' ) finalMatrix.multiply( rotationMatrix );
-        if ( c === 'S' ) finalMatrix.multiply( scaleMatrix );
+
+    if ( ! isIndependent ) {
+        // Normal Case, All Transformations Toghether 
+        const position = new THREE.Vector3().lerpVectors( meshA.position, meshB.position, t );
+        const rotation = new THREE.Quaternion().slerpQuaternions( quatA, quatB, t );
+        const scale = new THREE.Vector3().lerpVectors( meshA.scale, meshB.scale, t );
+
+        const translationMatrix = new THREE.Matrix4().makeTranslation( position.x, position.y, position.z );
+        const rotationMatrix = new THREE.Matrix4().makeRotationFromQuaternion( rotation );
+        const scaleMatrix = new THREE.Matrix4().makeScale( scale.x, scale.y, scale.z );
+
+        for ( let c of order ) {
+            if ( c === 'T') finalMatrix.multiply( translationMatrix );
+            if ( c === 'R') finalMatrix.multiply( rotationMatrix );
+            if ( c === 'S') finalMatrix.multiply( scaleMatrix );
+        }
+    } else {
+        // Indipendent Transformations: One Transformation at a time
+        const step = 1 / 3;
+        const phase = Math.min(Math.floor(t / step), 2);
+        const localT = (t - phase * step) / step;
+
+        let currentPos = meshA.position.clone();
+        let currentRot = meshA.quaternion.clone();
+        let currentScale = meshA.scale.clone();
+
+        for ( let i = 0; i <= phase; i++ ) {
+            let interpT = ( i === phase ) ? localT : 1;
+
+            switch ( order[i] ) {
+                case 'T':
+                currentPos.lerpVectors( meshA.position, meshB.position, interpT );
+                break;
+
+                case 'R':
+                currentRot.slerpQuaternions( meshA.quaternion, meshB.quaternion, interpT );
+                break;
+
+                case 'S':
+                currentScale.lerpVectors( meshA.scale, meshB.scale, interpT );
+                break;
+
+            }
+        }
+
+        const translationMatrix = new THREE.Matrix4().makeTranslation(currentPos.x, currentPos.y, currentPos.z);
+        const rotationMatrix = new THREE.Matrix4().makeRotationFromQuaternion(currentRot);
+        const scaleMatrix = new THREE.Matrix4().makeScale(currentScale.x, currentScale.y, currentScale.z);
+
+        for ( let c of order ) {
+            if ( c === 'T' ) finalMatrix.multiply( translationMatrix );
+            if ( c === 'R' ) finalMatrix.multiply( rotationMatrix );
+            if ( c === 'S' ) finalMatrix.multiply( scaleMatrix );
+        }
     }
 
-    // Applies Matrix
+    // Applies Final Matrix
     animationMesh.matrix.copy( finalMatrix );
     animationMesh.matrix.decompose( animationMesh.position, animationMesh.quaternion, animationMesh.scale );
 }
 
-function transformState(  ) {
-    scene.children.forEach( element => {
-        if ( element.type == "Group" ) {
-            element.visible = ! element.visible;
-            // element.children.forEach( mesh => {
-            //     mesh.MeshStandardMaterial
-            // } );
-        }
-        if ( element.type == "Object3D" ) {
-            element.visible = ! element.visible;
-        }
-    } );
+let isAnimationMode = false;
 
-    if ( changeModeButton.value == "Animation Mode" ) { // Goes into Animation Mode
+function transformState( ) {
+    // Disable gizmos if visible
+    if ( showGizmo ) toggleGizmo();
+
+    if ( changeModeButton.value === "Animation Mode" ) {
+        // Enter animation mode
+        isAnimationMode = true; // <— animation mode ON
         changeModeButton.value = "Move Mode";
         transformUI.style.display = "block";
-    }
-    else { // Goes into Move Mode
+
+        if ( ! animationMesh ) createAnimationMesh();
+        animationMesh.visible = true;
+        updatePhaseMarkers();
+
+        setMeshTransparency( myMesh1, true );
+        setMeshTransparency( myMesh2, true );
+
+        control1.enabled = false;
+        control2.enabled = false;
+
+        outlinePersp.selectedObjects = [];
+        outlineOrtho.selectedObjects = [];
+        outlinePersp.enabled = false;
+        outlineOrtho.enabled = false;
+
+    } else {
+        // Exit animation mode
+        isAnimationMode = false; // <— animation mode OFF
         changeModeButton.value = "Animation Mode";
         transformUI.style.display = "none";
 
-        // Resets Animation
+        phaseMarkersContainer.innerHTML = '';
+
+        setMeshTransparency( myMesh1, false );
+        setMeshTransparency( myMesh2, false );
+
+        if ( animationMesh ) animationMesh.visible = false;
+
         isPlaying = false;
         progress = 0;
         playButton.textContent = "Play";
         progressBar.value = 0;
-        // Actual Animation Reset
-        if (startMesh && endMesh && animationMesh) {
-            matrixTransformation(startMesh, endMesh, animationMesh, 0, order);
+
+        if ( startMesh && endMesh && animationMesh ) {
+            matrixTransformation( startMesh, endMesh, animationMesh, 0, order );
         }
+
+        control1.enabled = true;
+        control2.enabled = true;
+
+        outlinePersp.enabled = true;
+        outlineOrtho.enabled = true;
     }
+}
 
-    control1.enabled = ! control1.enabled;
-    control2.enabled = ! control2.enabled;
+function setMeshTransparency( meshGroup, transparent ) {
+    meshGroup.traverse( ( child ) => {
+        if ( ! child.isMesh ) return;
 
-    animationMesh = scene.children[12];
+        // Normalizes Always in Array
+        const materials = Array.isArray( child.material ) ? child.material : [child.material];
 
-    console.log( scene );
-};
+        if ( transparent ) {
+            // Saves Original Materials if not yet saved
+            if ( ! child.userData.originalMaterial ) {
+                child.userData.originalMaterial = materials.map( ( m ) => m);
+            }
+
+            const newMaterials = materials.map( ( mat ) => {
+                if ( ! mat ) return mat; // Skips Undefined Materials
+
+                // If Material has clone() method, use that
+                if ( typeof mat.clone !== 'function' ) {
+                    const fallback = mat;
+                    fallback.transparent = true;
+                    fallback.opacity = 0.25;
+                    fallback.depthWrite = false;
+                    return fallback;
+                }
+
+                // otherwise create safe clone() method
+                const cloned = mat.clone();
+                cloned.transparent = true;
+                cloned.opacity = 0.25;
+                cloned.depthWrite = false;
+
+                if ( cloned.color && cloned.color.isColor ) {
+                    cloned.color.offsetHSL( 0, -0.2, 0.1 );
+                }
+
+                return cloned;
+            } );
+
+            child.material = Array.isArray( child.material ) ? newMaterials : newMaterials[0];
+        } else {
+            // Resets Original Materials if present
+            if ( child.userData.originalMaterial ) {
+                const original = child.userData.originalMaterial;
+                child.material = Array.isArray( child.material ) ? original : original[0];
+                delete child.userData.originalMaterial;
+            }
+        }
+    });
+}
 
 // Sets up Dragging to Select Order of Transformations
 let draggedItem = null;
@@ -710,7 +920,8 @@ window.addEventListener( 'keydown', function(event) {
 
         // Disable / Enable Transformations
         case ' ':
-            toggleGizmo();
+
+            changeModeButton.value == "Animation Mode" ? toggleGizmo() : playAnim();
             break;
 
         // Cancel Current Transformation
@@ -740,6 +951,9 @@ let currentButton = null;
 let activeControl = null;
 
 renderer.domElement.addEventListener( 'mousedown', (event) => {
+    // Block all interactions in animation mode
+    if ( isAnimationMode ) return;
+
     // If in Gizmo Mode, exit
     if ( showGizmo ) return;
     if ( !hovering ) return;
