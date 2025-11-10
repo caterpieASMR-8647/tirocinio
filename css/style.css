@@ -23,6 +23,31 @@ canvas {
   gap: 5px;
 }
 
+/* camera views */
+#cameraViews {
+  position: fixed;
+  top: 20px;
+  left: 72px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 10;
+}
+#cameraViews input[type="button"] {
+  background: rgba(30, 30, 30, 0.8);
+  color: white;
+  border: 1px solid #555;
+  border-radius: 5px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-family: sans-serif;
+  transition: 0.2s;
+}
+#cameraViews input[type="button"]:hover {
+  background: rgba(60, 60, 60, 0.9);
+  transform: scale(1.05);
+}
+
 /* buttons container */
 #uiContainer {
   position: fixed;
@@ -33,7 +58,6 @@ canvas {
   gap: 12px;
   z-index: 10;
 }
-
 /* buttons */
 #uiContainer input[type="button"] {
   background: rgba(30, 30, 30, 0.8);
@@ -45,7 +69,6 @@ canvas {
   font-family: sans-serif;
   transition: 0.2s;
 }
-
 #uiContainer input[type="button"]:hover {
   background: rgba(60, 60, 60, 0.9);
   transform: scale(1.05);
@@ -61,6 +84,21 @@ canvas {
   padding: 10px;
   border-radius: 8px;
   color: white;
+}
+
+#playButton, #reverseButton, #boomerangButton {
+  background: rgba(30, 30, 30, 0.8);
+  color: white;
+  border: 1px solid #555;
+  border-radius: 5px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-family: sans-serif;
+  transition: 0.2s;
+}
+#playButton:hover, #reverseButton:hover, #boomerangButton:hover {
+  background: rgba(60, 60, 60, 0.9);
+  transform: scale(1.05);
 }
 
 /* Wrapper to keep slider and lines aligned */
@@ -153,7 +191,6 @@ canvas {
   user-select: none;
   margin-top: 10px;
 }
-
 /* Ordered Items */
 .order-item {
   background: #333;
@@ -167,4 +204,171 @@ canvas {
 .order-item.dragging {
   opacity: 0.4;
   background: #555;
+}
+
+/* Independent Transformations container */
+#independentContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  background: rgba(25, 25, 25, 0.85);
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin-top: 8px;
+  color: white;
+  font-family: sans-serif;
+  font-size: 14px;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+#independentContainer:hover {
+  background: rgba(45, 45, 45, 0.9);
+  transform: scale(1.02);
+}
+
+/* Custom checkbox */
+#indipendentTransforms {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #888;
+  border-radius: 4px;
+  background-color: rgba(40, 40, 40, 0.9);
+  margin-right: 8px;
+  transform: translateY(40%);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+#indipendentTransforms:hover {
+  border-color: #ccc;
+  background-color: rgba(60, 60, 60, 0.9);
+}
+
+#indipendentTransforms:checked {
+  background-color: #ccc;
+  border-color: #888;
+}
+
+#indipendentTransforms:checked::after {
+  content: "";
+  position: absolute;
+  top: 0px;
+  left: 3px;
+  width: 4px;
+  height: 8px;
+  border: solid #222;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+
+/* Right panel container */
+#sidePanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 30%;
+  height: 100%;
+  background: rgba(15, 15, 15, 0.92);
+  padding: 12px;
+  box-sizing: border-box;
+  color: white;
+  font-family: sans-serif;
+  overflow-y: auto;
+  z-index: 20;
+}
+
+/* Each section */
+.panelSection {
+  border-bottom: 1px solid #333;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+/* Section titles */
+.panelTitle {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+/* Subtitle */
+.subTitle {
+  font-size: 14px;
+  margin: 6px 0 4px 0;
+  opacity: 0.85;
+}
+
+/* Button row */
+.buttonRow {
+  display: flex;
+  align-items: center;
+  /* justify-content: center; */
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+/* Generic buttons inside panel */
+#sidePanel button,
+#sidePanel select {
+  background: #333;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 6px 8px;
+  cursor: pointer;
+  width: auto;
+  transition: 0.2s;
+}
+#sidePanel button:hover,
+#sidePanel select:hover {
+  background: #555;
+}
+
+/* Tabs container */
+#modeTabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 4px;
+}
+
+/* Single tab */
+.tab {
+  padding: 6px 8px;
+  background: #222;
+  border: 1px solid #444;
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  transition: 0.2s;
+}
+.tab:hover {
+  background: #333;
+}
+.tab.active {
+  background: #666;
+  border-bottom: 1px solid transparent;
+}
+
+/* Tab content area */
+.tabContent {
+  padding: 6px;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+.hidden {
+  display: none;
+}
+
+/* Legend toggle */
+.toggleable {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }

@@ -9,7 +9,7 @@ import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectio
 import { computeMorphedAttributes } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { element, getParallaxCorrectNormal } from 'three/tsl';
 import { BufferGeometryUtils } from 'three/examples/jsm/Addons.js';
-import { Group, Vector4 } from 'three/webgpu';
+import { Group, Vector3, Vector4 } from 'three/webgpu';
 
 // ########################################### Classes ########################################### //
 
@@ -67,13 +67,15 @@ const cameraPersp = new THREE.PerspectiveCamera(
     1000
 );
 
+/* I Never Change 1000, which is the far plane, so if perspective camera is very distant 
+from object, on perspective change, orthographic camera could be fully black */
 const cameraOrtho = new THREE.OrthographicCamera(
     -frustumSize * aspect,
     frustumSize * aspect,
     frustumSize,
     - frustumSize,
     0.1,
-    100
+    1000
 );
 
 cameraPersp.position.set(0, 0, 2);
@@ -290,6 +292,19 @@ function createAnimationMesh() {
     startMesh = myMesh1;
     endMesh = myMesh2;
 
+    // Saves Original Transforms for Mesh1 and 2 - I do it now to be sure they are properly set
+    myMesh1.userData.original = {
+        position : myMesh1.position.clone(),
+        rotation : myMesh1.rotation.clone(),
+        scale    : myMesh1.scale.clone()
+    };
+
+    myMesh2.userData.original = {
+        position : myMesh2.position.clone(),
+        rotation : myMesh2.rotation.clone(),
+        scale    : myMesh2.scale.clone()
+    };
+
     // Create a deep clone of the starting mesh
     animationMesh = startMesh.clone();
 
@@ -502,6 +517,26 @@ function changeCamera(  ) {
     });
 }
 
+// Sets New View from Vector3
+function setCameraView( newPosition ) {
+    // Center point the camera looks at
+    const target = orbit.target.clone();
+
+    // Update both perspective and orthographic cameras
+    cameraPersp.position.copy( newPosition );
+    cameraPersp.lookAt( target );
+
+    cameraOrtho.position.copy( newPosition );
+    cameraOrtho.lookAt( target );
+
+    // Update orbit control to follow the new camera
+    orbit.object = currentCamera;
+    orbit.update();
+
+    // Force re-render
+    render();
+}
+
 // Toggles Gizmos On/Off
 function toggleGizmo(  ) {
     // control.enabled = ! control.enabled;
@@ -535,6 +570,11 @@ const transformUI = document.getElementById( 'transformUI' );
 const gizmoButton = document.getElementById( 'gizmoToggle' );
 const perspectiveButton = document.getElementById( 'perspectiveChange' );
 const indipendentTransformations = document.getElementById( 'indipendentTransforms' );
+const frontViewButton = document.getElementById( 'frontView' );
+const rightViewButton = document.getElementById( 'rightView' );
+const leftViewButton = document.getElementById( 'leftView' );
+const topViewButton = document.getElementById( 'topView' );
+const resetButtons = document.querySelectorAll( 'button[data-target][data-action]' );
 
 playButton.addEventListener('click', (e) => {
     e.target.blur();
@@ -572,7 +612,7 @@ indipendentTransformations.addEventListener('click', (e) => {
 });
 
 phaseMarkersContainer.addEventListener('click', (e) => {
-    if ( ! isAnimationMode || !indipendentTransformations.checked ) return;
+    if ( ! isAnimationMode || ! indipendentTransformations.checked ) return;
 
     const rect = phaseMarkersContainer.getBoundingClientRect();
     const clickX = ( e.clientX - rect.left ) / rect.width;
@@ -587,6 +627,73 @@ phaseMarkersContainer.addEventListener('click', (e) => {
             break;
         }
     }
+});
+
+// Sets Camera in Front View
+frontViewButton.addEventListener('click', (e) => {
+    e.target.blur();
+    setCameraView( new THREE.Vector3( 0, 0, 2 ) );
+});
+// Sets Camera in Left View
+leftViewButton.addEventListener('click', (e) => {
+    e.target.blur();
+    setCameraView( new THREE.Vector3( -3, 0, 0 ) );
+});
+// Sets Camera in Right View
+rightViewButton.addEventListener('click', (e) => {
+    e.target.blur();
+    setCameraView( new THREE.Vector3( 3, 0, 0 ) );
+});
+// Sets Camera in Top View
+topViewButton.addEventListener('click', (e) => {
+    e.target.blur();
+    setCameraView( new THREE.Vector3( 0, 2, 0 ) );
+});
+
+// Attach an event listener to each reset button individually
+resetButtons.forEach( ( btn ) => {
+
+      btn.addEventListener( 'click', ( e ) => {
+
+            // Prevent focus outline issues
+            e.target.blur();
+
+            // Do not allow resets during animation mode
+            if ( isAnimationMode ) return;
+
+            const action = btn.dataset.action;
+            const target = btn.dataset.target;
+
+            let mesh = null;
+
+            if ( target === 'mesh1' ) mesh = myMesh1;
+            if ( target === 'mesh2' ) mesh = myMesh2;
+
+            if ( ! mesh || ! mesh.userData.original ) return;
+
+            // Execute the correct reset function
+            if ( action === 'resetPosition' ) {
+                  // Restore original position
+                  mesh.position.copy( mesh.userData.original.position );
+            }
+
+            if ( action === 'resetRotation' ) {
+                  // Restore original rotation
+                  mesh.rotation.copy( mesh.userData.original.rotation );
+            }
+
+            if ( action === 'resetScale' ) {
+                  // Restore original scale
+                  mesh.scale.copy( mesh.userData.original.scale );
+            }
+
+            // Update TransformControls after resetting
+            control1.updateMatrixWorld();
+            control2.updateMatrixWorld();
+
+            render();
+      });
+
 });
 
 let phaseLines = [];
@@ -841,7 +948,7 @@ orderContainer.addEventListener('dragover', (e) => {
   }
 });
 
-function getDragAfterElement(container, y) {
+function getDragAfterElement( container, y ) {
   const draggableElements = [...container.querySelectorAll('.order-item:not(.dragging)')];
   return draggableElements.reduce((closest, child) => {
     const box = child.getBoundingClientRect();
@@ -862,6 +969,50 @@ function updateOrder() {
 
   // Updates mesh animation
   matrixTransformation(startMesh, endMesh, animationMesh, progress, order);
+}
+
+// Mode tab switching
+// Select all tab buttons
+const tabs = document.querySelectorAll( '.tab' );
+// Select all tab content boxes
+const tabContents = document.querySelectorAll( '.tabContent' );
+tabs.forEach( tab => {
+      tab.addEventListener( 'click', () => {
+
+            /* Remove active class from all tabs */
+            tabs.forEach( t => t.classList.remove( 'active' ) );
+
+            /* Set this tab active */
+            tab.classList.add( 'active' );
+
+            const target = tab.dataset.tab;
+
+            /* Show only matching content */
+            tabContents.forEach( box => {
+                  if ( box.dataset.tab === target ) {
+                        box.classList.remove( 'hidden' );
+                  } else {
+                        box.classList.add( 'hidden' );
+                  }
+            } );
+
+      } );
+});
+
+// Resets only the position of the mesh
+function resetMeshPosition ( mesh ) {
+      // Restore original stored position
+      mesh.position.copy( mesh.userData.original.position );
+}
+// Resets only the rotation of the mesh
+function resetMeshRotation ( mesh ) {
+      // Restore original stored rotation
+      mesh.rotation.copy( mesh.userData.original.rotation );
+}
+// Resets only the scale of the mesh
+function resetMeshScale ( mesh ) {
+      // Restore original stored scale
+      mesh.scale.copy( mesh.userData.original.scale );
 }
 
 // ########################################### Keybinds ########################################### //
@@ -900,27 +1051,27 @@ window.addEventListener( 'keydown', function(event) {
             changeCamera();
             break;
 
-        // Only Show X Gizmo
-        case 'x':
-            control1.showX = ! control1.showX;
-            control2.showX = ! control2.showX;
+        // Front View
+        case '1':
+            setCameraView( new THREE.Vector3( 0, 0, 2 ) );
             break;
 
-        // Only Show Y Gizmo
-        case 'y':
-            control1.showY = ! control1.showY;
-            control2.showY = ! control2.showY;
+        // Right View
+        case '2':
+            setCameraView( new THREE.Vector3( -3, 0, 0) );
             break;
 
-        // Only Show Z Gizmo
-        case 'z':
-            control1.showZ = ! control1.showZ;
-            control2.showZ = ! control2.showZ;
+        // Top View
+        case '3':
+            setCameraView( new THREE.Vector3( 3, 0, 0 ) );
+            break;
+
+        case '4' :
+            setCameraView( new THREE.Vector3( 0, 2, 0 ) );
             break;
 
         // Disable / Enable Transformations
         case ' ':
-
             changeModeButton.value == "Animation Mode" ? toggleGizmo() : playAnim();
             break;
 
