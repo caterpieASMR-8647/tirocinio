@@ -9,7 +9,7 @@ import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectio
 import { computeMorphedAttributes } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { element, getParallaxCorrectNormal } from 'three/tsl';
 import { BufferGeometryUtils } from 'three/examples/jsm/Addons.js';
-import { Group, Vector3, Vector4 } from 'three/webgpu';
+import { AlwaysStencilFunc, Group, Vector3, Vector4 } from 'three/webgpu';
 
 // ########################################### Classes ########################################### //
 
@@ -622,6 +622,12 @@ const rightViewButton = document.getElementById( 'rightView' );
 const leftViewButton = document.getElementById( 'leftView' );
 const topViewButton = document.getElementById( 'topView' );
 const resetButtons = document.querySelectorAll( 'button[data-target][data-action]' );
+const collapseButton = document.getElementById( 'collapseSideBar' );
+const expandButton = document.getElementById( 'expandSideBar' );
+const expandBox = document.querySelectorAll( '.expandBox' );
+const collapsableClass = document.querySelectorAll( '.panelSection' );
+const legendToggle = document.getElementById( 'legendToggle' );
+const legendContent = document.getElementById( 'legendContent' );
 
 playButton.addEventListener('click', (e) => {
     e.target.blur();
@@ -645,6 +651,7 @@ progressBar.addEventListener('input', (e) => {
 
 perspectiveButton.addEventListener('click', (e) => {
     e.target.blur();
+    perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '3D' : '2D';
     changeCamera();
 });
 
@@ -743,6 +750,34 @@ resetButtons.forEach( ( btn ) => {
 
 });
 
+// Collapses SideBar
+collapseButton.addEventListener( 'click', (e) => {
+    e.target.blur();
+
+    document.getElementById( 'sidePanel' ).classList.add( 'collapsed' );
+    collapsableClass.forEach( ( panel ) => {
+        panel.classList.add( 'collapsed' );
+    });
+
+    setTimeout( function() { expandBox[0].style.display = 'block'; }, 200 );
+});
+// Expands Collapsed Sidebar
+expandButton.addEventListener( 'click', (e) => {
+    e.target.blur();
+
+    document.getElementById( 'sidePanel' ).classList.remove( 'collapsed' );
+    collapsableClass.forEach( ( panel ) => {
+        panel.classList.remove( 'collapsed' );
+    });
+    expandBox[0].style.display = 'none';
+});
+
+// Toggles Legend
+legendToggle.addEventListener( 'click', (e) => {
+    e.target.blur();
+    legendContent.style.display = legendContent.style.display == 'block' ? 'none' : 'block';
+});
+
 let phaseLines = [];
 
 function updatePhaseMarkers() {
@@ -754,21 +789,21 @@ function updatePhaseMarkers() {
     if (!isAnimationMode || !indipendentTransformations.checked) return;
 
     const phases = [1/3, 2/3];
-    phases.forEach((phase, i) => {
-        const line = document.createElement('div');
-        line.classList.add('phase-line');
+    phases.forEach( (phase, i) => {
+        const line = document.createElement( 'div' );
+        line.classList.add( 'phase-line' );
         line.style.left = `${phase * 100}%`;
         line.dataset.value = phase;
 
         // Area di tolleranza per il click (±0.03)
         line.addEventListener('click', (e) => {
-            progress = parseFloat(line.dataset.value);
+            progress = parseFloat( line.dataset.value );
             progressBar.value = progress;
-            matrixTransformation(startMesh, endMesh, animationMesh, progress, order);
+            matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
         });
 
-        phaseMarkersContainer.appendChild(line);
-        phaseLines.push(line);
+        phaseMarkersContainer.appendChild( line );
+        phaseLines.push( line );
     });
 }
 
@@ -971,7 +1006,7 @@ function setMeshTransparency( meshGroup, transparent ) {
 let draggedItem = null;
 
 // Activates Drag & Drop
-orderContainer.querySelectorAll('.order-item').forEach(item => {
+orderContainer.querySelectorAll( '.order-item' ).forEach( item => {
   item.addEventListener('dragstart', () => {
     draggedItem = item;
     item.classList.add('dragging');
@@ -985,7 +1020,7 @@ orderContainer.querySelectorAll('.order-item').forEach(item => {
   });
 });
 
-orderContainer.addEventListener('dragover', (e) => {
+orderContainer.addEventListener( 'dragover', (e) => {
   e.preventDefault();
   const afterElement = getDragAfterElement(orderContainer, e.clientY);
   if (afterElement == null) {

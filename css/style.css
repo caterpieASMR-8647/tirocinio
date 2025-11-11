@@ -269,27 +269,63 @@ canvas {
 /* Right panel container */
 #sidePanel {
   position: fixed;
-  bottom: 12px;
-  right: 12px;
+  bottom: 10px;
+  right: 10px;
   width: auto;
   height: auto;
   background: rgba(15, 15, 15, 0.92);
-  padding: 12px;
+  padding: 10px;
   border: 2px solid #555;
   border-radius: 10px;
   box-sizing: border-box;
   color: white;
   font-family: sans-serif;
-  overflow-y: auto;
+  overflow: hidden;
   z-index: 20;
-  transition: 0.2;
+
+  transition: transform 0.3s ease, padding 0.3s ease;
+  transform: scale(1);
+  transform-origin: bottom right;
+}
+#sidePanel.collapsed {
+  transform: scale(0);
+  padding: 5px;
 }
 
 /* Each section */
 .panelSection {
   border-bottom: 1px solid #333;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  transform: scale(1);
+  opacity: 1;
+}
+.panelSection.collapsed {
+  transform: scale(0);
+  opacity: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.expandBox {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  width: auto;
+  height: auto;
+  background: rgba(15, 15, 15, 0.92);
+  padding: 10px;
+  border: 2px solid #555;
+  border-radius: 10px;
+  box-sizing: border-box;
+  color: white;
+  font-family: sans-serif;
+  overflow: hidden;
+  z-index: 20;
 }
 
 /* Section titles */
@@ -315,14 +351,26 @@ canvas {
 /* Button row */
 .buttonRow {
   display: flex;
+  width: 50%;
   align-items: center;
   gap: 6px;
   margin-top: 5px;
 }
 
+.row{
+  display: flex;
+  gap: 5px;
+}
+.rightButton {
+  display: flex;
+  align-items: center;
+  right: 5px;
+}
+
 /* Generic buttons inside panel */
 #sidePanel button,
-#sidePanel select {
+#sidePanel select,
+#expandSideBar {
   background: rgba(30, 30, 30, 0.8);
   color: white;
   border: 1px solid #555;
@@ -359,7 +407,7 @@ canvas {
   cursor: pointer;
   border-radius: 4px 4px 0 0;
   border-bottom: 1px solid transparent;
-  transition: 0.2s;
+  transition: 0.2;
 }
 .tab:hover {
   background: #333;
@@ -374,7 +422,7 @@ canvas {
   background: #1a1a1a;
   border: 1px solid #444;
   border-top: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 0 0 4px 4px;
   background-color: rgba(60, 60, 60, 0.5);
 }
 .hidden {

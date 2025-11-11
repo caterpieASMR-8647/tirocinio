@@ -11,22 +11,35 @@
             <canvas id="unCanvas"></canvas>
 
             <!-- Right-side control panel -->
+            <div class="expandBox" hidden>
+                  <button id="expandSideBar">Expand</button>
+            </div>
+            
             <div id="sidePanel">
 
                   <!-- CAMERA SECTION -->
                   <div class="panelSection">
-                        <div class="panelTitle">Camera</div>
+                        <div class="row" style="margin-bottom: 5px; align-items: center;">
+                              <div class="panelTitle" style="margin: 0;">Camera</div>
+                              <span style="flex: 1;"></span>
+                              <button id="collapseSideBar">Collapse</button>
+                        </div>
 
-                        
-                        <div class="subSection">
-                              <div class="subTitle">Preset Views</div>
-                              <div class="buttonRow">
-                                    <button id="frontView">Front</button>
-                                    <button id="leftView">Left</button>
-                                    <button id="rightView">Right</button>
-                                    <button id="topView">Top</button>
-                                    <span style="flex: 1;"></span>
-                                    <button id="perspectiveChange">2D</button>
+                        <div class="row">
+                              <div class="subSection" style="width: 50%;">
+                                    <div class="subTitle">Preset Views</div>
+                                    <div class="buttonRow">
+                                          <button id="frontView">Front</button>
+                                          <button id="leftView">Left</button>
+                                          <button id="rightView">Right</button>
+                                          <button id="topView">Top</button>
+                                    </div>
+                              </div>
+                              <div class="subSection" style="width: 50%;">
+                                    <div class="subTitle">Perspective</div>
+                                    <div class="buttonRow">
+                                          <button id="perspectiveChange">2D</button>
+                                    </div>
                               </div>
                         </div>
                   </div>
@@ -35,12 +48,8 @@
                   <div class="panelSection">
                         <div class="panelTitle">Scene</div>
                         <div class="subSection">
-                              <div class="buttonRow">
-                                    <div class="subTitle">Reset</div>
-                                    <span style="flex: 1;"></span>
-                                    <button id="gizmoToggle">Toggle Gizmos</button>
-                              </div>
-
+                              <div class="subTitle">Reset</div>
+                              
                               <div class="buttonRow">
                                     Mesh1:
                                     <button data-target="mesh1" data-action="resetPosition">Position</button>
@@ -54,15 +63,25 @@
                                     <button data-target="mesh2" data-action="resetRotation">Rotation</button>
                                     <button data-target="mesh2" data-action="resetScale">Scale</button>
                               </div>
-                        </div>
 
-                        <div class="subSection">
-                        <div class="subTitle">Model</div>
-                              <select id="modelSelector">
-                                    <option value="model1">Model 1</option>
-                                    <option value="model2">Model 2</option>
-                                    <option value="model3">Model 3</option>
-                              </select>
+                        </div>
+                        
+                        <div class="row">
+                              <div class="subSection" style="width: 50%;">
+                                    <div class="subTitle">Model</div>
+                                    <select id="modelSelector">
+                                          <option value="model1">Model 1</option>
+                                          <option value="model2">Model 2</option>
+                                          <option value="model3">Model 3</option>
+                                    </select>
+                              </div>
+
+                              <div class="subSection" style="width: 50%;">
+                                    <div class="subTitle">UI</div>
+                                    <div class="buttonRow">
+                                          <button id="gizmoToggle" class="rightButton">Toggle Gizmos</button>
+                                    </div>
+                              </div>
                         </div>
                   </div>
 
@@ -96,8 +115,9 @@
                         </div>
 
                         <div id="legendContent" hidden>
-                              <!-- You will fill this -->
-                              <div style="padding: 5px;">Legend content here...</div>
+                              <div class="subSection">
+                                    <div style="padding: 5px;">Legend content here...</div>
+                              </div>
                         </div>
                   </div>
 
