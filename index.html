@@ -1,136 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 
-  <head>
-    <meta charset="utf-8">
-    <title>My first three.js app</title>
-    <link rel="stylesheet" href="css/style.css" />
-  </head>
+      <head>
+            <meta charset="utf-8">
+            <title>My first three.js app</title>
+            <link rel="stylesheet" href="css/style.css"/>
+      </head>
 
-  <body>
-    <canvas id="unCanvas"></canvas>
+      <body>
+            <canvas id="unCanvas"></canvas>
 
-    <!-- Right-side control panel -->
-    <div id="sidePanel">
+            <!-- Right-side control panel -->
+            <div id="sidePanel">
 
-          <!-- CAMERA SECTION -->
-          <div class="panelSection">
-                <div class="panelTitle">Camera</div>
+                  <!-- CAMERA SECTION -->
+                  <div class="panelSection">
+                        <div class="panelTitle">Camera</div>
 
-                <button id="perspectiveChange">2D</button>
+                        
+                        <div class="subSection">
+                              <div class="subTitle">Preset Views</div>
+                              <div class="buttonRow">
+                                    <button id="frontView">Front</button>
+                                    <button id="leftView">Left</button>
+                                    <button id="rightView">Right</button>
+                                    <button id="topView">Top</button>
+                                    <span style="flex: 1;"></span>
+                                    <button id="perspectiveChange">2D</button>
+                              </div>
+                        </div>
+                  </div>
 
-                <div class="subTitle">Preset Views</div>
-                <div class="buttonRow">
-                      <button id="frontView">Front</button>
-                      <button id="leftView">Left</button>
-                      <button id="rightView">Right</button>
-                      <button id="topView">Top</button>
-                </div>
-          </div>
+                  <!-- SCENE SECTION -->
+                  <div class="panelSection">
+                        <div class="panelTitle">Scene</div>
+                        <div class="subSection">
+                              <div class="buttonRow">
+                                    <div class="subTitle">Reset</div>
+                                    <span style="flex: 1;"></span>
+                                    <button id="gizmoToggle">Toggle Gizmos</button>
+                              </div>
 
-          <!-- SCENE SECTION -->
-          <div class="panelSection">
-                <div class="panelTitle">Scena</div>
+                              <div class="buttonRow">
+                                    Mesh1:
+                                    <button data-target="mesh1" data-action="resetPosition">Position</button>
+                                    <button data-target="mesh1" data-action="resetRotation">Rotation</button>
+                                    <button data-target="mesh1" data-action="resetScale">Scale</button>
+                              </div>
 
-                <div class="subTitle">Reset</div>
+                              <div class="buttonRow">
+                                    Mesh2:
+                                    <button data-target="mesh2" data-action="resetPosition">Position</button>
+                                    <button data-target="mesh2" data-action="resetRotation">Rotation</button>
+                                    <button data-target="mesh2" data-action="resetScale">Scale</button>
+                              </div>
+                        </div>
 
-                <div class="buttonRow">
-                  Mesh1:
-                      <button data-target="mesh1" data-action="resetPosition">Position</button>
-                      <button data-target="mesh1" data-action="resetRotation">Rotation</button>
-                      <button data-target="mesh1" data-action="resetScale">Scale</button>
-                </div>
+                        <div class="subSection">
+                        <div class="subTitle">Model</div>
+                              <select id="modelSelector">
+                                    <option value="model1">Model 1</option>
+                                    <option value="model2">Model 2</option>
+                                    <option value="model3">Model 3</option>
+                              </select>
+                        </div>
+                  </div>
 
-                <div class="buttonRow">
-                  Mesh2:
-                      <button data-target="mesh2" data-action="resetPosition">Position</button>
-                      <button data-target="mesh2" data-action="resetRotation">Rotation</button>
-                      <button data-target="mesh2" data-action="resetScale">Scale</button>
-                </div>
+                  <!-- MODE SECTION — TABS -->
+                  <div class="panelSection">
+                        <div class="panelTitle">Transform Mode</div>
 
-                <div class="subTitle">Modello</div>
-                <select id="modelSelector">
-                      <option value="model1">Model 1</option>
-                      <option value="model2">Model 2</option>
-                      <option value="model3">Model 3</option>
-                </select>
-          </div>
+                        <div id="modeTabs">
+                              <div class="tab active" data-tab="matrix">Matrix</div>
+                              <div class="tab" data-tab="euler">Euler Angles</div>
+                              <div class="tab" data-tab="axisangle">Axis-Angle</div>
+                              <div class="tab" data-tab="quat">Quaternion</div>
+                              <div class="tab" data-tab="dualquat">Dual Quaternion</div>
+                        </div>
 
-          <!-- MODE SECTION — TABS -->
-          <div class="panelSection">
-                <div class="panelTitle">Modalità</div>
+                        <div id="modeContent">
+                              <!-- You will fill this later -->
+                              <div class="tabContent" data-tab="matrix">Matrix content here</div>
+                              <div class="tabContent hidden" data-tab="euler">Euler content here</div>
+                              <div class="tabContent hidden" data-tab="axisangle">Axis-Angle content here</div>
+                              <div class="tabContent hidden" data-tab="quat">Quaternion content here</div>
+                              <div class="tabContent hidden" data-tab="dualquat">Dual quaternion content here</div>
+                        </div>
+                  </div>
 
-                <div id="modeTabs">
-                      <div class="tab active" data-tab="matrix">Matrix</div>
-                      <div class="tab" data-tab="euler">Euler Angles</div>
-                      <div class="tab" data-tab="axisangle">Axis-Angle</div>
-                      <div class="tab" data-tab="quat">Quaternion</div>
-                      <div class="tab" data-tab="dualquat">Dual Quaternion</div>
-                </div>
+                  <!-- LEGEND SECTION -->
+                  <div class="panelSection" style="padding: 0px; margin: 0px; border: 0px;">
+                        <div class="panelTitle toggleable">
+                              <span>Legend</span>
+                              <button id="legendToggle">Show / Hide</button>
+                        </div>
 
-                <div id="modeContent">
-                      <!-- You will fill this later -->
-                      <div class="tabContent" data-tab="matrix">Matrix content here</div>
-                      <div class="tabContent hidden" data-tab="euler">Euler content here</div>
-                      <div class="tabContent hidden" data-tab="axisangle">Axis-Angle content here</div>
-                      <div class="tabContent hidden" data-tab="quat">Quaternion content here</div>
-                      <div class="tabContent hidden" data-tab="dualquat">Dual quaternion content here</div>
-                </div>
-          </div>
+                        <div id="legendContent" hidden>
+                              <!-- You will fill this -->
+                              <div style="padding: 5px;">Legend content here...</div>
+                        </div>
+                  </div>
 
-          <!-- LEGEND SECTION -->
-          <div class="panelSection">
-                <div class="panelTitle toggleable">
-                      <span>Legenda</span>
-                      <button id="legendToggle">Show / Hide</button>
-                </div>
+            </div>
 
-                <div id="legendContent" class="hidden">
-                      <!-- You will fill this -->
-                      <div style="padding: 5px;">Legend content here...</div>
-                </div>
-          </div>
+            <!-- <div id="cameraViews">
+                  <input type="button" value="1" id="frontView">
+                  <input type="button" value="2" id="rightView">
+                  <input type="button" value="3" id="topView">
+            </div> -->
 
-    </div>
+            <div id="uiContainer">
+                  <input type="button" value="Animation Mode" id="transformState">
+                  <!-- <input type="button" value="Toggle Gizmos" id="gizmoToggle"> -->
+                  <!-- <input type="button" value="Change Perspective" id="perspectiveChange"> -->
+            </div>
 
-    <div id="cameraViews">
-      <input type="button" value="1" id="frontView">
-      <input type="button" value="2" id="rightView">
-      <input type="button" value="3" id="topView">
-    </div>
+            <div id="transformUI" hidden>
+                  <div class="inline">
+                        <button id="playButton">Play</button>
+                        <div id="progressWrapper" style="position: relative; width: 200px; height: 20px; ">
+                              <input id="progressBar" type="range" min="0" max="1" step="0.001" value="0" style="width:100%; position: absolute; top:0; left:0;">
+                              <div id="phaseMarkers"></div>
+                        </div>
+                        <button id="reverseButton">Reverse</button>
+                        <button id="boomerangButton">Boomerang</button>
+                  </div>
 
-    <div id="uiContainer">
-      <input type="button" value="Animation Mode" id="transformState">
-      <input type="button" value="Toggle Gizmos" id="gizmoToggle">
-      <input type="button" value="Change Perspective" id="perspectiveChange">
-    </div>
+                  <div id="orderContainer">
+                        <div style="font-size: large; margin: 5px;">Transformations Order</div>
+                        <div class="order-item" draggable="true" data-key="T">Translation</div>
+                        <div class="order-item" draggable="true" data-key="R">Rotation</div>
+                        <div class="order-item" draggable="true" data-key="S">Scale</div>
+                  </div>
+                  
+                  <div id="indipendentContainer">
+                        <input type="checkbox" id="indipendentTransforms">
+                        <label for="indipendentTransforms">Indipendent Transformations</label>
+                  </div>
 
-    <div id="transformUI" hidden>
-      <div class="inline">
-        <button id="playButton">Play</button>
-        <div id="progressWrapper" style="position: relative; width: 200px; height: 20px; ">
-          <input id="progressBar" type="range" min="0" max="1" step="0.001" value="0" style="width:100%; position: absolute; top:0; left:0;">
-          <div id="phaseMarkers"></div>
-        </div>
-        <button id="reverseButton">Reverse</button>
-        <button id="boomerangButton">Boomerang</button>
-      </div>
+            </div>
 
-      <div id="orderContainer">
-        <div style="font-size: large; margin: 5px;">Transformations Order</div>
-        <div class="order-item" draggable="true" data-key="T">Translation</div>
-        <div class="order-item" draggable="true" data-key="R">Rotation</div>
-        <div class="order-item" draggable="true" data-key="S">Scale</div>
-      </div>
-      
-      <div id="indipendentContainer">
-        <input type="checkbox" id="indipendentTransforms">
-        <label for="indipendentTransforms">Indipendent Transformations</label>
-      </div>
-
-    </div>
-
-    <script type="module" src="js/main.js"></script>
-  </body>
+            <script type="module" src="js/main.js"></script>
+      </body>
 
 </html>

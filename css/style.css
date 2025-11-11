@@ -269,17 +269,20 @@ canvas {
 /* Right panel container */
 #sidePanel {
   position: fixed;
-  top: 0;
-  right: 0;
-  width: 30%;
-  height: 100%;
+  bottom: 12px;
+  right: 12px;
+  width: auto;
+  height: auto;
   background: rgba(15, 15, 15, 0.92);
   padding: 12px;
+  border: 2px solid #555;
+  border-radius: 10px;
   box-sizing: border-box;
   color: white;
   font-family: sans-serif;
   overflow-y: auto;
   z-index: 20;
+  transition: 0.2;
 }
 
 /* Each section */
@@ -299,23 +302,28 @@ canvas {
 /* Subtitle */
 .subTitle {
   font-size: 14px;
-  margin: 6px 0 4px 0;
   opacity: 0.85;
+}
+.subSection {
+  border: 1px solid #444;
+  background-color: rgba(60, 60, 60, 0.5);
+  border-radius: 5px;
+  padding: 5px;
+  margin-bottom: 5px;
 }
 
 /* Button row */
 .buttonRow {
   display: flex;
   align-items: center;
-  /* justify-content: center; */
   gap: 6px;
-  margin-bottom: 6px;
+  margin-top: 5px;
 }
 
 /* Generic buttons inside panel */
 #sidePanel button,
 #sidePanel select {
-  background: #333;
+  background: rgba(30, 30, 30, 0.8);
   color: white;
   border: 1px solid #555;
   border-radius: 4px;
@@ -323,6 +331,9 @@ canvas {
   cursor: pointer;
   width: auto;
   transition: 0.2s;
+}
+#sidePanel select {
+  margin-top: 5px;
 }
 #sidePanel button:hover,
 #sidePanel select:hover {
@@ -333,18 +344,21 @@ canvas {
 #modeTabs {
   display: flex;
   gap: 4px;
-  margin-bottom: 10px;
+  /* margin-bottom: 10px; */
   border-bottom: 1px solid #444;
-  padding-bottom: 4px;
+  /* padding-bottom: 4px; */
 }
 
 /* Single tab */
 .tab {
+  align-items: center;
+  justify-content: center;
   padding: 6px 8px;
-  background: #222;
+  background: rgba(30, 30, 30, 0.8);
   border: 1px solid #444;
   cursor: pointer;
   border-radius: 4px 4px 0 0;
+  border-bottom: 1px solid transparent;
   transition: 0.2s;
 }
 .tab:hover {
@@ -352,15 +366,16 @@ canvas {
 }
 .tab.active {
   background: #666;
-  border-bottom: 1px solid transparent;
 }
 
 /* Tab content area */
 .tabContent {
-  padding: 6px;
+  padding: 5px;
   background: #1a1a1a;
   border: 1px solid #444;
+  border-top: 1px solid transparent;
   border-radius: 4px;
+  background-color: rgba(60, 60, 60, 0.5);
 }
 .hidden {
   display: none;

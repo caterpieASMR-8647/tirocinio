@@ -517,24 +517,71 @@ function changeCamera(  ) {
     });
 }
 
-// Sets New View from Vector3
-function setCameraView( newPosition ) {
-    // Center point the camera looks at
-    const target = orbit.target.clone();
+// Transitions Camera from starting point to a final position, sets orbit.target = ( 0, 0, 0 )
+function smoothCameraTransition ( finalPosition ) {
 
-    // Update both perspective and orthographic cameras
-    cameraPersp.position.copy( newPosition );
-    cameraPersp.lookAt( target );
+    if ( isTransitioning || currentCamera.position == finalPosition ) return;
+    isTransitioning = true;
 
-    cameraOrtho.position.copy( newPosition );
-    cameraOrtho.lookAt( target );
+    const duration = 0.75;
+    const startTime = performance.now();
 
-    // Update orbit control to follow the new camera
-    orbit.object = currentCamera;
-    orbit.update();
+    const startPos = currentCamera.position.clone();
+    const startTarget = orbit.target.clone();
 
-    // Force re-render
-    render();
+    const endTarget = new THREE.Vector3( 0, 0, 0 );
+    const endPos = finalPosition.clone();
+
+    const startOffset = startPos.clone().sub( startTarget );
+    const endOffset   = endPos.clone().sub( endTarget );
+
+    const startSph = new THREE.Spherical().setFromVector3( startOffset );
+    const endSph   = new THREE.Spherical().setFromVector3( endOffset );
+
+    const EPS = 0.0001;
+    startSph.phi = THREE.MathUtils.clamp( startSph.phi, EPS, Math.PI - EPS );
+    endSph.phi   = THREE.MathUtils.clamp( endSph.phi,   EPS, Math.PI - EPS );
+
+    const startZoom = currentCamera.zoom;
+
+    const endZoom = ( endPos.x === 0 ) ? 3.258063432103014 : 2.1720422880686763;
+
+    function update() {
+
+        const now  = performance.now();
+        const t    = Math.min( ( now - startTime ) / ( duration * 1000 ), 1 );
+        const eased = easeInOutCubic( t );
+
+        const sph = new THREE.Spherical();
+        sph.radius = THREE.MathUtils.lerp( startSph.radius, endSph.radius, eased );
+        sph.theta  = THREE.MathUtils.lerp( startSph.theta,  endSph.theta,  eased );
+        sph.phi    = THREE.MathUtils.lerp( startSph.phi,    endSph.phi,    eased );
+
+        const target = startTarget.clone().lerp( endTarget, eased );
+
+        const offset = new THREE.Vector3().setFromSpherical( sph );
+        const pos    = target.clone().add( offset );
+
+        currentCamera.position.copy( pos );
+        orbit.target.copy( target );
+
+        // Apply proper zoom/distance depending on camera type
+        if ( currentCamera.isOrthographicCamera ) {
+            currentCamera.zoom = THREE.MathUtils.lerp( startZoom, endZoom, eased );
+            currentCamera.updateProjectionMatrix();
+        }
+
+        orbit.update();
+        render();
+
+        if ( t < 1 ) {
+            requestAnimationFrame( update );
+        } else {
+            isTransitioning = false;
+        }
+    }
+
+    update();
 }
 
 // Toggles Gizmos On/Off
@@ -632,22 +679,22 @@ phaseMarkersContainer.addEventListener('click', (e) => {
 // Sets Camera in Front View
 frontViewButton.addEventListener('click', (e) => {
     e.target.blur();
-    setCameraView( new THREE.Vector3( 0, 0, 2 ) );
+    smoothCameraTransition( new THREE.Vector3( 0, 0, 2 ) );
 });
 // Sets Camera in Left View
 leftViewButton.addEventListener('click', (e) => {
     e.target.blur();
-    setCameraView( new THREE.Vector3( -3, 0, 0 ) );
+    smoothCameraTransition( new THREE.Vector3( -3, 0, 0 ) );
 });
 // Sets Camera in Right View
 rightViewButton.addEventListener('click', (e) => {
     e.target.blur();
-    setCameraView( new THREE.Vector3( 3, 0, 0 ) );
+    smoothCameraTransition( new THREE.Vector3( 3, 0, 0 ) );
 });
 // Sets Camera in Top View
 topViewButton.addEventListener('click', (e) => {
     e.target.blur();
-    setCameraView( new THREE.Vector3( 0, 2, 0 ) );
+    smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
 });
 
 // Attach an event listener to each reset button individually
@@ -1053,21 +1100,21 @@ window.addEventListener( 'keydown', function(event) {
 
         // Front View
         case '1':
-            setCameraView( new THREE.Vector3( 0, 0, 2 ) );
+            smoothCameraTransition( new THREE.Vector3( 0, 0, 2 ) );
             break;
 
         // Right View
         case '2':
-            setCameraView( new THREE.Vector3( -3, 0, 0) );
+            smoothCameraTransition( new THREE.Vector3( -3, 0, 0) );
             break;
 
         // Top View
         case '3':
-            setCameraView( new THREE.Vector3( 3, 0, 0 ) );
+            smoothCameraTransition( new THREE.Vector3( 3, 0, 0 ) );
             break;
 
         case '4' :
-            setCameraView( new THREE.Vector3( 0, 2, 0 ) );
+            smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
             break;
 
         // Disable / Enable Transformations
