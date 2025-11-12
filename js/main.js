@@ -342,6 +342,8 @@ function createAnimationMesh() {
     // Add the mesh to the scene
     scene.add( animationMesh );
 
+    updateTransformation();
+
     console.log( "Animation mesh created:", animationMesh );
 }
 
@@ -628,6 +630,7 @@ const expandBox = document.querySelectorAll( '.expandBox' );
 const collapsableClass = document.querySelectorAll( '.panelSection' );
 const legendToggle = document.getElementById( 'legendToggle' );
 const legendContent = document.getElementById( 'legendContent' );
+const sidePanel = document.getElementById( 'sidePanel' );
 
 playButton.addEventListener('click', (e) => {
     e.target.blur();
@@ -754,7 +757,7 @@ resetButtons.forEach( ( btn ) => {
 collapseButton.addEventListener( 'click', (e) => {
     e.target.blur();
 
-    document.getElementById( 'sidePanel' ).classList.add( 'collapsed' );
+    sidePanel.classList.add( 'collapsed' );
     collapsableClass.forEach( ( panel ) => {
         panel.classList.add( 'collapsed' );
     });
@@ -765,7 +768,7 @@ collapseButton.addEventListener( 'click', (e) => {
 expandButton.addEventListener( 'click', (e) => {
     e.target.blur();
 
-    document.getElementById( 'sidePanel' ).classList.remove( 'collapsed' );
+    sidePanel.classList.remove( 'collapsed' );
     collapsableClass.forEach( ( panel ) => {
         panel.classList.remove( 'collapsed' );
     });
@@ -824,75 +827,115 @@ function updateTransformation() {
         matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
     }
 
+    updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
     requestAnimationFrame( updateTransformation );
 }
 
 function matrixTransformation( meshA, meshB, animationMesh, t, order = 'TRS' ) {
+
     const isIndependent = indipendentTransformations.checked;
 
-    const quatA = meshA.quaternion;
-    const quatB = meshB.quaternion;
+    // Determine which transform mode is currently active
+    // (set by your tab buttons — e.g., 'matrix', 'euler', 'axis-angle', 'quaternion', 'dual-quaternion')
+    const mode = currentTransformMode || 'matrix';
 
-    let finalMatrix = new THREE.Matrix4();
+    // Declare variables for reused results
+    let transformA, transformB, mixedTransform;
 
-    if ( ! isIndependent ) {
-        // Normal Case, All Transformations Toghether 
-        const position = new THREE.Vector3().lerpVectors( meshA.position, meshB.position, t );
-        const rotation = new THREE.Quaternion().slerpQuaternions( quatA, quatB, t );
-        const scale = new THREE.Vector3().lerpVectors( meshA.scale, meshB.scale, t );
+    // Helper function to apply the chosen transformation type
+    function applyTransform( A, B, target, interp ) {
+        switch ( mode ) {
 
-        const translationMatrix = new THREE.Matrix4().makeTranslation( position.x, position.y, position.z );
-        const rotationMatrix = new THREE.Matrix4().makeRotationFromQuaternion( rotation );
-        const scaleMatrix = new THREE.Matrix4().makeScale( scale.x, scale.y, scale.z );
-
-        for ( let c of order ) {
-            if ( c === 'T') finalMatrix.multiply( translationMatrix );
-            if ( c === 'R') finalMatrix.multiply( rotationMatrix );
-            if ( c === 'S') finalMatrix.multiply( scaleMatrix );
-        }
-    } else {
-        // Indipendent Transformations: One Transformation at a time
-        const step = 1 / 3;
-        const phase = Math.min(Math.floor(t / step), 2);
-        const localT = (t - phase * step) / step;
-
-        let currentPos = meshA.position.clone();
-        let currentRot = meshA.quaternion.clone();
-        let currentScale = meshA.scale.clone();
-
-        for ( let i = 0; i <= phase; i++ ) {
-            let interpT = ( i === phase ) ? localT : 1;
-
-            switch ( order[i] ) {
-                case 'T':
-                currentPos.lerpVectors( meshA.position, meshB.position, interpT );
+            case 'matrix':
+                const mA = getMatrixTransform( A );
+                const mB = getMatrixTransform( B );
+                const mMix = mixMatrixTransform( mA, mB, interp );
+                setMatrixTransform( mMix, target );
                 break;
 
-                case 'R':
-                currentRot.slerpQuaternions( meshA.quaternion, meshB.quaternion, interpT );
+            case 'euler':
+                const eA = getEulerTransform( A );
+                const eB = getEulerTransform( B );
+                const eMix = mixEulerTransform( eA, eB, interp );
+                setEulerMatrix( eMix, target );
                 break;
 
-                case 'S':
-                currentScale.lerpVectors( meshA.scale, meshB.scale, interpT );
+            case 'axisangle':
+                const aaA = getAxisAngleTransform( A );
+                const aaB = getAxisAngleTransform( B );
+                const aaMix = mixAxisAngleTransform( aaA, aaB, interp );
+                setAxisAngleMatrix( aaMix, target );
                 break;
 
-            }
-        }
+            case 'quat':
+                const qA = getQuaternionTransform( A );
+                const qB = getQuaternionTransform( B );
+                const qMix = mixQuaternionTransform( qA, qB, interp );
+                setQuaternionMatrix( qMix, target );
+                break;
 
-        const translationMatrix = new THREE.Matrix4().makeTranslation(currentPos.x, currentPos.y, currentPos.z);
-        const rotationMatrix = new THREE.Matrix4().makeRotationFromQuaternion(currentRot);
-        const scaleMatrix = new THREE.Matrix4().makeScale(currentScale.x, currentScale.y, currentScale.z);
+            case 'dualquat':
+                const dqA = getDualQuaternionTransform( A );
+                const dqB = getDualQuaternionTransform( B );
+                const dqMix = mixDualQuaternionTransform( dqA, dqB, interp );
+                setDualQuaternionMatrix( dqMix, target );
+                break;
 
-        for ( let c of order ) {
-            if ( c === 'T' ) finalMatrix.multiply( translationMatrix );
-            if ( c === 'R' ) finalMatrix.multiply( rotationMatrix );
-            if ( c === 'S' ) finalMatrix.multiply( scaleMatrix );
+            default:
+                console.warn( `Unknown transform mode: ${mode}` );
+                break;
         }
     }
 
-    // Applies Final Matrix
-    animationMesh.matrix.copy( finalMatrix );
-    animationMesh.matrix.decompose( animationMesh.position, animationMesh.quaternion, animationMesh.scale );
+    // All Transformations Together
+    if ( ! isIndependent ) {
+        applyTransform( meshA, meshB, animationMesh, t );
+    }
+
+    // Indipendent Transformations
+    else {
+        const step = 1 / 3;
+        const phase = Math.min( Math.floor( t / step ), 2 );
+        const localT = ( t - phase * step ) / step;
+
+        // Start from the A mesh
+        let currentMesh = meshA;
+
+        // Go through each phase of transformation (T, R, S)
+        for ( let i = 0; i <= phase; i++ ) {
+
+            let interpT = ( i === phase ) ? localT : 1;
+
+            // Temporarily interpolate only one transform type
+            const key = order[i];
+            let tempMesh = animationMesh.clone(); // create a temporary clone for progressive updates
+
+            // For each single phase, interpolate that specific component only
+            if ( key === 'T' ) {
+                const pos = new THREE.Vector3().lerpVectors( meshA.position, meshB.position, interpT );
+                tempMesh.position.copy( pos );
+            }
+            else if ( key === 'R' ) {
+                const rot = new THREE.Quaternion().slerpQuaternions( meshA.quaternion, meshB.quaternion, interpT );
+                tempMesh.quaternion.copy( rot );
+            }
+            else if ( key === 'S' ) {
+                const sca = new THREE.Vector3().lerpVectors( meshA.scale, meshB.scale, interpT );
+                tempMesh.scale.copy( sca );
+            }
+
+            // Apply depending on current transformation mode
+            applyTransform( meshA, tempMesh, animationMesh, interpT );
+        }
+    }
+
+    // Apply final matrix decomposition for rendering
+    animationMesh.updateMatrix();
+    animationMesh.matrix.decompose(
+        animationMesh.position,
+        animationMesh.quaternion,
+        animationMesh.scale
+    );
 }
 
 let isAnimationMode = false;
@@ -1054,6 +1097,8 @@ function updateOrder() {
 }
 
 // Mode tab switching
+let currentTransformMode = 'matrix';
+
 // Select all tab buttons
 const tabs = document.querySelectorAll( '.tab' );
 // Select all tab content boxes
@@ -1068,6 +1113,9 @@ tabs.forEach( tab => {
             tab.classList.add( 'active' );
 
             const target = tab.dataset.tab;
+            currentTransformMode = target;
+
+            sidePanel.className = target;
 
             /* Show only matching content */
             tabContents.forEach( box => {
@@ -1095,6 +1143,330 @@ function resetMeshRotation ( mesh ) {
 function resetMeshScale ( mesh ) {
       // Restore original stored scale
       mesh.scale.copy( mesh.userData.original.scale );
+}
+
+// ##### MATRIX ##### //
+
+// Extracts the full transformation matrix from a mesh
+function getMatrixTransform( mesh ) {
+  // Returns a clone to prevent unwanted reference sharing
+  return mesh.matrix.clone();
+}
+
+// Interpolates linearly between two matrices
+function mixMatrixTransform( matrixA, matrixB, t ) {
+  // Decompose both matrices
+  const posA = new THREE.Vector3();
+  const quatA = new THREE.Quaternion();
+  const scaleA = new THREE.Vector3();
+  matrixA.decompose( posA, quatA, scaleA );
+
+  const posB = new THREE.Vector3();
+  const quatB = new THREE.Quaternion();
+  const scaleB = new THREE.Vector3();
+  matrixB.decompose( posB, quatB, scaleB );
+
+  // Interpolate each component
+  const pos = new THREE.Vector3().lerpVectors( posA, posB, t );
+  const quat = new THREE.Quaternion().slerpQuaternions( quatA, quatB, t );
+  const scale = new THREE.Vector3().lerpVectors( scaleA, scaleB, t );
+
+  // Recompose into a final matrix
+  const result = new THREE.Matrix4();
+  result.compose( pos, quat, scale );
+  return result;
+}
+
+// Applies the given matrix to the target mesh
+function setMatrixTransform( matrix, mesh ) {
+  mesh.matrix.copy( matrix );
+  mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+}
+
+// ##### EULER ANGLES ##### //
+
+// Extracts position, rotation (Euler), and scale from the mesh
+function getEulerTransform( mesh ) {
+  return {
+    position: mesh.position.clone(),
+    rotation: mesh.rotation.clone(),
+    scale: mesh.scale.clone()
+  };
+}
+
+// Interpolates between two Euler-based transforms
+function mixEulerTransform( a, b, t ) {
+  const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
+
+  // Interpolates Euler angles directly (not ideal for all cases)
+  const rot = new THREE.Euler(
+    THREE.MathUtils.lerp( a.rotation.x, b.rotation.x, t ),
+    THREE.MathUtils.lerp( a.rotation.y, b.rotation.y, t ),
+    THREE.MathUtils.lerp( a.rotation.z, b.rotation.z, t ),
+    a.rotation.order
+  );
+
+  const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
+  return { position: pos, rotation: rot, scale: scale };
+}
+
+// Applies Euler transform to a mesh
+function setEulerMatrix( transform, mesh ) {
+  const matrix = new THREE.Matrix4();
+  const q = new THREE.Quaternion().setFromEuler( transform.rotation );
+  matrix.compose( transform.position, q, transform.scale );
+  mesh.matrix.copy( matrix );
+  mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+}
+
+// ##### AXIS-ANGLE ##### //
+
+// Extracts axis-angle representation from a mesh
+function getAxisAngleTransform( mesh ) {
+  const q = mesh.quaternion.clone();
+  const axis = new THREE.Vector3( 1, 0, 0 );
+  let angle = 0;
+  q.normalize();
+  angle = 2 * Math.acos( q.w );
+  const s = Math.sqrt( 1 - q.w * q.w );
+  if ( s > 0.0001 ) {
+    axis.set( q.x / s, q.y / s, q.z / s );
+  }
+  return {
+    position: mesh.position.clone(),
+    axis: axis,
+    angle: angle,
+    scale: mesh.scale.clone()
+  };
+}
+
+// Interpolates between two axis-angle transforms
+function mixAxisAngleTransform( a, b, t ) {
+  const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
+  const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
+
+  // Convert both to quaternions, interpolate via slerp
+  const qA = new THREE.Quaternion().setFromAxisAngle( a.axis, a.angle );
+  const qB = new THREE.Quaternion().setFromAxisAngle( b.axis, b.angle );
+  const q = new THREE.Quaternion().slerpQuaternions( qA, qB, t );
+
+  return { position: pos, quaternion: q, scale: scale };
+}
+
+// Applies interpolated axis-angle transform
+function setAxisAngleMatrix( transform, mesh ) {
+  const matrix = new THREE.Matrix4();
+  matrix.compose( transform.position, transform.quaternion, transform.scale );
+  mesh.matrix.copy( matrix );
+  mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+}
+
+// ##### QUATERNIONS ##### //
+function getQuaternionTransform( mesh ) {
+  return {
+    position: mesh.position.clone(),
+    quaternion: mesh.quaternion.clone(),
+    scale: mesh.scale.clone()
+  };
+}
+
+function mixQuaternionTransform( a, b, t ) {
+  const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
+  const quat = new THREE.Quaternion().slerpQuaternions( a.quaternion, b.quaternion, t );
+  const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
+  return { position: pos, quaternion: quat, scale: scale };
+}
+
+function setQuaternionMatrix( transform, mesh ) {
+  const matrix = new THREE.Matrix4();
+  matrix.compose( transform.position, transform.quaternion, transform.scale );
+  mesh.matrix.copy( matrix );
+  mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+}
+
+// ##### DUAL QUATERNIONS ##### //
+
+// Convert a standard transform to dual quaternion
+function getDualQuaternionTransform( mesh ) {
+  const q = mesh.quaternion.clone();
+  const t = mesh.position.clone();
+
+  const dqReal = q.clone();
+  const dqDual = new THREE.Quaternion(
+    0.5 * ( t.x * q.w + t.y * q.z - t.z * q.y ),
+    0.5 * (-t.x * q.z + t.y * q.w + t.z * q.x ),
+    0.5 * ( t.x * q.y - t.y * q.x + t.z * q.w ),
+    -0.5 * ( t.x * q.x + t.y * q.y + t.z * q.z )
+  );
+
+  return { real: dqReal, dual: dqDual, scale: mesh.scale.clone() };
+}
+
+// Linearly blends dual quaternions (normalized afterwards)
+function mixDualQuaternionTransform( a, b, t ) {
+  const real = new THREE.Quaternion().slerpQuaternions( a.real, b.real, t );
+  const dual = new THREE.Quaternion().slerpQuaternions( a.dual, b.dual, t );
+  const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
+  return { real: real, dual: dual, scale: scale };
+}
+
+// Converts a dual quaternion back to standard matrix
+function setDualQuaternionMatrix( transform, mesh ) {
+  const q = transform.real;
+  const qd = transform.dual;
+
+  // Translation = 2 * (qd * q_conjugate)
+  const qc = q.clone().conjugate();
+  const t = new THREE.Vector3().set(
+    2 * ( qd.x * qc.w + qd.w * qc.x + qd.y * qc.z - qd.z * qc.y ),
+    2 * ( qd.y * qc.w + qd.w * qc.y + qd.z * qc.x - qd.x * qc.z ),
+    2 * ( qd.z * qc.w + qd.w * qc.z + qd.x * qc.y - qd.y * qc.x )
+  );
+
+  const matrix = new THREE.Matrix4();
+  matrix.compose( t, q, transform.scale );
+  mesh.matrix.copy( matrix );
+  mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+}
+
+// Updates the Content of the Selected Tab
+function updateTabDisplay( mode, meshA, meshB, t ) {
+
+    let getA, getB, mix;
+
+    switch ( mode ) {
+        case 'matrix':
+            getA = getMatrixTransform( meshA );
+            getB = getMatrixTransform( meshB );
+            mix = mixMatrixTransform( getA, getB, t );
+            break;
+
+        case 'euler':
+            getA = getEulerTransform( meshA );
+            getB = getEulerTransform( meshB );
+            mix = mixEulerTransform( getA, getB, t );
+            break;
+
+        case 'axisangle':
+            getA = getAxisAngleTransform( meshA );
+            getB = getAxisAngleTransform( meshB );
+            mix = mixAxisAngleTransform( getA, getB, t );
+            break;
+
+        case 'quat':
+            getA = getQuaternionTransform( meshA );
+            getB = getQuaternionTransform( meshB );
+            mix = mixQuaternionTransform( getA, getB, t );
+            break;
+
+        case 'dualquat':
+            getA = getDualQuaternionTransform( meshA );
+            getB = getDualQuaternionTransform( meshB );
+            mix = mixDualQuaternionTransform( getA, getB, t );
+            break;
+    }
+
+    // Function to simplify vector/quaternion display
+    function fmt( v, decimals = 3 ) {
+        function cut( n ) {
+            // If NaN or undefined
+            if ( isNaN( n ) || n === null ) return "0";
+            // Truncate to `decimals` digits (not round)
+            const str = n.toFixed( decimals );
+            // Remove trailing zeros and decimal if not needed
+            return str.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.$/,'');
+        }
+
+        if ( v instanceof THREE.Vector3 ) {
+            return `(${cut(v.x)}, ${cut(v.y)}, ${cut(v.z)})`;
+        }
+        if ( v instanceof THREE.Quaternion ) {
+            return `(${cut(v.x)}, ${cut(v.y)}, ${cut(v.z)}, ${cut(v.w)})`;
+        }
+        if ( v instanceof THREE.Euler ) {
+            return `(${cut(v.x)}, ${cut(v.y)}, ${cut(v.z)})`;
+        }
+        if ( v instanceof THREE.Matrix4 ) {
+            const e = v.elements.map( n => cut(n) );
+            return `[${e.slice(0,4)}]<br>[${e.slice(4,8)}]<br>[${e.slice(8,12)}]<br>[${e.slice(12,16)}]`;
+        }
+        if ( typeof v === 'number' ) {
+            return cut( v );
+        }
+        return v;
+    }
+
+    const tabA   = document.getElementById(`${mode}A`);
+    const tabB   = document.getElementById(`${mode}B`);
+    const tabMix = document.getElementById(`${mode}Mix`);
+
+    if ( tabA )   tabA.innerHTML   = `<b>Mesh 1:</b><br>${fmtSummary(getA)}`;
+    if ( tabB )   tabB.innerHTML   = `<b>Mesh 2:</b><br>${fmtSummary(getB)}`;
+    if ( tabMix ) tabMix.innerHTML = `<b>Mix (t=${t.toFixed(2)}):</b><br>${fmtSummary(mix)}`;
+
+    // Helper for structured display of nested transform objects
+    function fmtSummary( obj ) {
+
+        if ( obj instanceof THREE.Matrix4 ) return fmt( obj );
+
+        if ( obj.position ) {
+            let str = '';
+
+            if ( obj.position )   
+                str += `pos = ${fmt( obj.position )}<br>`;
+
+            if ( obj.rotation )   
+                str += `rot = ${fmt( obj.rotation )}<br>`;
+
+            if ( obj.quaternion ) 
+                str += `quat = ${fmt( obj.quaternion )}<br>`;
+
+            if ( obj.axis )       
+                str += `axis = ${fmt( obj.axis )}<br>`;
+
+            if ( obj.angle !== undefined ) 
+                str += `angle = ${obj.angle.toFixed( 3 )}<br>`;
+
+            // Uniform scale detection
+            if ( obj.scale ) {
+                const s = obj.scale;
+                const uniform = Math.abs( s.x - s.y ) < 1e-6 && Math.abs( s.y - s.z ) < 1e-6;
+                if ( uniform ) {
+                        str += `scale = ${fmt( s.x )}<br>`;
+                } else {
+                        str += `scale = ${fmt( s )}<br>`;
+                }
+            }
+
+            // Proper display for dual quaternion
+            if ( obj.real )       
+                str += `real = ${fmt( obj.real )}<br>`;
+            if ( obj.dual )       
+                str += `dual = ${fmt( obj.dual )}<br>`;
+
+            return str;
+        }
+
+        // For dual quaternion objects (when passed directly)
+        if ( obj.real && obj.dual ) {
+            let str = '';
+            str += `real = ${fmt( obj.real )}<br>`;
+            str += `dual = ${fmt( obj.dual )}<br>`;
+            if ( obj.scale ) {
+                const s = obj.scale;
+                const uniform = Math.abs( s.x - s.y ) < 1e-6 && Math.abs( s.y - s.z ) < 1e-6;
+                if ( uniform ) {
+                        str += `scale = ${fmt( s.x )}<br>`;
+                } else {
+                        str += `scale = ${fmt( s )}<br>`;
+                }
+            }
+            return str;
+        }
+
+        return fmt( obj );
+    }
+
 }
 
 // ########################################### Keybinds ########################################### //
@@ -1306,4 +1678,3 @@ console.log(scene);
 
 render();
 animate();
-updateTransformation();

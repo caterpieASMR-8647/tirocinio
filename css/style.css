@@ -1,3 +1,7 @@
+:root {
+  interpolate-size: allow-keywords;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -283,7 +287,7 @@ canvas {
   overflow: hidden;
   z-index: 20;
 
-  transition: transform 0.3s ease, padding 0.3s ease;
+  transition: all 0.3s ease;
   transform: scale(1);
   transform-origin: bottom right;
 }
@@ -291,6 +295,10 @@ canvas {
   transform: scale(0);
   padding: 5px;
 }
+/* #sidePanel.matrix, #sidePanel.euler, #sidePanel.axisangle, #sidePanel.quat, #sidePanel.dualquat {
+  width: auto;
+  height: auto;
+} */
 
 /* Each section */
 .panelSection {
@@ -401,6 +409,8 @@ canvas {
 .tab {
   align-items: center;
   justify-content: center;
+  min-width: max-content;
+  width: 20%;
   padding: 6px 8px;
   background: rgba(30, 30, 30, 0.8);
   border: 1px solid #444;
@@ -434,4 +444,43 @@ canvas {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* Tab content result boxes */
+.tabBottom, .tabMesh {
+  background-color: rgba(25, 25, 25, 0.85);
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 10px;
+  padding-top: 6px;
+  color: white;
+  font-family: monospace;
+  font-size: 13px;
+  line-height: 1.3em;
+  overflow-x: none;
+  word-break: break-word;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.tabMesh {
+  width: 50%;
+}
+.tabTop {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.tabBottom b, .tabMesh b {
+    color: #ddd; /* evidenzia le label A/B/Mix */
+}
+
+/* Hover leggero per feedback */
+.tabBottom:hover, .tabMesh:hover {
+    background-color: rgba(45, 45, 45, 0.9);
+    transform: scale(1.01);
+}
+
+/* Matrice multilinea più leggibile */
+.tabBottom br, .tabMesh br {
+    line-height: 1.2em;
 }

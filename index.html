@@ -15,7 +15,7 @@
                   <button id="expandSideBar">Expand</button>
             </div>
             
-            <div id="sidePanel">
+            <div id="sidePanel" class="matrix">
 
                   <!-- CAMERA SECTION -->
                   <div class="panelSection">
@@ -99,11 +99,41 @@
 
                         <div id="modeContent">
                               <!-- You will fill this later -->
-                              <div class="tabContent" data-tab="matrix">Matrix content here</div>
-                              <div class="tabContent hidden" data-tab="euler">Euler content here</div>
-                              <div class="tabContent hidden" data-tab="axisangle">Axis-Angle content here</div>
-                              <div class="tabContent hidden" data-tab="quat">Quaternion content here</div>
-                              <div class="tabContent hidden" data-tab="dualquat">Dual quaternion content here</div>
+                              <div class="tabContent" data-tab="matrix">
+                                    <div class="tabTop">
+                                          <div class="tabMesh" id="matrixA"></div>
+                                          <div class="tabMesh" id="matrixB"></div>
+                                    </div>
+                                    <div class="tabBottom" id="matrixMix"></div>
+                              </div>
+                              <div class="tabContent hidden" data-tab="euler">
+                                    <div class="tabTop">
+                                          <div class="tabMesh" id="eulerA"></div>
+                                          <div class="tabMesh" id="eulerB"></div>
+                                    </div>
+                                    <div class="tabBottom" id="eulerMix"></div>
+                              </div>
+                              <div class="tabContent hidden" data-tab="axisangle">
+                                    <div class="tabTop">
+                                          <div class="tabMesh" id="axisangleA"></div>
+                                          <div class="tabMesh" id="axisangleB"></div>
+                                    </div>
+                                    <div class="tabBottom" id="axisangleMix"></div>
+                              </div>
+                              <div class="tabContent hidden" data-tab="quat">
+                                    <div class="tabTop">
+                                          <div class="tabMesh" id="quatA"></div>
+                                          <div class="tabMesh" id="quatB"></div>
+                                    </div>
+                                    <div class="tabBottom" id="quatMix"></div>
+                              </div>
+                              <div class="tabContent hidden" data-tab="dualquat">
+                                    <div class="tabTop">
+                                          <div class="tabMesh" id="dualquatA"></div>
+                                          <div class="tabMesh" id="dualquatB"></div>
+                                    </div>
+                                    <div class="tabBottom" id="dualquatMix"></div>
+                              </div>
                         </div>
                   </div>
 
