@@ -447,7 +447,8 @@ canvas {
 }
 
 /* Tab content result boxes */
-.tabBottom, .tabMesh {
+.tabMesh, .tabMix, .tabSetM {
+  width: 50%;
   background-color: rgba(25, 25, 25, 0.85);
   border: 1px solid #555;
   border-radius: 6px;
@@ -458,29 +459,29 @@ canvas {
   font-size: 13px;
   line-height: 1.3em;
   overflow-x: none;
-  word-break: break-word;
+  word-break:keep-all;
   transition: background 0.2s ease, transform 0.2s ease;
-}
-.tabMesh {
-  width: 50%;
 }
 .tabTop {
   display: flex;
   gap: 5px;
   margin-bottom: 5px;
 }
+.tabBot {
+  display: flex;
+  gap: 5px;
+}
 
-.tabBottom b, .tabMesh b {
+.tabMesh b, .tabMix b, .tabSetM b {
     color: #ddd; /* evidenzia le label A/B/Mix */
+}
+/* Matrice multilinea più leggibile */
+.tabMesh br, .tabMix br, .tabSetM br {
+    line-height: 1.2em;
 }
 
 /* Hover leggero per feedback */
-.tabBottom:hover, .tabMesh:hover {
+.tabMesh:hover, .tabMix:hover, .tabSetM:hover {
     background-color: rgba(45, 45, 45, 0.9);
     transform: scale(1.01);
-}
-
-/* Matrice multilinea più leggibile */
-.tabBottom br, .tabMesh br {
-    line-height: 1.2em;
 }
