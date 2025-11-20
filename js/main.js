@@ -1166,57 +1166,57 @@ function setMatrixTransform( matrix, mesh ) {
 
 // Extracts position, rotation (Euler), and scale from the mesh
 function getEulerTransform( mesh ) {
-  return {
-    position: mesh.position.clone(),
-    rotation: mesh.rotation.clone(),
-    scale: mesh.scale.clone()
-  };
+    return {
+        position: mesh.position.clone(),
+        rotation: mesh.rotation.clone(),
+        scale: mesh.scale.clone()
+    };
 }
 
 // Interpolates between two Euler-based transforms
 function mixEulerTransform( a, b, t ) {
-  const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
+    const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
 
-  // Interpolates Euler angles directly (not ideal for all cases)
-  const rot = new THREE.Euler(
-    THREE.MathUtils.lerp( a.rotation.x, b.rotation.x, t ),
-    THREE.MathUtils.lerp( a.rotation.y, b.rotation.y, t ),
-    THREE.MathUtils.lerp( a.rotation.z, b.rotation.z, t ),
-    a.rotation.order
-  );
+    // Interpolates Euler angles directly (not ideal for all cases)
+    const rot = new THREE.Euler(
+        THREE.MathUtils.lerp( a.rotation.x, b.rotation.x, t ),
+        THREE.MathUtils.lerp( a.rotation.y, b.rotation.y, t ),
+        THREE.MathUtils.lerp( a.rotation.z, b.rotation.z, t ),
+        a.rotation.order
+    );
 
-  const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
-  return { position: pos, rotation: rot, scale: scale };
+    const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
+    return { position: pos, rotation: rot, scale: scale };
 }
 
 // Applies Euler transform to a mesh
 function setEulerMatrix( transform, mesh ) {
-  const matrix = new THREE.Matrix4();
-  const q = new THREE.Quaternion().setFromEuler( transform.rotation );
-  matrix.compose( transform.position, q, transform.scale );
-  mesh.matrix.copy( matrix );
-  mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+    const matrix = new THREE.Matrix4();
+    const q = new THREE.Quaternion().setFromEuler( transform.rotation );
+    matrix.compose( transform.position, q, transform.scale );
+    mesh.matrix.copy( matrix );
+    mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
 }
 
 // ##### AXIS-ANGLE ##### //
 
 // Extracts axis-angle representation from a mesh
 function getAxisAngleTransform( mesh ) {
-  const q = mesh.quaternion.clone();
-  const axis = new THREE.Vector3( 1, 0, 0 );
-  let angle = 0;
-  q.normalize();
-  angle = 2 * Math.acos( q.w );
-  const s = Math.sqrt( 1 - q.w * q.w );
-  if ( s > 0.0001 ) {
-    axis.set( q.x / s, q.y / s, q.z / s );
-  }
-  return {
-    position: mesh.position.clone(),
-    axis: axis,
-    angle: angle,
-    scale: mesh.scale.clone()
-  };
+    const q = mesh.quaternion.clone();
+    const axis = new THREE.Vector3( 1, 0, 0 );
+    let angle = 0;
+    q.normalize();
+    angle = 2 * Math.acos( q.w );
+    const s = Math.sqrt( 1 - q.w * q.w );
+    if ( s > 0.0001 ) {
+        axis.set( q.x / s, q.y / s, q.z / s );
+    }
+    return {
+        position: mesh.position.clone(),
+        axis: axis,
+        angle: angle,
+        scale: mesh.scale.clone()
+    };
 }
 
 // Interpolates between two axis-angle transforms
@@ -1242,18 +1242,18 @@ function setAxisAngleMatrix( transform, mesh ) {
 
 // ##### QUATERNIONS ##### //
 function getQuaternionTransform( mesh ) {
-  return {
-    position: mesh.position.clone(),
-    quaternion: mesh.quaternion.clone(),
-    scale: mesh.scale.clone()
-  };
+    return {
+        position: mesh.position.clone(),
+        quaternion: mesh.quaternion.clone(),
+        scale: mesh.scale.clone()
+    };
 }
 
 function mixQuaternionTransform( a, b, t ) {
-  const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
-  const quat = new THREE.Quaternion().slerpQuaternions( a.quaternion, b.quaternion, t );
-  const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
-  return { position: pos, quaternion: quat, scale: scale };
+    const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
+    const quat = new THREE.Quaternion().slerpQuaternions( a.quaternion, b.quaternion, t );
+    const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
+    return { position: pos, quaternion: quat, scale: scale };
 }
 
 function setQuaternionMatrix( transform, mesh ) {
@@ -1438,10 +1438,10 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
     const tabMix = document.getElementById(`${mode}Mix`);
     const tabSetM  = document.getElementById( `${mode}SetM` );
 
-    if ( tabA )   tabA.innerHTML   = `<b>Mesh 1:</b><br>${fmtSummary(getA)}`;
-    if ( tabB )   tabB.innerHTML   = `<b>Mesh 2:</b><br>${fmtSummary(getB)}`;
+    if ( tabA )   tabA.innerHTML   = `<b>Get Mesh 1:</b><br>${fmtSummary(getA)}`;
+    if ( tabB )   tabB.innerHTML   = `<b>Get Mesh 2:</b><br>${fmtSummary(getB)}`;
     if ( tabMix ) tabMix.innerHTML = `<b>Mix (t=${t.toFixed(2)}):</b><br>${fmtSummary(mix)}`;
-    if ( tabSetM )  tabSetM.innerHTML = `<b>Set M:</b><br>${fmt( setM )}`;
+    if ( tabSetM )  tabSetM.innerHTML = `<b>Set Matrix:</b><br>${fmt( setM )}`;
 
     // Helper for structured display of nested transform objects
     function fmtSummary( obj ) {
