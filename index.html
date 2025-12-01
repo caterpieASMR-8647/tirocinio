@@ -8,176 +8,230 @@
       </head>
 
       <body>
-            <canvas id="unCanvas"></canvas>
+            <!-- <div id="mainContainer"> -->
+                  <!-- <div id="canvasContainer"> -->
+                        <canvas id="unCanvas"></canvas>
+                  <!-- </div> -->
 
-            <!-- Right-side control panel -->
-            <div class="expandBox" hidden>
-                  <button id="expandSideBar">Expand</button>
-            </div>
-            
-            <div id="sidePanel" class="matrix">
-
-                  <!-- CAMERA SECTION -->
-                  <div class="panelSection">
-                        <div class="row" style="margin-bottom: 5px; align-items: center;">
-                              <div class="panelTitle" style="margin: 0;">Camera</div>
-                              <span style="flex: 1;"></span>
-                              <button id="collapseSideBar">Collapse</button>
-                        </div>
-
-                        <div class="row">
-                              <div class="subSection" style="width: 50%;">
-                                    <div class="subTitle">Preset Views</div>
-                                    <div class="buttonRow">
-                                          <button id="frontView">Front</button>
-                                          <button id="leftView">Left</button>
-                                          <button id="rightView">Right</button>
-                                          <button id="topView">Top</button>
-                                    </div>
-                              </div>
-                              <div class="subSection" style="width: 50%;">
-                                    <div class="subTitle">Perspective</div>
-                                    <div class="buttonRow">
-                                          <button id="perspectiveChange">2D</button>
-                                    </div>
-                              </div>
-                        </div>
+                  <!-- Right-side control panel -->
+                  <div class="expandBox" hidden>
+                        <button id="expandSideBar">Expand</button>
                   </div>
+                  
+                  <div id="sidePanel" class="matrix">
 
-                  <!-- SCENE SECTION -->
-                  <div class="panelSection">
-                        <div class="panelTitle">Scene</div>
-                        <div class="subSection">
-                              <div class="subTitle">Reset</div>
-                              
-                              <div class="buttonRow">
-                                    Mesh1:
-                                    <button data-target="mesh1" data-action="resetPosition">Position</button>
-                                    <button data-target="mesh1" data-action="resetRotation">Rotation</button>
-                                    <button data-target="mesh1" data-action="resetScale">Scale</button>
+                        <!-- CAMERA SECTION -->
+                        <div class="panelSection">
+                              <div class="row" style="margin-bottom: 5px; align-items: center;">
+                                    <div class="panelTitle" style="margin: 0;">Camera</div>
+                                    <span style="flex: 1;"></span>
+                                    <button id="collapseSideBar">Collapse</button>
                               </div>
 
-                              <div class="buttonRow">
-                                    Mesh2:
-                                    <button data-target="mesh2" data-action="resetPosition">Position</button>
-                                    <button data-target="mesh2" data-action="resetRotation">Rotation</button>
-                                    <button data-target="mesh2" data-action="resetScale">Scale</button>
-                              </div>
-
-                        </div>
-                        
-                        <div class="row">
-                              <div class="subSection" style="width: 50%;">
-                                    <div class="subTitle">Model</div>
-                                    <select id="modelSelector">
-                                          <option value="model1">Model 1</option>
-                                          <option value="model2">Model 2</option>
-                                          <option value="model3">Model 3</option>
-                                    </select>
-                              </div>
-
-                              <div class="subSection" style="width: 50%;">
-                                    <div class="subTitle">UI</div>
-                                    <div class="buttonRow">
-                                          <button id="gizmoToggle" class="rightButton">Toggle Gizmos</button>
+                              <div class="row">
+                                    <div class="subSection" style="width: 50%;">
+                                          <div class="subTitle">Preset Views</div>
+                                          <div class="buttonRow">
+                                                <button id="frontView">Front</button>
+                                                <button id="leftView">Left</button>
+                                                <button id="rightView">Right</button>
+                                                <button id="topView">Top</button>
+                                          </div>
+                                    </div>
+                                    <div class="subSection" style="width: 50%;">
+                                          <div class="subTitle">Perspective</div>
+                                          <div class="buttonRow">
+                                                <button id="perspectiveChange">2D</button>
+                                          </div>
                                     </div>
                               </div>
                         </div>
-                  </div>
 
-                  <!-- MODE SECTION — TABS -->
-                  <div class="panelSection">
-                        <div class="panelTitle">Transform Mode</div>
-
-                        <div id="modeTabs">
-                              <div class="tab active" data-tab="matrix">Matrix</div>
-                              <div class="tab" data-tab="euler">Euler Angles</div>
-                              <div class="tab" data-tab="axisangle">Axis-Angle</div>
-                              <div class="tab" data-tab="quat">Quaternion</div>
-                              <div class="tab" data-tab="dualquat">Dual Quaternion</div>
-                        </div>
-
-                        <div id="modeContent">
-                              <!-- You will fill this later -->
-                              <div class="tabContent" data-tab="matrix">
-                                    <div class="tabTop">
-                                          <div class="tabMesh" id="matrixA"></div>
-                                          <div class="tabMesh" id="matrixB"></div>
-                                    </div>
-                                    <div class="tabBot">
-                                          <div class="tabMix" id="matrixMix"></div>
-                                          <div class="tabSetM" id="matrixSetM"></div>
-                                    </div>
-                              </div>
-                              <div class="tabContent hidden" data-tab="euler">
-                                    <div class="tabTop">
-                                          <div class="tabMesh" id="eulerA"></div>
-                                          <div class="tabMesh" id="eulerB"></div>
-                                    </div>
-                                    <div class="tabBot">
-                                          <div class="tabMix" id="eulerMix"></div>
-                                          <div class="tabSetM" id="eulerSetM"></div>
-                                    </div>
-                              </div>
-                              <div class="tabContent hidden" data-tab="axisangle">
-                                    <div class="tabTop">
-                                          <div class="tabMesh" id="axisangleA"></div>
-                                          <div class="tabMesh" id="axisangleB"></div>
-                                    </div>
-                                    <div class="tabBot">
-                                          <div class="tabMix" id="axisangleMix"></div>
-                                          <div class="tabSetM" id="axisangleSetM"></div>
-                                    </div>
-                              </div>
-                              <div class="tabContent hidden" data-tab="quat">
-                                    <div class="tabTop">
-                                          <div class="tabMesh" id="quatA"></div>
-                                          <div class="tabMesh" id="quatB"></div>
-                                    </div>
-                                    <div class="tabBot">
-                                          <div class="tabMix" id="quatMix"></div>
-                                          <div class="tabSetM" id="quatSetM"></div>
-                                    </div>
-                              </div>
-                              <div class="tabContent hidden" data-tab="dualquat">
-                                    <div class="tabTop">
-                                          <div class="tabMesh" id="dualquatA"></div>
-                                          <div class="tabMesh" id="dualquatB"></div>
-                                    </div>
-                                    <div class="tabBot">
-                                          <div class="tabMix" id="dualquatMix"></div>
-                                          <div class="tabSetM" id="dualquatSetM"></div>
-                                    </div>
-                              </div>
-                        </div>
-                  </div>
-
-                  <!-- LEGEND SECTION -->
-                  <div class="panelSection" style="padding: 0px; margin: 0px; border: 0px;">
-                        <div class="panelTitle toggleable">
-                              <span>Legend</span>
-                              <button id="legendToggle">Show / Hide</button>
-                        </div>
-
-                        <div id="legendContent" hidden>
+                        <!-- SCENE SECTION -->
+                        <div class="panelSection">
+                              <div class="panelTitle">Scene</div>
                               <div class="subSection">
-                                    <div style="padding: 5px;">Legend content here...</div>
+                                    <div class="subTitle">Reset</div>
+                                    
+                                    <div class="buttonRow">
+                                          Mesh1:
+                                          <button data-target="mesh1" data-action="resetPosition">Position</button>
+                                          <button data-target="mesh1" data-action="resetRotation">Rotation</button>
+                                          <button data-target="mesh1" data-action="resetScale">Scale</button>
+                                    </div>
+
+                                    <div class="buttonRow">
+                                          Mesh2:
+                                          <button data-target="mesh2" data-action="resetPosition">Position</button>
+                                          <button data-target="mesh2" data-action="resetRotation">Rotation</button>
+                                          <button data-target="mesh2" data-action="resetScale">Scale</button>
+                                    </div>
+
+                              </div>
+                              
+                              <div class="row">
+                                    <div class="subSection" style="width: 50%;">
+                                          <div class="subTitle">Model</div>
+                                          <select id="modelSelector">
+                                                <option value="model1">Model 1</option>
+                                                <option value="model2">Model 2</option>
+                                                <option value="model3">Model 3</option>
+                                          </select>
+                                    </div>
+
+                                    <div class="subSection" style="width: 50%;">
+                                          <div class="subTitle">UI</div>
+                                          <div class="buttonRow">
+                                                <button id="gizmoToggle" class="rightButton">Toggle Gizmos</button>
+                                          </div>
+                                    </div>
                               </div>
                         </div>
+
+                        <!-- MODE SECTION — TABS -->
+                        <div class="panelSection">
+                              <div class="panelTitle">Transform Mode</div>
+
+                              <div id="modeTabs">
+                                    <div class="tab active" data-tab="matrix">Matrix</div>
+                                    <div class="tab" data-tab="euler">Euler Angles</div>
+                                    <div class="tab" data-tab="axisangle">Axis-Angle</div>
+                                    <div class="tab" data-tab="quat">Quaternion</div>
+                                    <div class="tab" data-tab="dualquat">Dual Quaternion</div>
+                              </div>
+
+                              <div id="modeContent">
+                                    <!-- You will fill this later -->
+                                    <div class="tabContent" data-tab="matrix">
+                                          <div class="tabTop">
+                                                <div class="tabMesh" id="matrixA"></div>
+                                                <div class="tabMesh" id="matrixB"></div>
+                                          </div>
+                                          <div class="tabMid">
+                                                <div class="tabMod" id="matrixMod">
+                                                      <div class="modTitle">
+                                                            <b>Modifiers:</b><br>
+                                                      </div>
+                                                </div>
+                                          </div>
+                                          <div class="tabBot">
+                                                <div class="tabMix" id="matrixMix"></div>
+                                                <div class="tabSetM" id="matrixSetM"></div>
+                                          </div>
+                                    </div>
+                                    <div class="tabContent hidden" data-tab="euler">
+                                          <div class="tabTop">
+                                                <div class="tabMesh" id="eulerA"></div>
+                                                <div class="tabMesh" id="eulerB"></div>
+                                          </div>
+                                          <div class="tabMid">
+                                                <div class="tabMod" id="eulerMod">
+                                                      <div class="modTitle">
+                                                            <b>Modifiers:</b><br>
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <b>Euler rotation mode:</b>
+                                                            <input type="radio" name="eulerRot" value="parallel" checked> Parallel Interpolation
+                                                            <input type="radio" name="eulerRot" value="series"> Series Rotation
+                                                      </div>
+                                                      <div class="lastModEntry">
+                                                            <input type="checkbox" id="eulerSP" value>Shortest Path
+                                                      </div>
+                                                </div>
+                                          </div>
+                                          <div class="tabBot">
+                                                <div class="tabMix" id="eulerMix"></div>
+                                                <div class="tabSetM" id="eulerSetM"></div>
+                                          </div>
+                                    </div>
+                                    <div class="tabContent hidden" data-tab="axisangle">
+                                          <div class="tabTop">
+                                                <div class="tabMesh" id="axisangleA"></div>
+                                                <div class="tabMesh" id="axisangleB"></div>
+                                          </div>
+                                          <div class="tabMid">
+                                                <div class="tabMod" id="axisangleMod">
+                                                      <div class="modTitle">
+                                                            <b>Modifiers:</b><br>
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <input type="checkbox" id="axisangleSP" value>Shortest Path
+                                                      </div>
+                                                      <div class="modEntry hidden">
+                                                            <input type="radio" name="axisangleSPType" value="parallel" checked> Per Angle
+                                                            <input type="radio" name="axisangleSPType" value="series"> Global
+                                                      </div>
+                                                      <div class="lastModEntry">
+                                                            <b>Euler rotation mode:</b>
+                                                            <input type="radio" name="axisangleInterp" value="parallel" checked> N-Lerp
+                                                            <input type="radio" name="axisangleInterp" value="series"> S-Lerp
+                                                      </div>
+                                                </div>
+                                          </div>
+                                          <div class="tabBot">
+                                                <div class="tabMix" id="axisangleMix"></div>
+                                                <div class="tabSetM" id="axisangleSetM"></div>
+                                          </div>
+                                    </div>
+                                    <div class="tabContent hidden" data-tab="quat">
+                                          <div class="tabTop">
+                                                <div class="tabMesh" id="quatA"></div>
+                                                <div class="tabMesh" id="quatB"></div>
+                                          </div>
+                                          <div class="tabMid">
+                                                <div class="tabMod" id="quatMod">
+                                                      <div class="modTitle">
+                                                            <b>Modifiers:</b><br>
+                                                      </div>
+                                                      <div class="lastModEntry">
+                                                            <input type="checkbox" id="quatSP" value>Shortest Path
+                                                      </div>
+                                                </div>
+                                          </div>
+                                          <div class="tabBot">
+                                                <div class="tabMix" id="quatMix"></div>
+                                                <div class="tabSetM" id="quatSetM"></div>
+                                          </div>
+                                    </div>
+                                    <div class="tabContent hidden" data-tab="dualquat">
+                                          <div class="tabTop">
+                                                <div class="tabMesh" id="dualquatA"></div>
+                                                <div class="tabMesh" id="dualquatB"></div>
+                                          </div>
+                                          <div class="tabMid">
+                                                <div class="tabMod" id="dualquatMod">
+                                                      <div class="modTitle">
+                                                            <b>Modifiers:</b><br>
+                                                      </div>
+                                                </div>
+                                          </div>
+                                          <div class="tabBot">
+                                                <div class="tabMix" id="dualquatMix"></div>
+                                                <div class="tabSetM" id="dualquatSetM"></div>
+                                          </div>
+                                    </div>
+                              </div>
+                        </div>
+
+                        <!-- LEGEND SECTION -->
+                        <div class="panelSection" style="padding: 0px; margin: 0px; border: 0px;">
+                              <div class="panelTitle toggleable">
+                                    <span>Legend</span>
+                                    <button id="legendToggle">Show / Hide</button>
+                              </div>
+
+                              <div id="legendContent" hidden>
+                                    <div class="subSection">
+                                          <div style="padding: 5px;">Legend content here...</div>
+                                    </div>
+                              </div>
+                        </div>
+
                   </div>
-
-            </div>
-
-            <!-- <div id="cameraViews">
-                  <input type="button" value="1" id="frontView">
-                  <input type="button" value="2" id="rightView">
-                  <input type="button" value="3" id="topView">
-            </div> -->
+            <!-- </div> -->
 
             <div id="uiContainer">
                   <input type="button" value="Animation Mode" id="transformState">
-                  <!-- <input type="button" value="Toggle Gizmos" id="gizmoToggle"> -->
-                  <!-- <input type="button" value="Change Perspective" id="perspectiveChange"> -->
             </div>
 
             <div id="transformUI" hidden>

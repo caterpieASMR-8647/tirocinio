@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
-import { EffectComposer, OrbitControls, RenderPass, SceneUtils, ShaderPass, ThreeMFLoader } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, OrbitControls, RenderPass, SceneUtils, ShaderPass, TextureHelper, ThreeMFLoader } from 'three/examples/jsm/Addons.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { InteractionManager } from '../node_modules/THREE.Interactive-1.8.0/build/three.interactive'
 import { OutlinePass } from 'three/examples/jsm/Addons.js';
@@ -9,7 +9,7 @@ import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectio
 import { computeMorphedAttributes } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { element, getParallaxCorrectNormal } from 'three/tsl';
 import { BufferGeometryUtils } from 'three/examples/jsm/Addons.js';
-import { AlwaysStencilFunc, Group, Vector3, Vector4 } from 'three/webgpu';
+import { AlwaysStencilFunc, Group, Matrix4, Vector3, Vector4 } from 'three/webgpu';
 
 // ########################################### Classes ########################################### //
 
@@ -336,6 +336,9 @@ function createAnimationMesh() {
         }
     });
 
+    animationMesh.matrixAutoUpdate = false;
+    // animationMesh.matrixWorldAutoUpdate = false;
+
     // Place animation mesh at the scene center
     animationMesh.visible = false;
 
@@ -608,7 +611,7 @@ const transformNames = {
     S: "Scale"
 };
 
-let startMesh, endMesh, animationMesh;
+var startMesh, endMesh, animationMesh;
 
 // UI Elements
 const playButton = document.getElementById( 'playButton' );
@@ -928,14 +931,6 @@ function matrixTransformation( meshA, meshB, animationMesh, t, order = 'TRS' ) {
             applyTransform( meshA, tempMesh, animationMesh, interpT );
         }
     }
-
-    // Apply final matrix decomposition for rendering
-    animationMesh.updateMatrix();
-    animationMesh.matrix.decompose(
-        animationMesh.position,
-        animationMesh.quaternion,
-        animationMesh.scale
-    );
 }
 
 let isAnimationMode = false;
@@ -1157,9 +1152,9 @@ function mixMatrixTransform( matrixA, matrixB, t ) {
 }
 
 // Applies the given matrix to the target mesh
-function setMatrixTransform( matrix, mesh ) {
-  mesh.matrix.copy( matrix );
-  mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+function setMatrixTransform( m, mesh ) {
+    mesh.matrix.copy( m );
+    mesh.matrixWorldNeedsUpdate = true
 }
 
 // ##### EULER ANGLES ##### //
@@ -1175,27 +1170,88 @@ function getEulerTransform( mesh ) {
 
 // Interpolates between two Euler-based transforms
 function mixEulerTransform( a, b, t ) {
+
+    function lerpAngle( a1, b1, t ) {
+        return a1 + ( b1 - a1 ) * t;
+    }
+
+    function getEulerMode() {
+        const r = document.querySelector('input[name="eulerRot"]:checked');
+        return r.value;
+    }
+
     const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
-
-    // Interpolates Euler angles directly (not ideal for all cases)
-    const rot = new THREE.Euler(
-        THREE.MathUtils.lerp( a.rotation.x, b.rotation.x, t ),
-        THREE.MathUtils.lerp( a.rotation.y, b.rotation.y, t ),
-        THREE.MathUtils.lerp( a.rotation.z, b.rotation.z, t ),
-        a.rotation.order
-    );
-
     const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
-    return { position: pos, rotation: rot, scale: scale };
+
+    let mode = getEulerMode()
+
+    if ( mode === "parallel" ) {
+        // Interpolates Euler angles directly (not ideal for all cases)
+        const rot = new THREE.Euler(
+            lerpAngle( a.rotation.x, b.rotation.x, t ),
+            lerpAngle( a.rotation.y, b.rotation.y, t ),
+            lerpAngle( a.rotation.z, b.rotation.z, t ),
+            a.rotation.order
+        );
+
+        return { position: pos, rotation: rot, scale: scale };
+    }
+
+    else {
+        let rx = a.rotation.x;
+        let ry = a.rotation.y;
+        let rz = a.rotation.z;
+
+        if ( t < 1/3 ) {
+            // phase 1: ONLY X rotates
+            const k = t * 3;
+            rx = lerp(a.rotation.x, b.rotation.x, k);
+        }
+
+        else if ( t < 2/3 ) {
+            // phase 1: X completed
+            rx = b.rotation.x;
+
+            // phase 2: ONLY Y rotates
+            const k = ( t - 1/3 ) * 3;
+            ry = lerp(a.rotation.y, b.rotation.y, k);
+        }
+
+        else {
+            // phase 1: X completed
+            rx = b.rotation.x;
+            // phase 2: Y completed
+            ry = b.rotation.y;
+
+            // phase 3: ONLY Z rotates
+            const k = ( t - 2/3 ) * 3;
+            rz = lerp(a.rotation.z, b.rotation.z, k);
+        }
+
+        // Compose the final Euler
+        const rot = new THREE.Euler( rx, ry, rz, a.rotation.order );
+
+        return { position: pos, rotation: rot, scale: scale };
+    }
 }
 
 // Applies Euler transform to a mesh
 function setEulerMatrix( transform, mesh ) {
     const matrix = new THREE.Matrix4();
-    const q = new THREE.Quaternion().setFromEuler( transform.rotation );
-    matrix.compose( transform.position, q, transform.scale );
+
+    const translation = new THREE.Matrix4().makeTranslation( transform.position.x, transform.position.y, transform.position.z );
+    const rotation = new THREE.Matrix4().makeRotationFromEuler( transform.rotation );
+    const scaling = new THREE.Matrix4().makeScale( transform.scale.x, transform.scale.y, transform.scale.z );
+
+    // const q = new THREE.Quaternion().setFromEuler( transform.rotation );
+    // matrix.compose( transform.position, q, transform.scale );
+
+    // For now just T*R*S composition
+    matrix.multiplyMatrices( translation, rotation );
+    matrix.multiply( scaling );
+
     mesh.matrix.copy( matrix );
-    mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+    mesh.matrixWorldNeedsUpdate = true;
 }
 
 // ##### AXIS-ANGLE ##### //
@@ -1237,7 +1293,7 @@ function setAxisAngleMatrix( transform, mesh ) {
     const matrix = new THREE.Matrix4();
     matrix.compose( transform.position, transform.quaternion, transform.scale );
     mesh.matrix.copy( matrix );
-    mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+    mesh.matrixWorldNeedsUpdate = true
 }
 
 // ##### QUATERNIONS ##### //
@@ -1260,7 +1316,7 @@ function setQuaternionMatrix( transform, mesh ) {
     const matrix = new THREE.Matrix4();
     matrix.compose( transform.position, transform.quaternion, transform.scale );
     mesh.matrix.copy( matrix );
-    mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+    mesh.matrixWorldNeedsUpdate = true
 }
 
 // ##### DUAL QUATERNIONS ##### //
@@ -1342,7 +1398,7 @@ function setDualQuaternionMatrix( transform, mesh ) {
     matrix.compose( t, q, transform.scale );
 
     mesh.matrix.copy( matrix );
-    mesh.matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+    mesh.matrixWorldNeedsUpdate = true
 }
 
 // Updates the Content of the Selected Tab
@@ -1413,6 +1469,16 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
             // Remove trailing zeros and decimal if not needed
             return str.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.$/,'');
         }
+        function cutFixed( n, decimals = 3, width = 7 ) {
+            if ( isNaN( n ) || n === null ) return " ".repeat( width );
+            // Format with fixed decimals
+            let s = n.toFixed( decimals );
+            // Pad on the left to ensure identical width
+            if ( s.length < width ) {
+                s = " ".repeat( width - s.length ) + s;
+            }
+            return s;
+        }
 
         if ( v instanceof THREE.Vector3 ) {
             return `(${cut(v.x)}, ${cut(v.y)}, ${cut(v.z)})`;
@@ -1421,10 +1487,14 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
             return `(${cut(v.x)}, ${cut(v.y)}, ${cut(v.z)}, ${cut(v.w)})`;
         }
         if ( v instanceof THREE.Euler ) {
-            return `(${cut(v.x)}, ${cut(v.y)}, ${cut(v.z)})`;
+            const degX = THREE.MathUtils.radToDeg( v.x );
+            const degY = THREE.MathUtils.radToDeg( v.y );
+            const degZ = THREE.MathUtils.radToDeg( v.z );
+
+            return `(${cut(degX)}°, ${cut(degY)}°, ${cut(degZ)}°)`;
         }
         if ( v instanceof THREE.Matrix4 ) {
-            const e = v.elements.map( n => cut(n) );
+            const e = v.elements.map( n => cutFixed(n) );
             return `[${e.slice(0,4)}]<br>[${e.slice(4,8)}]<br>[${e.slice(8,12)}]<br>[${e.slice(12,16)}]`;
         }
         if ( typeof v === 'number' ) {
@@ -1435,11 +1505,13 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
 
     const tabA   = document.getElementById(`${mode}A`);
     const tabB   = document.getElementById(`${mode}B`);
+    const tabMod = document.getElementById(`${mode}Mod`);
     const tabMix = document.getElementById(`${mode}Mix`);
     const tabSetM  = document.getElementById( `${mode}SetM` );
 
-    if ( tabA )   tabA.innerHTML   = `<b>Get Mesh 1:</b><br>${fmtSummary(getA)}`;
-    if ( tabB )   tabB.innerHTML   = `<b>Get Mesh 2:</b><br>${fmtSummary(getB)}`;
+    if ( tabA )   tabA.innerHTML   = `<b>Start:</b><br>${fmtSummary(getA)}`;
+    if ( tabB )   tabB.innerHTML   = `<b>End:</b><br>${fmtSummary(getB)}`;
+    // if ( tabMod ) tabMod.innerHTML = `<b>Modifiers:</b><br>`;
     if ( tabMix ) tabMix.innerHTML = `<b>Mix (t=${t.toFixed(2)}):</b><br>${fmtSummary(mix)}`;
     if ( tabSetM )  tabSetM.innerHTML = `<b>Set Matrix:</b><br>${fmt( setM )}`;
 
@@ -1463,8 +1535,10 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
             if ( obj.axis )       
                 str += `axis = ${fmt( obj.axis )}<br>`;
 
-            if ( obj.angle !== undefined ) 
-                str += `angle = ${obj.angle.toFixed( 3 )}<br>`;
+            if ( obj.angle !== undefined ) {
+                var deg = THREE.MathUtils.radToDeg( obj.angle );
+                str += `angle = ${deg.toFixed(3)}°<br>`;
+            }
 
             // Uniform scale detection
             if ( obj.scale ) {
@@ -1654,6 +1728,7 @@ renderer.domElement.addEventListener( 'mouseup', (event) => {
         orbit.enabled = true;
     }
 });
+
 
 window.addEventListener( 'resize', onWindowResize, false );
 function onWindowResize() {

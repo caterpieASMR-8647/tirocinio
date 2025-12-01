@@ -447,7 +447,8 @@ canvas {
 }
 
 /* Tab content result boxes */
-.tabMesh, .tabMix, .tabSetM {
+.tabMesh, .tabMix, .tabSetM{
+  flex: auto;
   width: 50%;
   background-color: rgba(25, 25, 25, 0.85);
   border: 1px solid #555;
@@ -456,9 +457,11 @@ canvas {
   padding-top: 6px;
   color: white;
   font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
   font-size: 13px;
   line-height: 1.3em;
-  overflow-x: none;
+  overflow-x: fit-content;
   word-break:keep-all;
   transition: background 0.2s ease, transform 0.2s ease;
 }
@@ -467,9 +470,26 @@ canvas {
   gap: 5px;
   margin-bottom: 5px;
 }
+.tabMid {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 5px;
+}
 .tabBot {
   display: flex;
   gap: 5px;
+}
+.tabMod {
+  flex: none;
+  width: 100%;
+  background-color: rgba(25, 25, 25, 0.85);
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 10px;
+  padding-top: 6px;
+  color: white;
+  font-family: monospace;
+  white-space: normal;
 }
 
 .tabMesh b, .tabMix b, .tabSetM b {
@@ -484,4 +504,21 @@ canvas {
 .tabMesh:hover, .tabMix:hover, .tabSetM:hover {
     background-color: rgba(45, 45, 45, 0.9);
     transform: scale(1.01);
+}
+
+.modEntry, .modTitle {
+  display: flex;
+  gap: 5px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+.modTitle {
+  font-size: large;
+  padding-top: 5px;
+  /* margin-top: 5px; */
+}
+.lastModEntry {
+  display: flex;
+  gap: 5px;
 }
