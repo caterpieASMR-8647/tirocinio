@@ -8,18 +8,17 @@
       </head>
 
       <body>
-            <!-- <div id="mainContainer"> -->
-                  <!-- <div id="canvasContainer"> -->
-                        <canvas id="unCanvas"></canvas>
-                  <!-- </div> -->
+            <div id="layout">
 
-                  <!-- Right-side control panel -->
+                  <div id="canvasContainer">
+                        <canvas id="render3d"></canvas>
+                  </div>
+                        
                   <div class="expandBox" hidden>
                         <button id="expandSideBar">Expand</button>
                   </div>
                   
                   <div id="sidePanel" class="matrix">
-
                         <!-- CAMERA SECTION -->
                         <div class="panelSection">
                               <div class="row" style="margin-bottom: 5px; align-items: center;">
@@ -226,9 +225,9 @@
                                     </div>
                               </div>
                         </div>
-
                   </div>
-            <!-- </div> -->
+
+            </div>
 
             <div id="uiContainer">
                   <input type="button" value="Animation Mode" id="transformState">
@@ -259,6 +258,14 @@
 
             </div>
 
+            <script type="importmap">
+            {
+                  "imports": {
+                        "three": "../three/three/build/three.module.js",
+                        "three/addons/": "../three/three/examples/jsm/"
+                  }
+            }
+            </script>
             <script type="module" src="js/main.js"></script>
       </body>
 

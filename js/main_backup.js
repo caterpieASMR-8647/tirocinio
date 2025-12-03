@@ -24,10 +24,8 @@ changeModeButton.addEventListener( 'click', (e) => {
 
 // ########################################### Renderer ########################################## //
 
-const canvasContainer = document.getElementById( "canvasContainer" );
-const canvas = document.getElementById( "render3d" ); 
-const renderer = new THREE.WebGLRenderer( { canvas: canvas , antialias : true } );
-document.getElementById( "canvasContainer" ).appendChild( renderer.domElement );
+const renderer = new THREE.WebGLRenderer( {canvas: unCanvas , antialias : true});
+document.body.appendChild( renderer.domElement );
 
 // ############################################ Scene ############################################ //
 
@@ -58,7 +56,7 @@ const ambientLight = new THREE.AmbientLight();
 scene.add(ambientLight);
 
 // ########################################### Cameras ########################################### //
-let aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+let aspect = window.innerWidth / window.innerHeight;
 const frustumSize = 5;
 
 const cameraPersp = new THREE.PerspectiveCamera(
@@ -149,7 +147,7 @@ outlineOrtho.visibleEdgeColor.set( 0xffffff );
 
 composerOrtho.addPass( outlineOrtho );
 
-// const textureLoader = new THREE.TextureLoader();
+const textureLoader = new THREE.TextureLoader();
 // textureLoader.load("../three.js-master/examples/textures/tri_pattern.jpg", function(texture){
 //     if (texture) {
 //         outlinePersp.patternTexture = texture;
@@ -165,6 +163,8 @@ composerPersp.addPass( fxaaShader );
 composerOrtho.addPass( fxaaShader );
 
 let currentComposer = composerPersp;
+
+onWindowResize();
 
 // ############################################ Funcs ############################################ //
 
@@ -1728,20 +1728,11 @@ renderer.domElement.addEventListener( 'mouseup', (event) => {
     }
 });
 
-window.addEventListener( "DOMContentLoaded", () => {
-    onWindowResize();
-});
 
 window.addEventListener( 'resize', onWindowResize, false );
 function onWindowResize() {
-    const width = canvasContainer.clientWidth;
-    const height = canvasContainer.clientHeight;
-
-    if ( width === 0 || height === 0 ) {
-        console.warn("resize skipped: layout has zero size");
-        return;
-    }
-
+    const width = window.innerWidth;
+    const height = window.innerHeight;
     const aspect = width / height;
 
     // Aggiorna camera prospettica
