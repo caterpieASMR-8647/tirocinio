@@ -179,7 +179,7 @@ function createInitialMeshes(  ) {
 
     //Loader for FBX Meshes + adds Events for mouse hover
     const loader = new FBXLoader();
-    loader.load('../../../../../meshes/J10B-TSF.fbx',
+    loader.load('../../../../../meshes/plane.fbx',
         ( mesh ) => {
             // mesh.traverse(function (child) {
             //     if (child.isMesh) {
