@@ -62,13 +62,13 @@ html, body {
 
 /* buttons container */
 #uiContainer {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  /* position: fixed; */
+  /* top: 20px; */
+  /* left: 50%; */
+  /* transform: translateX(-50%); */
   display: flex;
   gap: 12px;
-  z-index: 10;
+  /* z-index: 10; */
 }
 /* buttons */
 #uiContainer input[type="button"] {
@@ -87,12 +87,14 @@ html, body {
 }
 
 #transformUI {
-  position: fixed;
-  top: 60px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  background: rgba(20, 20, 20, 0.85);
+  /* position: fixed; */
+  /* top: 60px; */
+  /* left: 50%; */
+  /* transform: translateX(-50%); */
+  /* z-index: 10; */
+  border: 1px solid #444;
+  background-color: rgba(60, 60, 60, 0.5);
+  /* background: rgba(20, 20, 20, 0.85); */
   padding: 10px;
   border-radius: 8px;
   color: white;
@@ -491,7 +493,7 @@ html, body {
   gap: 0;
   background-color: rgba(25, 25, 25, 0.85);
   border: 1px solid #555;
-  border-radius: 6px;
+  border-radius: 20px;
   padding: 10px;
   padding-top: 6px;
   color: white;
