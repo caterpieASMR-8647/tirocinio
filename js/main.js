@@ -16,11 +16,11 @@ import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 
 // ########################################## Elements ########################################### //
 
-let changeModeButton = document.getElementById("transformState");
-changeModeButton.addEventListener( 'click', (e) => {
-    e.target.blur();
-    transformState();
-} );
+// let changeModeButton = document.getElementById("transformState");
+// changeModeButton.addEventListener( 'click', (e) => {
+//     e.target.blur();
+//     transformState();
+// } );
 
 // ########################################### Renderer ########################################## //
 
@@ -204,7 +204,7 @@ function createInitialMeshes(  ) {
             myMesh1.position.set( -1 , 0, 0 );
         
             myMesh1.addEventListener('mouseover', (event) => {
-                if ( isAnimationMode ) return;
+                // if ( isAnimationMode ) return;
 
                 let selectedObjects = [];
                 selectedObjects[0] = event.target;
@@ -214,7 +214,7 @@ function createInitialMeshes(  ) {
                 hovering = 1;
             });
             myMesh1.addEventListener('mouseout', (event) => {
-                if ( isAnimationMode ) return;
+                // if ( isAnimationMode ) return;
 
                 outlinePersp.selectedObjects = [];
                 outlineOrtho.selectedObjects = [];
@@ -239,7 +239,7 @@ function createInitialMeshes(  ) {
             myMesh2.position.set( 1 , 0, 0 );
 
             myMesh2.addEventListener('mouseover', (event) => {
-                if ( isAnimationMode ) return;
+                // if ( isAnimationMode ) return;
 
                 let selectedObjects = [];
                 selectedObjects[0] = event.target;
@@ -249,7 +249,7 @@ function createInitialMeshes(  ) {
                 hovering = 2;
             });
             myMesh2.addEventListener('mouseout', (event) => {
-                if ( isAnimationMode ) return;
+                // if ( isAnimationMode ) return;
 
                 outlinePersp.selectedObjects = [];
                 outlineOrtho.selectedObjects = [];
@@ -270,7 +270,7 @@ function createInitialMeshes(  ) {
             scene.add( myMesh2 );
             control2.attach( myMesh2 );
 
-            if (myMesh1 && myMesh2) createAnimationMesh(  );
+            if ( myMesh1 && myMesh2 ) createAnimationMesh(  );
 
             render();
         },
@@ -671,7 +671,8 @@ indipendentTransformations.addEventListener('click', (e) => {
 });
 
 phaseMarkersContainer.addEventListener('click', (e) => {
-    if ( ! isAnimationMode || ! indipendentTransformations.checked ) return;
+    // if ( ! isAnimationMode || ! indipendentTransformations.checked ) return;
+    if ( ! indipendentTransformations.checked ) return;
 
     const rect = phaseMarkersContainer.getBoundingClientRect();
     const clickX = ( e.clientX - rect.left ) / rect.width;
@@ -718,7 +719,7 @@ resetButtons.forEach( ( btn ) => {
             e.target.blur();
 
             // Do not allow resets during animation mode
-            if ( isAnimationMode ) return;
+            // if ( isAnimationMode ) return;
 
             const action = btn.dataset.action;
             const target = btn.dataset.target;
@@ -791,7 +792,8 @@ function updatePhaseMarkers() {
     phaseLines = [];
 
     // Mostra linee solo se in animation mode + trasformazioni indipendenti
-    if (!isAnimationMode || !indipendentTransformations.checked) return;
+    // if ( ! isAnimationMode || ! indipendentTransformations.checked ) return;
+    if ( ! indipendentTransformations.checked ) return;
 
     const phases = [1/3, 2/3];
     phases.forEach( (phase, i) => {
@@ -932,7 +934,7 @@ function matrixTransformation( meshA, meshB, animationMesh, t, order = 'TRS' ) {
     }
 }
 
-let isAnimationMode = false;
+// let isAnimationMode = false;
 
 function transformState( ) {
     // Disable gizmos if visible
@@ -940,7 +942,7 @@ function transformState( ) {
 
     if ( changeModeButton.value === "Animation Mode" ) {
         // Enter animation mode
-        isAnimationMode = true; // <— animation mode ON
+        // isAnimationMode = true; // <— animation mode ON
         changeModeButton.value = "Move Mode";
         transformUI.style.display = "block";
 
@@ -961,7 +963,7 @@ function transformState( ) {
 
     } else {
         // Exit animation mode
-        isAnimationMode = false; // <— animation mode OFF
+        // isAnimationMode = false; // <— animation mode OFF
         changeModeButton.value = "Animation Mode";
         transformUI.style.display = "none";
 
@@ -1325,7 +1327,7 @@ function getDualQuaternionTransform( mesh ) {
     const q = mesh.quaternion.clone().normalize();
     const t = mesh.position.clone();
 
-    const dqReal = q.clone();
+    const dqPrimal = q.clone();
     const dqDual = new THREE.Quaternion(
         0.5 * (  t.x * q.w + t.y * q.z - t.z * q.y ),
         0.5 * ( -t.x * q.z + t.y * q.w + t.z * q.x ),
@@ -1333,28 +1335,28 @@ function getDualQuaternionTransform( mesh ) {
         -0.5 * ( t.x * q.x + t.y * q.y + t.z * q.z )
     );
 
-    return { real: dqReal, dual: dqDual, scale: mesh.scale.clone() };
+    return { primal: dqPrimal, dual: dqDual, scale: mesh.scale.clone() };
 }
 
 // Linearly blends dual quaternions (normalized afterwards)
 function mixDualQuaternionTransform( a, b, t ) {
 
-    // Ensure consistent orientation between the two real quaternions
-    let realB = b.real.clone();
+    // Ensure consistent orientation between the two primal quaternions
+    let primalB = b.primal.clone();
     let dualB = b.dual.clone();
 
     // Flip both if they point in opposite directions
-    if ( a.real.dot( b.real ) < 0 ) {
-        realB.x = -realB.x; realB.y = -realB.y; realB.z = -realB.z; realB.w = -realB.w;
+    if ( a.primal.dot( b.primal ) < 0 ) {
+        primalB.x = -primalB.x; primalB.y = -primalB.y; primalB.z = -primalB.z; primalB.w = -primalB.w;
         dualB.x = -dualB.x; dualB.y = -dualB.y; dualB.z = -dualB.z; dualB.w = -dualB.w;
     }
 
     // Pure linear interpolation of both components
-    const real = new THREE.Quaternion(
-        a.real.x * ( 1 - t ) + realB.x * t,
-        a.real.y * ( 1 - t ) + realB.y * t,
-        a.real.z * ( 1 - t ) + realB.z * t,
-        a.real.w * ( 1 - t ) + realB.w * t
+    const primal = new THREE.Quaternion(
+        a.primal.x * ( 1 - t ) + primalB.x * t,
+        a.primal.y * ( 1 - t ) + primalB.y * t,
+        a.primal.z * ( 1 - t ) + primalB.z * t,
+        a.primal.w * ( 1 - t ) + primalB.w * t
     );
 
     const dual = new THREE.Quaternion(
@@ -1365,11 +1367,11 @@ function mixDualQuaternionTransform( a, b, t ) {
     );
 
     // Normalize result
-    const norm = Math.sqrt( real.x**2 + real.y**2 + real.z**2 + real.w**2 );
-    real.x /= norm;
-    real.y /= norm;
-    real.z /= norm;
-    real.w /= norm;
+    const norm = Math.sqrt( primal.x**2 + primal.y**2 + primal.z**2 + primal.w**2 );
+    primal.x /= norm;
+    primal.y /= norm;
+    primal.z /= norm;
+    primal.w /= norm;
     dual.x /= norm;
     dual.y /= norm;
     dual.z /= norm;
@@ -1378,12 +1380,12 @@ function mixDualQuaternionTransform( a, b, t ) {
     // Scale interpolated linearly
     const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
 
-    return { real, dual, scale };
+    return { primal, dual, scale };
 }
 
 // Converts a dual quaternion back to standard matrix
 function setDualQuaternionMatrix( transform, mesh ) {
-    const q = transform.real.clone().normalize();
+    const q = transform.primal.clone().normalize();
     const qd = transform.dual.clone();
 
     const qc = q.clone().conjugate();
@@ -1494,7 +1496,7 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
         }
         if ( v instanceof THREE.Matrix4 ) {
             const e = v.elements.map( n => cutFixed(n) );
-            return `[${e.slice(0,4)}]<br>[${e.slice(4,8)}]<br>[${e.slice(8,12)}]<br>[${e.slice(12,16)}]`;
+            return `[${e.slice(0,4)}  ]<br>[${e.slice(4,8)}  ]<br>[${e.slice(8,12)}  ]<br>[${e.slice(12,16)}  ]`;
         }
         if ( typeof v === 'number' ) {
             return cut( v );
@@ -1551,8 +1553,8 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
             }
 
             // Proper display for dual quaternion
-            if ( obj.real )       
-                str += `real = ${fmt( obj.real )}<br>`;
+            if ( obj.primal )       
+                str += `primal = ${fmt( obj.primal )}<br>`;
             if ( obj.dual )       
                 str += `dual = ${fmt( obj.dual )}<br>`;
 
@@ -1560,9 +1562,9 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
         }
 
         // For dual quaternion objects (when passed directly)
-        if ( obj.real && obj.dual ) {
+        if ( obj.primal && obj.dual ) {
             let str = '';
-            str += `real = ${fmt( obj.real )}<br>`;
+            str += `primal = ${fmt( obj.primal )}<br>`;
             str += `dual = ${fmt( obj.dual )}<br>`;
             if ( obj.scale ) {
                 const s = obj.scale;
@@ -1638,7 +1640,7 @@ window.addEventListener( 'keydown', function(event) {
 
         // Disable / Enable Transformations
         case ' ':
-            changeModeButton.value == "Animation Mode" ? toggleGizmo() : playAnim();
+            playAnim();
             break;
 
         // Cancel Current Transformation
@@ -1669,7 +1671,7 @@ let activeControl = null;
 
 renderer.domElement.addEventListener( 'mousedown', (event) => {
     // Block all interactions in animation mode
-    if ( isAnimationMode ) return;
+    // if ( isAnimationMode ) return;
 
     // If in Gizmo Mode, exit
     if ( showGizmo ) return;

@@ -1,6 +1,10 @@
 :root {
   interpolate-size: allow-keywords;
 }
+::-webkit-scrollbar {
+    display: none;
+}
+
 
 html, body {
   margin: 0;
@@ -13,14 +17,15 @@ html, body {
 #layout {
   display: flex;
   flex-direction: row;
+  /* align-items: flex-start; */
   width: 100%;
   height: 100%;
 }
 
 #canvasContainer {
-  flex: 1;
   position: relative;
-  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 0px;
 }
 #canvasContainer canvas {
   width: 100%;
@@ -87,14 +92,8 @@ html, body {
 }
 
 #transformUI {
-  /* position: fixed; */
-  /* top: 60px; */
-  /* left: 50%; */
-  /* transform: translateX(-50%); */
-  /* z-index: 10; */
   border: 1px solid #444;
   background-color: rgba(60, 60, 60, 0.5);
-  /* background: rgba(20, 20, 20, 0.85); */
   padding: 10px;
   border-radius: 8px;
   color: white;
@@ -207,7 +206,7 @@ html, body {
 }
 /* Ordered Items */
 .order-item {
-  background: #333;
+  background: rgba(20, 20, 20, 0.85);
   border: 1px solid #666;
   margin: 3px 0;
   padding: 6px;
@@ -283,25 +282,26 @@ html, body {
 /* Right panel container */
 #sidePanel {
   position: relative;
-  flex: 1;
-  /* flex-shrink: 0; */
-  width: auto;
-  max-width: 620px;
+  flex: 0 0 600px;
+  width: 600px;
   background: rgba(15, 15, 15, 0.92);
   color: white;
   padding: 10px;
   border-left: 2px solid #555;
-  font-family: sans-serif;
+  font-family: monospace;
   box-sizing: border-box;
   overflow-y: auto;
 
+  transform: translateX(0);
   transition: all 0.3s ease;
-  transform: scale(1);
-  transform-origin: bottom right;
 }
 #sidePanel.collapsed {
-  transform: scale(0);
-  padding: 5px;
+  transform: translateX(100%);
+  flex-basis: 0px;
+  width: 0px;
+  padding: 0px;
+  border: 0px;
+  opacity: 0;
 }
 /* #sidePanel.matrix, #sidePanel.euler, #sidePanel.axisangle, #sidePanel.quat, #sidePanel.dualquat {
   width: auto;
@@ -437,6 +437,8 @@ html, body {
 /* Tab content area */
 .tabContent {
   padding: 5px;
+  min-width: 0;
+  max-width: 100%;
   background: #1a1a1a;
   border: 1px solid #444;
   border-top: 1px solid transparent;
@@ -456,7 +458,7 @@ html, body {
 
 /* Tab content result boxes */
 .tabMesh, .tabMix, .tabSetM{
-  flex: auto;
+  flex: 1 1 auto;
   width: 50%;
   background-color: rgba(25, 25, 25, 0.85);
   border: 1px solid #555;
@@ -473,6 +475,9 @@ html, body {
   word-break:keep-all;
   transition: background 0.2s ease, transform 0.2s ease;
 }
+.tabTop, .tabMid, .tabMod, .tabBot {
+  max-width: 100%;
+}
 .tabTop {
   display: flex;
   gap: 5px;
@@ -488,17 +493,18 @@ html, body {
   gap: 5px;
 }
 .tabMod {
-  flex: none;
   width: 100%;
   gap: 0;
   background-color: rgba(25, 25, 25, 0.85);
   border: 1px solid #555;
-  border-radius: 20px;
-  padding: 10px;
-  padding-top: 6px;
+  border-radius: 50px ;
+  padding: 6px 30px 6px 30px;
+  /* padding-top: 6px; */
+  margin: 0px 20px 0px 20px ;
   color: white;
   font-family: monospace;
   white-space: normal;
+  overflow: hidden;
 }
 
 .tabMesh b, .tabMix b, .tabSetM b {
@@ -530,4 +536,5 @@ html, body {
 .lastModEntry {
   display: flex;
   gap: 5px;
+  padding-bottom: 5px;
 }

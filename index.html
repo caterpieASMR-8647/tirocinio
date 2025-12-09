@@ -6,19 +6,50 @@
             <title>My first three.js app</title>
             <link rel="stylesheet" href="css/style.css"/>
       </head>
-
+      
       <body>
             <div id="layout">
-
+                  
                   <div id="canvasContainer">
                         <canvas id="render3d"></canvas>
                   </div>
-                        
+                  
                   <div class="expandBox" hidden>
                         <button id="expandSideBar">Expand</button>
                   </div>
-                  
+
                   <div id="sidePanel" class="matrix">
+                        <!-- ANIMATION SECTION -->
+                        <div class="panelSection">
+                              <!-- <div id="uiContainer">
+                                    <input type="button" value="Animation Mode" id="transformState">
+                              </div> -->
+                        
+                              <div id="transformUI">
+                                    <div class="inline">
+                                          <button id="playButton">Play</button>
+                                          <div id="progressWrapper" style="position: relative; width: 200px; height: 20px; ">
+                                                <input id="progressBar" type="range" min="0" max="1" step="0.001" value="0" style="width:100%; position: absolute; top:0; left:0;">
+                                                <div id="phaseMarkers"></div>
+                                          </div>
+                                          <button id="reverseButton">Reverse</button>
+                                          <button id="boomerangButton">Boomerang</button>
+                                    </div>
+                        
+                                    <div id="orderContainer">
+                                          <div style="font-size: large; margin: 5px;">Transformations Order</div>
+                                          <div class="order-item" draggable="true" data-key="T">Translation</div>
+                                          <div class="order-item" draggable="true" data-key="R">Rotation</div>
+                                          <div class="order-item" draggable="true" data-key="S">Scale</div>
+                                    </div>
+                                    
+                                    <div id="indipendentContainer">
+                                          <input type="checkbox" id="indipendentTransforms">
+                                          <label for="indipendentTransforms">Indipendent Transformations</label>
+                                    </div>
+                              </div>
+                        </div>
+
                         <!-- CAMERA SECTION -->
                         <div class="panelSection">
                               <div class="row" style="margin-bottom: 5px; align-items: center;">
@@ -111,6 +142,9 @@
                                                       <div class="modTitle">
                                                             <b>Modifiers:</b><br>
                                                       </div>
+                                                      <div class="lastModEntry">
+                                                            No Modifiers :(<br>
+                                                      </div>
                                                 </div>
                                           </div>
                                           <div class="tabBot">
@@ -129,12 +163,17 @@
                                                             <b>Modifiers:</b><br>
                                                       </div>
                                                       <div class="modEntry">
+                                                            <input type="checkbox" id="eulerSP" value>Shortest Path
+                                                      </div>
+                                                      <div class="modEntry">
                                                             <b>Euler rotation mode:</b>
                                                             <input type="radio" name="eulerRot" value="parallel" checked> Parallel Interpolation
                                                             <input type="radio" name="eulerRot" value="series"> Series Rotation
                                                       </div>
                                                       <div class="lastModEntry">
-                                                            <input type="checkbox" id="eulerSP" value>Shortest Path
+                                                            <b>Scale:</b>
+                                                            <input type="radio" name="eulerScale" value="parallel" checked> Arithmetic
+                                                            <input type="radio" name="eulerScale" value="series"> Geometric
                                                       </div>
                                                 </div>
                                           </div>
@@ -160,10 +199,15 @@
                                                             <input type="radio" name="axisangleSPType" value="parallel" checked> Per Angle
                                                             <input type="radio" name="axisangleSPType" value="series"> Global
                                                       </div>
+                                                      <div class="modEntry">
+                                                            <b>Type of Interpolation:</b>
+                                                            <input type="radio" name="axisangleInterp" value="nlerp" checked> N-Lerp
+                                                            <input type="radio" name="axisangleInterp" value="slerp"> S-Lerp
+                                                      </div>
                                                       <div class="lastModEntry">
-                                                            <b>Euler rotation mode:</b>
-                                                            <input type="radio" name="axisangleInterp" value="parallel" checked> N-Lerp
-                                                            <input type="radio" name="axisangleInterp" value="series"> S-Lerp
+                                                            <b>Scale:</b>
+                                                            <input type="radio" name="axisangleScale" value="arithmetic" checked> Arithmetic
+                                                            <input type="radio" name="axisangleScale" value="geometric"> Geometric
                                                       </div>
                                                 </div>
                                           </div>
@@ -182,8 +226,19 @@
                                                       <div class="modTitle">
                                                             <b>Modifiers:</b><br>
                                                       </div>
-                                                      <div class="lastModEntry">
+                                                      <div class="modEntry">
                                                             <input type="checkbox" id="quatSP" value>Shortest Path
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <b>Type of Interpolation:</b>
+                                                            <input type="radio" name="quatInterp" value="nlerp" checked> N-Lerp
+                                                            <input type="radio" name="quatInterp" value="slerp"> S-Lerp
+                                                            <input type="radio" name="quatInterp" value="lerp"> Lerp
+                                                      </div>
+                                                      <div class="lastModEntry">
+                                                            <b>Scale:</b>
+                                                            <input type="radio" name="quatScale" value="arithmetic" checked> Arithmetic
+                                                            <input type="radio" name="quatScale" value="geometric"> Geometric
                                                       </div>
                                                 </div>
                                           </div>
@@ -201,6 +256,14 @@
                                                 <div class="tabMod" id="dualquatMod">
                                                       <div class="modTitle">
                                                             <b>Modifiers:</b><br>
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <input type="checkbox" id="dualquatSP" value>Shortest Path
+                                                      </div>
+                                                      <div class="lastModEntry">
+                                                            <b>Scale:</b>
+                                                            <input type="radio" name="dualquatScale" value="arithmetic" checked> Arithmetic
+                                                            <input type="radio" name="dualquatScale" value="geometric"> Geometric
                                                       </div>
                                                 </div>
                                           </div>
@@ -229,34 +292,6 @@
 
             </div>
 
-            <div id="uiContainer">
-                  <input type="button" value="Animation Mode" id="transformState">
-            </div>
-
-            <div id="transformUI" hidden>
-                  <div class="inline">
-                        <button id="playButton">Play</button>
-                        <div id="progressWrapper" style="position: relative; width: 200px; height: 20px; ">
-                              <input id="progressBar" type="range" min="0" max="1" step="0.001" value="0" style="width:100%; position: absolute; top:0; left:0;">
-                              <div id="phaseMarkers"></div>
-                        </div>
-                        <button id="reverseButton">Reverse</button>
-                        <button id="boomerangButton">Boomerang</button>
-                  </div>
-
-                  <div id="orderContainer">
-                        <div style="font-size: large; margin: 5px;">Transformations Order</div>
-                        <div class="order-item" draggable="true" data-key="T">Translation</div>
-                        <div class="order-item" draggable="true" data-key="R">Rotation</div>
-                        <div class="order-item" draggable="true" data-key="S">Scale</div>
-                  </div>
-                  
-                  <div id="indipendentContainer">
-                        <input type="checkbox" id="indipendentTransforms">
-                        <label for="indipendentTransforms">Indipendent Transformations</label>
-                  </div>
-
-            </div>
 
             <script type="importmap">
             {
