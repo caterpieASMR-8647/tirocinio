@@ -21,11 +21,12 @@
                   <div id="sidePanel" class="matrix">
                         <!-- ANIMATION SECTION -->
                         <div class="panelSection">
-                              <!-- <div id="uiContainer">
-                                    <input type="button" value="Animation Mode" id="transformState">
-                              </div> -->
-                        
-                              <div id="transformUI">
+                              <div class="row" style="margin-bottom: 5px; align-items: center;">
+                                    <div class="panelTitle" style="margin: 0;">Animation</div>
+                                    <span style="flex: 1;"></span>
+                                    <button id="collapseSideBar">Collapse</button>
+                              </div>
+                              <div class="subSection">
                                     <div class="inline">
                                           <button id="playButton">Play</button>
                                           <div id="progressWrapper" style="position: relative; width: 200px; height: 20px; ">
@@ -36,14 +37,14 @@
                                           <button id="boomerangButton">Boomerang</button>
                                     </div>
                         
-                                    <div id="orderContainer">
+                                    <div id="orderContainer" hidden>
                                           <div style="font-size: large; margin: 5px;">Transformations Order</div>
                                           <div class="order-item" draggable="true" data-key="T">Translation</div>
                                           <div class="order-item" draggable="true" data-key="R">Rotation</div>
                                           <div class="order-item" draggable="true" data-key="S">Scale</div>
                                     </div>
                                     
-                                    <div id="indipendentContainer">
+                                    <div id="indipendentContainer" hidden>
                                           <input type="checkbox" id="indipendentTransforms">
                                           <label for="indipendentTransforms">Indipendent Transformations</label>
                                     </div>
@@ -52,11 +53,7 @@
 
                         <!-- CAMERA SECTION -->
                         <div class="panelSection">
-                              <div class="row" style="margin-bottom: 5px; align-items: center;">
-                                    <div class="panelTitle" style="margin: 0;">Camera</div>
-                                    <span style="flex: 1;"></span>
-                                    <button id="collapseSideBar">Collapse</button>
-                              </div>
+                              <div class="panelTitle">Camera</div>
 
                               <div class="row">
                                     <div class="subSection" style="width: 50%;">
@@ -69,7 +66,7 @@
                                           </div>
                                     </div>
                                     <div class="subSection" style="width: 50%;">
-                                          <div class="subTitle">Perspective</div>
+                                          <div class="subTitle">View</div>
                                           <div class="buttonRow">
                                                 <button id="perspectiveChange">2D</button>
                                           </div>

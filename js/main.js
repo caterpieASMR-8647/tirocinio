@@ -51,11 +51,11 @@ rightGrid.rotation.z = Math.PI * 0.5;
 rightGrid.position.x += 5;
 scene.add( bottomGrid, topGrid, frontGrid, leftGrid, rightGrid );
 
-const light = new THREE.PointLight(0xffffff, 50);
+const light = new THREE.PointLight( 0xffffff, 50 );
 light.position.set(0.8, 1.4, 1.0);
-scene.add(light);
+scene.add( light );
 const ambientLight = new THREE.AmbientLight();
-scene.add(ambientLight);
+scene.add( ambientLight );
 
 // ########################################### Cameras ########################################### //
 let aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
@@ -173,10 +173,6 @@ let hovering = false;
 
 // Creates 2 Meshes with proper TransformControls, Origin and EventListeners
 function createInitialMeshes(  ) {
-
-    // let myMesh1 = new THREE.Group();
-    // let myMesh2 = new THREE.Group();
-
     //Loader for FBX Meshes + adds Events for mouse hover
     const loader = new FBXLoader();
     loader.load('../../../../../meshes/plane.fbx',
@@ -204,7 +200,7 @@ function createInitialMeshes(  ) {
             myMesh1.position.set( -1 , 0, 0 );
         
             myMesh1.addEventListener('mouseover', (event) => {
-                // if ( isAnimationMode ) return;
+                if ( isPlaying ) return;
 
                 let selectedObjects = [];
                 selectedObjects[0] = event.target;
@@ -214,7 +210,7 @@ function createInitialMeshes(  ) {
                 hovering = 1;
             });
             myMesh1.addEventListener('mouseout', (event) => {
-                // if ( isAnimationMode ) return;
+                if ( isPlaying ) return;
 
                 outlinePersp.selectedObjects = [];
                 outlineOrtho.selectedObjects = [];
@@ -222,12 +218,27 @@ function createInitialMeshes(  ) {
                 hovering = 0;
             }); 
             myMesh1.addEventListener('mousedown', (event) => {
-                if (hovering && ! control1.enabled) {
+                if ( isPlaying ) return;
+
+                if ( hovering && ! control1.enabled ) {
                     control1.pointerDown( control1._getPointer( event ) );
                     control1.pointerMove( control1._getPointer( event ) );
                 }
             });
+            myMesh1.addEventListener('mousemove', (event) => {
+                if ( isPlaying ) return;
+                if( control1.enabled ) {
+                    control1.pointerMove( control1._getPointer( event ) );
+
+                    matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+                    updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
+                }
+            });
             myMesh1.addEventListener('mouseup', (event) => {
+                if ( isPlaying ) return;
+
+                matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+                updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
                 control1.pointerUp( control1._getPointer( event ) );
             });
 
@@ -239,7 +250,7 @@ function createInitialMeshes(  ) {
             myMesh2.position.set( 1 , 0, 0 );
 
             myMesh2.addEventListener('mouseover', (event) => {
-                // if ( isAnimationMode ) return;
+                if ( isPlaying ) return;
 
                 let selectedObjects = [];
                 selectedObjects[0] = event.target;
@@ -249,7 +260,7 @@ function createInitialMeshes(  ) {
                 hovering = 2;
             });
             myMesh2.addEventListener('mouseout', (event) => {
-                // if ( isAnimationMode ) return;
+                if ( isPlaying ) return;
 
                 outlinePersp.selectedObjects = [];
                 outlineOrtho.selectedObjects = [];
@@ -257,13 +268,30 @@ function createInitialMeshes(  ) {
                 hovering = 0;
             }); 
             myMesh2.addEventListener('mousedown', (event) => {
-                if (hovering && ! control2.enabled) {
+                if ( isPlaying ) return;
+
+                if ( hovering && ! control2.enabled ) {
                     control2.pointerDown( control2._getPointer( event ) );
                     control2.pointerMove( control2._getPointer( event ) );
                 }
             });
+            myMesh2.addEventListener('mousemove', (event) => {
+                if ( isPlaying ) return;
+
+                if ( ! control2.enabled ) {
+                    control2.pointerMove( control2._getPointer( event ) );
+
+                    matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+                    updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
+                }
+            });
             myMesh2.addEventListener('mouseup', (event) => {
+                if ( isPlaying ) return;
+
                 control2.pointerUp( control2._getPointer( event ) );
+
+                matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+                updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
             });
 
             interactionManager.add( myMesh2 );
@@ -339,7 +367,7 @@ function createAnimationMesh() {
     // animationMesh.matrixWorldAutoUpdate = false;
 
     // Place animation mesh at the scene center
-    animationMesh.visible = false;
+    // animationMesh.visible = false;
 
     // Add the mesh to the scene
     scene.add( animationMesh );
@@ -614,6 +642,8 @@ var startMesh, endMesh, animationMesh;
 
 // UI Elements
 const playButton = document.getElementById( 'playButton' );
+const reverseButton = document.getElementById( 'reverseButton' );
+const boomerangButton = document.getElementById( 'boomerangButton' );
 const progressBar = document.getElementById( 'progressBar' );
 const phaseMarkersContainer = document.getElementById( 'phaseMarkers' );
 const orderContainer = document.getElementById( 'orderContainer' );
@@ -634,24 +664,76 @@ const legendToggle = document.getElementById( 'legendToggle' );
 const legendContent = document.getElementById( 'legendContent' );
 const sidePanel = document.getElementById( 'sidePanel' );
 
+let animDirection = 1;
 playButton.addEventListener('click', (e) => {
     e.target.blur();
+    if ( animDirection == -1 && isPlaying ) {
+        isPlaying = ! isPlaying;
+    }
+    animDirection = 1;
     playAnim();
+});
+reverseButton.addEventListener('click', (e) => {
+    e.target.blur();
+    if ( animDirection == 1 && isPlaying ) {
+        isPlaying = ! isPlaying;
+    }
+    animDirection = -1;
+    playAnim();
+});
+let boomerang = false
+boomerangButton.addEventListener('click', (e) => {
+    e.target.blur();
+    boomerang = ! boomerang;
+    
+    boomerangButton.classList.toggle( 'active', boomerang );
+
+    if ( boomerang && ! isPlaying ) playAnim();
 });
 
 // Updates Progress Bar, text value, animation time
 function playAnim (  ) {
     // If Animation is Concluded, Restart
-    if ( ! isPlaying && progress == 1 ) progress = 0;
+    if ( ! isPlaying && progress == 1 && animDirection == 1 ) progress = 0;
+    if ( ! isPlaying && progress == 0 && animDirection == -1 ) progress = 1;
 
     isPlaying = ! isPlaying;
-    playButton.textContent = isPlaying ? 'Stop' : 'Play';
+    if ( isPlaying ) {
+        setMeshTransparency( myMesh1, true );
+        setMeshTransparency( myMesh2, true );
+        setMeshTransparency( animationMesh, false );
+        if ( showGizmo ) toggleGizmo();
+        
+        control1.enabled = false;
+        control2.enabled = false;
+
+        outlinePersp.selectedObjects = [];
+        outlineOrtho.selectedObjects = [];
+        outlinePersp.enabled = false;
+        outlineOrtho.enabled = false;
+    }
+    else {
+        reEnableControlsOutline();
+    }
+
     lastTime = performance.now();
+}
+function reEnableControlsOutline() {
+    setMeshTransparency( myMesh1, false );
+    setMeshTransparency( myMesh2, false );
+    setMeshTransparency( animationMesh, true );
+
+    control1.enabled = true;
+    control2.enabled = true;
+
+    outlinePersp.enabled = true;
+    outlineOrtho.enabled = true;
 }
 
 progressBar.addEventListener('input', (e) => {
     progress = parseFloat( e.target.value );
     matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+    if ( isPlaying ) playAnim();
 });
 
 perspectiveButton.addEventListener('click', (e) => {
@@ -820,11 +902,30 @@ function updateTransformation() {
         const delta = ( now - lastTime ) / 1000;
         lastTime = now;
 
-        progress += delta / duration;
+        progress += delta * animDirection / duration;
         if ( progress > 1 ) {
             progress = 1;
-            isPlaying = false;
-            playButton.textContent = 'Play';
+            if ( ! boomerang ) {
+                isPlaying = false;
+                reEnableControlsOutline();
+                playButton.textContent = 'Play';
+                reverseButton.textContent = 'Reverse';
+            }
+            else {
+                animDirection = -1;
+            }
+        }
+        if ( progress < 0 ) {
+            progress = 0
+            if ( ! boomerang ) {
+                isPlaying = false;
+                reEnableControlsOutline();
+                playButton.textContent = 'Play';
+                reverseButton.textContent = 'Reverse';
+            }
+            else {
+                animDirection = 1;
+            }
         }
 
         progressBar.value = progress;
@@ -1640,6 +1741,7 @@ window.addEventListener( 'keydown', function(event) {
 
         // Disable / Enable Transformations
         case ' ':
+            event.preventDefault();
             playAnim();
             break;
 
