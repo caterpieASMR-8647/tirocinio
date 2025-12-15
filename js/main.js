@@ -753,7 +753,6 @@ indipendentTransformations.addEventListener('click', (e) => {
 });
 
 phaseMarkersContainer.addEventListener('click', (e) => {
-    // if ( ! isAnimationMode || ! indipendentTransformations.checked ) return;
     if ( ! indipendentTransformations.checked ) return;
 
     const rect = phaseMarkersContainer.getBoundingClientRect();
@@ -1226,6 +1225,20 @@ tabs.forEach( tab => {
       } );
 });
 
+function mixScale( a, b, t, mode ) {
+    if ( mode === 'geometric' ) {
+        // geometric interpolation: s(t) = a^(1-t) * b^t
+        return new THREE.Vector3(
+            Math.pow( a.x, 1 - t ) * Math.pow( b.x, t ),
+            Math.pow( a.y, 1 - t ) * Math.pow( b.y, t ),
+            Math.pow( a.z, 1 - t ) * Math.pow( b.z, t )
+        );
+    }
+
+    // arithmetic ( default )
+    return new THREE.Vector3().lerpVectors( a, b, t ); 
+}
+
 // ##### MATRIX ##### //
 
 // Extracts the full transformation matrix from a mesh
@@ -1270,6 +1283,7 @@ function getEulerTransform( mesh ) {
     };
 }
 
+const eulerSP = document.getElementById( 'eulerSP' )?.checked;
 // Interpolates between two Euler-based transforms
 function mixEulerTransform( a, b, t ) {
 
@@ -1277,22 +1291,48 @@ function mixEulerTransform( a, b, t ) {
         return a1 + ( b1 - a1 ) * t;
     }
 
+    function lerpAngleSP( a1, b1, t ) {
+        let delta = ( ( b1 - a1 + Math.PI ) % ( 2 * Math.PI ) ) - Math.PI;
+        return delta < - Math.PI ? a1 + ( delta + 2 * Math.PI ) * t : a1 + delta * t;
+        // if ( THREE.MathUtils.radToDeg( Math.abs( a1 - b1 ) ) < 180 ) {
+        //     return a1 + ( b1 - a1 ) * t;
+        // }
+        
+        // return  a1 + ( Math.abs( - Math.PI - b1 ) + Math.abs( Math.PI - a1 ) ) * t;
+    }
+
+    function lerpEuler( a1, b1, t ) {
+        return sp
+            ? lerpAngleSP( a1, b1, t )
+            : lerpAngle( a1, b1, t );
+    }
+
+    function getEulerSP() {
+        return document.getElementById( 'eulerSP' )?.checked;
+    }
+
     function getEulerMode() {
         const r = document.querySelector('input[name="eulerRot"]:checked');
         return r.value;
     }
 
+    function getEulerScaleMode() {
+        const r = document.querySelector('input[name="eulerScale"]:checked');
+        return r.value;
+    }
+
     const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
-    const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
+    const scale = mixScale( a.scale, b.scale, t, getEulerScaleMode() );
 
     let mode = getEulerMode()
+    let sp = getEulerSP();
 
     if ( mode === "parallel" ) {
         // Interpolates Euler angles directly (not ideal for all cases)
         const rot = new THREE.Euler(
-            lerpAngle( a.rotation.x, b.rotation.x, t ),
-            lerpAngle( a.rotation.y, b.rotation.y, t ),
-            lerpAngle( a.rotation.z, b.rotation.z, t ),
+            lerpEuler( a.rotation.x, b.rotation.x, t ),
+            lerpEuler( a.rotation.y, b.rotation.y, t ),
+            lerpEuler( a.rotation.z, b.rotation.z, t ),
             a.rotation.order
         );
 
@@ -1307,7 +1347,7 @@ function mixEulerTransform( a, b, t ) {
         if ( t < 1/3 ) {
             // phase 1: ONLY X rotates
             const k = t * 3;
-            rx = lerp(a.rotation.x, b.rotation.x, k);
+            rx = lerpEuler(a.rotation.x, b.rotation.x, k);
         }
 
         else if ( t < 2/3 ) {
@@ -1316,7 +1356,7 @@ function mixEulerTransform( a, b, t ) {
 
             // phase 2: ONLY Y rotates
             const k = ( t - 1/3 ) * 3;
-            ry = lerp(a.rotation.y, b.rotation.y, k);
+            ry = lerpEuler(a.rotation.y, b.rotation.y, k);
         }
 
         else {
@@ -1327,7 +1367,7 @@ function mixEulerTransform( a, b, t ) {
 
             // phase 3: ONLY Z rotates
             const k = ( t - 2/3 ) * 3;
-            rz = lerp(a.rotation.z, b.rotation.z, k);
+            rz = lerpEuler(a.rotation.z, b.rotation.z, k);
         }
 
         // Compose the final Euler
@@ -1379,8 +1419,13 @@ function getAxisAngleTransform( mesh ) {
 
 // Interpolates between two axis-angle transforms
 function mixAxisAngleTransform( a, b, t ) {
+    function getAxisAngleScaleMode() {
+        const r = document.querySelector('input[name="axisangleScale"]:checked');
+        return r.value;
+    }
+
     const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
-    const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
+    const scale = mixScale( a.scale, b.scale, t , getAxisAngleScaleMode() );
 
     // Linear interpolation of axis and angle — not geometrically correct
     const axis = new THREE.Vector3().lerpVectors( a.axis, b.axis, t ).normalize();
@@ -1408,9 +1453,14 @@ function getQuaternionTransform( mesh ) {
 }
 
 function mixQuaternionTransform( a, b, t ) {
+    function getQuatScaleMode() {
+        const r = document.querySelector('input[name="quatScale"]:checked');
+        return r.value;
+    }
+
     const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
     const quat = new THREE.Quaternion().slerpQuaternions( a.quaternion, b.quaternion, t );
-    const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
+    const scale = mixScale( a.scale, b.scale, t, getQuatScaleMode() );
     return { position: pos, quaternion: quat, scale: scale };
 }
 
@@ -1441,6 +1491,13 @@ function getDualQuaternionTransform( mesh ) {
 
 // Linearly blends dual quaternions (normalized afterwards)
 function mixDualQuaternionTransform( a, b, t ) {
+
+    function getDualQuatScaleMode() {
+        const r = document.querySelector('input[name="dualquatScale"]:checked');
+        return r.value;
+    }
+
+    const scale = mixScale( a.scale, b.scale, t, getDualQuatScaleMode() );
 
     // Ensure consistent orientation between the two primal quaternions
     let primalB = b.primal.clone();
@@ -1477,9 +1534,6 @@ function mixDualQuaternionTransform( a, b, t ) {
     dual.y /= norm;
     dual.z /= norm;
     dual.w /= norm;
-
-    // Scale interpolated linearly
-    const scale = new THREE.Vector3().lerpVectors( a.scale, b.scale, t );
 
     return { primal, dual, scale };
 }
@@ -1561,6 +1615,15 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
             break;
     }
 
+    function input( value, field ) {
+        return `<input 
+            type="number" 
+            step="0.001"
+            value="${value}"
+            data-field="${field}"
+        >`;
+    }
+
     // Function to simplify vector/quaternion display
     function fmt( v, decimals = 3 ) {
         function cut( n ) {
@@ -1597,7 +1660,17 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
         }
         if ( v instanceof THREE.Matrix4 ) {
             const e = v.elements.map( n => cutFixed(n) );
-            return `[${e.slice(0,4)}  ]<br>[${e.slice(4,8)}  ]<br>[${e.slice(8,12)}  ]<br>[${e.slice(12,16)}  ]`;
+            // return `[${e.slice(0,4)}  ]<br>[${e.slice(4,8)}  ]<br>[${e.slice(8,12)}  ]<br>[${e.slice(12,16)}  ]`;
+            let html = '';
+            for ( let r = 0; r < 4; r++ ) {
+                const row = [];
+                for ( let c = 0; c < 4; c++ ) {
+                    row.push( e[ c * 4 + r ] ); // column-major → row
+                }
+                html += `[${row.join(' ')}  ]<br>`;
+            }
+
+            return html;
         }
         if ( typeof v === 'number' ) {
             return cut( v );

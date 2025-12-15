@@ -17,7 +17,6 @@ html, body {
 #layout {
   display: flex;
   flex-direction: row;
-  /* align-items: flex-start; */
   width: 100%;
   height: 100%;
 }
@@ -329,7 +328,7 @@ html, body {
 
 .expandBox {
   position: fixed;
-  bottom: 10px;
+  top: 10px;
   right: 10px;
   width: auto;
   height: auto;
@@ -537,4 +536,9 @@ html, body {
   display: flex;
   gap: 5px;
   padding-bottom: 5px;
+}
+
+.transformInput {
+  width: 4.5em;
+  font-family: monospace;
 }
