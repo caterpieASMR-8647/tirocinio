@@ -445,7 +445,7 @@ html, body {
   background-color: rgba(60, 60, 60, 0.5);
 }
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 /* Legend toggle */

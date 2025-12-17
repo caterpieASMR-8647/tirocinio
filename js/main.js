@@ -521,6 +521,20 @@ function animateCameraTransition( fromCamera, toCamera, duration, onComplete ) {
 function changeCamera(  ) {
     if ( isTransitioning ) return; // Prevents Multiple Transitions
 
+    if ( ! currentCamera.isPerspectiveCamera ) {
+        orbit.mouseButtons = {
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+        };
+    } else {
+        orbit.mouseButtons = {
+            // LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+        };
+    }
+
     const oldCamera = currentCamera;
     
     // Determines New Camera ( does not change it yet )
@@ -1146,50 +1160,50 @@ let draggedItem = null;
 
 // Activates Drag & Drop
 orderContainer.querySelectorAll( '.order-item' ).forEach( item => {
-  item.addEventListener('dragstart', () => {
-    draggedItem = item;
-    item.classList.add('dragging');
-  });
-  
-  item.addEventListener('dragend', () => {
-    draggedItem.classList.remove('dragging');
-    draggedItem = null;
+    item.addEventListener('dragstart', () => {
+        draggedItem = item;
+        item.classList.add('dragging');
+    });
+    
+    item.addEventListener('dragend', () => {
+        draggedItem.classList.remove('dragging');
+        draggedItem = null;
 
-    updateOrder();
-  });
+        updateOrder();
+    });
 });
 
 orderContainer.addEventListener( 'dragover', (e) => {
-  e.preventDefault();
-  const afterElement = getDragAfterElement(orderContainer, e.clientY);
-  if (afterElement == null) {
-    orderContainer.appendChild(draggedItem);
-  } else {
-    orderContainer.insertBefore(draggedItem, afterElement);
-  }
+    e.preventDefault();
+    const afterElement = getDragAfterElement( orderContainer, e.clientY );
+    if ( afterElement == null ) {
+        orderContainer.appendChild( draggedItem );
+    } else {
+        orderContainer.insertBefore( draggedItem, afterElement );
+    }
 });
 
 function getDragAfterElement( container, y ) {
-  const draggableElements = [...container.querySelectorAll('.order-item:not(.dragging)')];
-  return draggableElements.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-    if (offset < 0 && offset > closest.offset) {
-      return { offset: offset, element: child };
-    } else {
-      return closest;
-    }
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
+    const draggableElements = [...container.querySelectorAll('.order-item:not(.dragging)')];
+    return draggableElements.reduce( ( closest, child ) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if ( offset < 0 && offset > closest.offset ) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY } ).element;
 }
 
 // Updates the global variable "order" used in the animation
 function updateOrder() {
-  const items = Array.from(orderContainer.querySelectorAll('.order-item'));
-  order = items.map(i => i.dataset.key).join(''); // use data-key
-  console.log('Nuovo ordine:', order);
+    const items = Array.from(orderContainer.querySelectorAll('.order-item'));
+    order = items.map(i => i.dataset.key).join(''); // use data-key
+    console.log('Nuovo ordine:', order);
 
-  // Updates mesh animation
-  matrixTransformation(startMesh, endMesh, animationMesh, progress, order);
+    // Updates mesh animation
+    matrixTransformation(startMesh, endMesh, animationMesh, progress, order);
 }
 
 // Mode tab switching
@@ -1215,11 +1229,12 @@ tabs.forEach( tab => {
 
             /* Show only matching content */
             tabContents.forEach( box => {
-                  if ( box.dataset.tab === target ) {
-                        box.classList.remove( 'hidden' );
-                  } else {
-                        box.classList.add( 'hidden' );
-                  }
+                if ( box.classList.contains( 'noTabHide' ) ) return;
+                if ( box.dataset.tab === target ) {
+                    box.classList.remove( 'hidden' );
+                } else {
+                    box.classList.add( 'hidden' );
+                }
             } );
 
       } );
@@ -1398,12 +1413,20 @@ function setEulerMatrix( transform, mesh ) {
 
 // ##### AXIS-ANGLE ##### //
 
+const spCheckbox = document.getElementById( 'axisangleSP' );
+const spTypeDiv  = document.getElementById( 'axisangleSPType' );
+
+// spTypeDiv.classList.toggle( 'hidden', ! spCheckbox.checked );
+
+spCheckbox.addEventListener( 'change', () => {
+    spTypeDiv.classList.toggle( 'hidden', ! spCheckbox.checked );
+});
+
 // Extracts axis-angle representation from a mesh
 function getAxisAngleTransform( mesh ) {
-    const q = mesh.quaternion.clone();
+    const q = mesh.quaternion.clone().normalize();
     const axis = new THREE.Vector3( 1, 0, 0 );
     let angle = 0;
-    q.normalize();
     angle = 2 * Math.acos( q.w );
     const s = Math.sqrt( 1 - q.w * q.w );
     if ( s > 0.0001 ) {
@@ -1419,20 +1442,95 @@ function getAxisAngleTransform( mesh ) {
 
 // Interpolates between two axis-angle transforms
 function mixAxisAngleTransform( a, b, t ) {
+
     function getAxisAngleScaleMode() {
-        const r = document.querySelector('input[name="axisangleScale"]:checked');
+        const r = document.querySelector( 'input[name="axisangleScale"]:checked' );
         return r.value;
     }
 
-    const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
-    const scale = mixScale( a.scale, b.scale, t , getAxisAngleScaleMode() );
+    function getAxisAngleInterpMode() {
+        const r = document.querySelector( 'input[name="axisangleInterp"]:checked' );
+        return r ? r.value : 'nlerp';
+    }
 
-    // Linear interpolation of axis and angle — not geometrically correct
-    const axis = new THREE.Vector3().lerpVectors( a.axis, b.axis, t ).normalize();
-    const angle = (1 - t) * a.angle + t * b.angle;
+    function getAxisAngleSPMode() {
+        if ( !spCheckbox || !spCheckbox.checked ) return 'none';
 
-    const q = new THREE.Quaternion().setFromAxisAngle( axis, angle );
-    return { position: pos, quaternion: q, scale: scale };
+        const r = document.querySelector( 'input[name="axisangleSPType"]:checked' );
+        return r ? r.value : 'perAngle';
+    }
+
+    function normalizeAngle0To2PI( a ) {
+        a = a % ( Math.PI * 2 );
+        if ( a < 0 ) a += Math.PI * 2;
+        return a;
+    }
+
+    function shortestAngleDelta( a, b ) {
+        let d = b - a;
+        if ( d > Math.PI )  d -= Math.PI * 2;
+        if ( d < -Math.PI ) d += Math.PI * 2;
+        return d;
+    }
+
+    const pos   = new THREE.Vector3().lerpVectors( a.position, b.position, t );
+    const scale = mixScale( a.scale, b.scale, t, getAxisAngleScaleMode() );
+
+    const spMode = getAxisAngleSPMode();
+
+    // ---------- NO SHORTEST PATH ----------
+    if ( spMode === 'none' ) {
+
+        const axis  = new THREE.Vector3().lerpVectors( a.axis, b.axis, t ).normalize();
+        const angle = ( 1 - t ) * a.angle + t * b.angle;
+
+        const q = new THREE.Quaternion().setFromAxisAngle( axis, angle );
+        return { position: pos, quaternion: q, scale: scale };
+    }
+
+    // ---------- PER ANGLE ----------
+    if ( spMode === 'perAngle' ) {
+
+        const axis = new THREE.Vector3().lerpVectors( a.axis, b.axis, t ).normalize();
+
+        const a0 = normalizeAngle0To2PI( a.angle );
+        const b0 = normalizeAngle0To2PI( b.angle );
+
+        const delta = shortestAngleDelta( a0, b0 );
+        const angle = a0 + delta * t;
+
+        const q = new THREE.Quaternion().setFromAxisAngle( axis, angle );
+        return { position: pos, quaternion: q, scale: scale };
+    }
+
+    // ---------- GLOBAL ----------
+    if ( spMode === 'global' ) {
+
+        const qa = new THREE.Quaternion().setFromAxisAngle( a.axis, a.angle ).normalize();
+        const qb = new THREE.Quaternion().setFromAxisAngle( b.axis, b.angle ).normalize();
+
+        // forces global shortest path
+        if ( qa.dot( qb ) < 0 ) {
+            qb.x = -qb.x;
+            qb.y = -qb.y;
+            qb.z = -qb.z;
+            qb.w = -qb.w;
+        }
+
+        const interp = getAxisAngleInterpMode();
+        const q =
+            interp === 'slerp'
+                ? new THREE.Quaternion().slerpQuaternions( qa, qb, t )
+                : new THREE.Quaternion(
+                    qa.x * ( 1 - t ) + qb.x * t,
+                    qa.y * ( 1 - t ) + qb.y * t,
+                    qa.z * ( 1 - t ) + qb.z * t,
+                    qa.w * ( 1 - t ) + qb.w * t
+                ).normalize();
+
+        // const q = new THREE.Quaternion().slerpQuaternions( qa, qb, t );
+        return { position: pos, quaternion: q, scale: scale };
+    }
 }
 
 // Applies interpolated axis-angle transform
@@ -1458,10 +1556,63 @@ function mixQuaternionTransform( a, b, t ) {
         return r.value;
     }
 
+    function getQuatInterpMode() {
+        const r = document.querySelector('input[name="quatInterp"]:checked');
+        return r ? r.value : 'slerp';
+    }
+
+    function getQuatSPMode() {
+        const cb = document.getElementById('quatSP');
+        return cb && cb.checked;
+    }
+
     const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
-    const quat = new THREE.Quaternion().slerpQuaternions( a.quaternion, b.quaternion, t );
+    // const quat = new THREE.Quaternion().slerpQuaternions( a.quaternion, b.quaternion, t );
     const scale = mixScale( a.scale, b.scale, t, getQuatScaleMode() );
-    return { position: pos, quaternion: quat, scale: scale };
+
+    let qa = a.quaternion.clone().normalize();
+    let qb = b.quaternion.clone().normalize();
+
+    // ---------- SHORTEST PATH ----------
+    if ( getQuatSPMode() ) {
+        if ( qa.dot( qb ) < 0 ) {
+            qb.x *= -1;
+            qb.y *= -1;
+            qb.z *= -1;
+            qb.w *= -1;
+        }
+    }
+
+    const interp = getQuatInterpMode();
+    let q;
+
+    // ---------- SLERP ----------
+    if ( interp === 'slerp' ) {
+        q = new THREE.Quaternion().slerpQuaternions( qa, qb, t );
+    }
+
+    // ---------- NLERP ----------
+    else if ( interp === 'nlerp' ) {
+        q = new THREE.Quaternion(
+            qa.x * ( 1 - t ) + qb.x * t,
+            qa.y * ( 1 - t ) + qb.y * t,
+            qa.z * ( 1 - t ) + qb.z * t,
+            qa.w * ( 1 - t ) + qb.w * t
+        ).normalize();
+    }
+
+    // ---------- LERP ----------
+    else if ( interp === 'lerp' ) {
+        q = new THREE.Quaternion(
+            qa.x * ( 1 - t ) + qb.x * t,
+            qa.y * ( 1 - t ) + qb.y * t,
+            qa.z * ( 1 - t ) + qb.z * t,
+            qa.w * ( 1 - t ) + qb.w * t
+        );
+        // NO normalize()
+    }
+
+    return { position: pos, quaternion: q, scale: scale };
 }
 
 function setQuaternionMatrix( transform, mesh ) {
