@@ -28,6 +28,7 @@ const canvasContainer = document.getElementById( "canvasContainer" );
 const canvas = document.getElementById( "render3d" ); 
 const renderer = new THREE.WebGLRenderer( { canvas: canvas , antialias : true } );
 document.getElementById( "canvasContainer" ).appendChild( renderer.domElement );
+// renderer.physicallyCorrectLights = true;
 
 // ############################################ Scene ############################################ //
 
@@ -51,11 +52,22 @@ rightGrid.rotation.z = Math.PI * 0.5;
 rightGrid.position.x += 5;
 scene.add( bottomGrid, topGrid, frontGrid, leftGrid, rightGrid );
 
-const light = new THREE.PointLight( 0xffffff, 50 );
-light.position.set(0.8, 1.4, 1.0);
-scene.add( light );
-const ambientLight = new THREE.AmbientLight();
-scene.add( ambientLight );
+// const light = new THREE.PointLight( 0xffffff, 1000000000 );
+// light.position.set(0.8, 1.4, 1.0);
+// scene.add( light );
+// const ambientLight = new THREE.AmbientLight();
+// scene.add( ambientLight );
+
+const lightA = new THREE.DirectionalLight( 0xffffff, 1 );
+lightA.position.set( 1, 1, 1 );
+scene.add( lightA );
+
+const lightB = new THREE.DirectionalLight( 0xddddff, 1 );
+lightB.position.set( -1, -1, -1 );
+scene.add( lightB );
+
+const ambient = new THREE.AmbientLight( 0x404040, 5 );
+scene.add( ambient );
 
 // ########################################### Cameras ########################################### //
 let aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
@@ -171,11 +183,14 @@ let currentComposer = composerPersp;
 let myMesh1 = new THREE.Group(), myMesh2 = new THREE.Group();
 let hovering = false;
 
+// const aoMapLoader = new THREE.TextureLoader();
+// const aoTexture = aoMapLoader.load( '../../../../../meshes/plane_ao.png' );
+
 // Creates 2 Meshes with proper TransformControls, Origin and EventListeners
 function createInitialMeshes(  ) {
     //Loader for FBX Meshes + adds Events for mouse hover
     const loader = new FBXLoader();
-    loader.load('../../../../../meshes/plane.fbx',
+    loader.load('../../../../../meshes/plane2.fbx',
         ( mesh ) => {
             // mesh.traverse(function (child) {
             //     if (child.isMesh) {
@@ -346,7 +361,7 @@ function createAnimationMesh() {
                 child.material = child.material.clone();
                 child.material.transparent = false;
                 child.material.opacity = 1.0;
-                child.material.depthWrite = true;
+                // child.material.depthWrite = true;
             }
         }
     });
@@ -370,6 +385,8 @@ function createAnimationMesh() {
     // animationMesh.visible = false;
 
     // Add the mesh to the scene
+
+    setMeshTransparency( animationMesh, true );
     scene.add( animationMesh );
 
     updateTransformation();
@@ -1413,13 +1430,11 @@ function setEulerMatrix( transform, mesh ) {
 
 // ##### AXIS-ANGLE ##### //
 
-const spCheckbox = document.getElementById( 'axisangleSP' );
-const spTypeDiv  = document.getElementById( 'axisangleSPType' );
+const spAxisAngleCheckbox = document.getElementById( 'axisangleSP' );
+const spAxisAngleTypeDiv  = document.getElementById( 'axisangleSPType' );
 
-// spTypeDiv.classList.toggle( 'hidden', ! spCheckbox.checked );
-
-spCheckbox.addEventListener( 'change', () => {
-    spTypeDiv.classList.toggle( 'hidden', ! spCheckbox.checked );
+spAxisAngleCheckbox.addEventListener( 'change', () => {
+    spAxisAngleTypeDiv.classList.toggle( 'hidden', ! spAxisAngleCheckbox.checked );
 });
 
 // Extracts axis-angle representation from a mesh
@@ -1454,9 +1469,10 @@ function mixAxisAngleTransform( a, b, t ) {
     }
 
     function getAxisAngleSPMode() {
-        if ( !spCheckbox || !spCheckbox.checked ) return 'none';
+        if ( !spAxisAngleCheckbox || !spAxisAngleCheckbox.checked ) return 'none';
 
         const r = document.querySelector( 'input[name="axisangleSPType"]:checked' );
+        console.log(r.value)
         return r ? r.value : 'perAngle';
     }
 
@@ -1624,6 +1640,15 @@ function setQuaternionMatrix( transform, mesh ) {
 
 // ##### DUAL QUATERNIONS ##### //
 
+const spDualQuatCheckbox = document.getElementById( 'dualquatSP' );
+const spDualQuatTypeDiv  = document.getElementById( 'dualquatSPType' );
+
+spDualQuatCheckbox.addEventListener( 'change', () => {
+    spDualQuatTypeDiv.classList.toggle( 'hidden', ! spDualQuatCheckbox.checked );
+});
+
+const normPrimalDualQuat = document.getElementById( 'dualquatNormPrimal' );
+
 // Convert a standard transform to dual quaternion
 function getDualQuaternionTransform( mesh ) {
     const q = mesh.quaternion.clone().normalize();
@@ -1654,10 +1679,12 @@ function mixDualQuaternionTransform( a, b, t ) {
     let primalB = b.primal.clone();
     let dualB = b.dual.clone();
 
-    // Flip both if they point in opposite directions
-    if ( a.primal.dot( b.primal ) < 0 ) {
-        primalB.x = -primalB.x; primalB.y = -primalB.y; primalB.z = -primalB.z; primalB.w = -primalB.w;
-        dualB.x = -dualB.x; dualB.y = -dualB.y; dualB.z = -dualB.z; dualB.w = -dualB.w;
+    if ( spDualQuatCheckbox.checked ) {
+        // Flip both if they point in opposite directions
+        if ( a.primal.dot( b.primal ) < 0 ) {
+            primalB.x = -primalB.x; primalB.y = -primalB.y; primalB.z = -primalB.z; primalB.w = -primalB.w;
+            dualB.x = -dualB.x; dualB.y = -dualB.y; dualB.z = -dualB.z; dualB.w = -dualB.w;
+        }
     }
 
     // Pure linear interpolation of both components
@@ -1677,10 +1704,12 @@ function mixDualQuaternionTransform( a, b, t ) {
 
     // Normalize result
     const norm = Math.sqrt( primal.x**2 + primal.y**2 + primal.z**2 + primal.w**2 );
-    primal.x /= norm;
-    primal.y /= norm;
-    primal.z /= norm;
-    primal.w /= norm;
+    if ( normPrimalDualQuat.checked ) {
+        primal.x /= norm;
+        primal.y /= norm;
+        primal.z /= norm;
+        primal.w /= norm;
+    }
     dual.x /= norm;
     dual.y /= norm;
     dual.z /= norm;
@@ -1691,7 +1720,10 @@ function mixDualQuaternionTransform( a, b, t ) {
 
 // Converts a dual quaternion back to standard matrix
 function setDualQuaternionMatrix( transform, mesh ) {
-    const q = transform.primal.clone().normalize();
+    let q = new THREE.Quaternion;
+    if ( normPrimalDualQuat.checked ){
+        q = transform.primal.clone().normalize();
+    }
     const qd = transform.dual.clone();
 
     const qc = q.clone().conjugate();
