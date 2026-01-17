@@ -34,19 +34,19 @@ document.getElementById( "canvasContainer" ).appendChild( renderer.domElement );
 
 // Grids
 const scene = new THREE.Scene();
-scene.add( new THREE.AxesHelper(5) );
-var bottomGrid = new THREE.GridHelper( 10, 20, 0x888888, 0x444444 );
+// scene.add( new THREE.AxesHelper(5) );
+var bottomGrid = new THREE.GridHelper( 10, 20, 0x444444, 0x444444 );
 bottomGrid.position.y += -5;
-var topGrid = new THREE.GridHelper( 10, 20, 0x888888, 0x444444 );
+var topGrid = new THREE.GridHelper( 10, 20, 0x444444, 0x444444 );
 topGrid.position.y += 5;
-var frontGrid = new THREE.GridHelper( 10, 20, 0x888888, 0x444444 );
+var frontGrid = new THREE.GridHelper( 10, 20, 0x444444, 0x444444 );
 frontGrid.rotation.x = Math.PI * 0.5;
 frontGrid.position.z += -5;
-var leftGrid = new THREE.GridHelper( 10, 20, 0x888888, 0x444444 );
+var leftGrid = new THREE.GridHelper( 10, 20, 0x444444, 0x444444 );
 leftGrid.rotation.x = Math.PI * 0.5;
 leftGrid.rotation.z = Math.PI * 0.5;
 leftGrid.position.x += -5;
-var rightGrid = new THREE.GridHelper( 10, 20, 0x888888, 0x444444 );
+var rightGrid = new THREE.GridHelper( 10, 20, 0x444444, 0x444444 );
 rightGrid.rotation.x = Math.PI * 0.5;
 rightGrid.rotation.z = Math.PI * 0.5;
 rightGrid.position.x += 5;
@@ -925,6 +925,130 @@ function updatePhaseMarkers() {
         phaseLines.push( line );
     });
 }
+
+const transformPresets = {
+    matrix: {
+        shear: () => { 
+            resetMesh( startMesh );
+            resetMesh( endMesh );
+
+            startMesh.rotation.set( 0, Math.PI / 2, 0 );
+            endMesh.rotation.set( Math.PI / 2, 0, 0 );
+            startMesh.position.set(  -1, 0, 0  );
+            endMesh.position.set(  1, 0, 0 );
+
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+
+            smoothCameraTransition( new THREE.Vector3( 0, 0, 2 ) );
+        }
+    },
+    euler: {
+        gimbalLock: () => { 
+            resetMesh( startMesh );
+            resetMesh( endMesh );
+
+            startMesh.rotation.set(
+                THREE.MathUtils.degToRad( 0 ),
+                THREE.MathUtils.degToRad( 90 ),
+                THREE.MathUtils.degToRad( 0 )
+            );
+            endMesh.rotation.set(
+                THREE.MathUtils.degToRad( 90 ),
+                THREE.MathUtils.degToRad( 90 ),
+                THREE.MathUtils.degToRad( 0 )
+            );
+            startMesh.position.set(  0, 0, -1  );
+            endMesh.position.set(  0, 0, 1 );
+
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+
+            smoothCameraTransition( new THREE.Vector3( -2, 0, 0 ) );
+        },
+        // axisFlip: () => { ... }
+    },
+    axisangle: {
+        axisAmbiguity: () => { 
+            resetMesh( startMesh );
+            resetMesh( endMesh );
+
+            startMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 0, 1, 0 ),
+                THREE.MathUtils.degToRad( 170 )
+            );
+            endMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 0, -1, 0 ),
+                THREE.MathUtils.degToRad( 190 )
+            );
+            startMesh.position.set(  0, -1, 0  );
+            endMesh.position.set(  0, 1, 0 );
+
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+
+            smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
+        }
+    },
+    quat: {
+        sp: () => { 
+            resetMesh( startMesh );
+            resetMesh( endMesh );
+
+            startMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 0, 1, 0 ),
+                THREE.MathUtils.degToRad( 10 )
+            );
+            startMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 0, 1, 0 ),
+                THREE.MathUtils.degToRad( 350 )
+            );
+            startMesh.position.set(  -1, 0, 0  );
+            endMesh.position.set(  1, 0, 0 );
+
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+
+            smoothCameraTransition( new THREE.Vector3( 0, 0, 2 ) );
+        }
+    },
+    dualquat: {
+        volumePreservation: () => { 
+            resetMesh( startMesh );
+            resetMesh( endMesh );
+
+            
+            startMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 0, 1, 0 ),
+                0
+            );
+            endMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 0, 1, 0 ),
+                Math.PI
+            );
+            startMesh.position.set( -1, 0, 0 );
+            endMesh.position.set(  1, 0, 0 );
+
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+        }
+    }
+};
+
+function resetMesh( mesh ) {
+    mesh.position.set( 0, 0, 0 );
+    mesh.rotation.set( 0, 0, 0 );
+    mesh.quaternion.identity();
+    mesh.scale.set( 1, 1, 1 );
+    mesh.updateMatrix();
+}
+
+document.querySelectorAll( '[data-preset]' ).forEach( btn => {
+    btn.addEventListener( 'click', () => {
+        const [ mode, name ] = btn.dataset.preset.split( '.' );
+        transformPresets[ mode ][ name ]();
+    });
+});
 
 function updateTransformation() {
     if ( isPlaying ) {

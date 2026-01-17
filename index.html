@@ -37,7 +37,7 @@
                                           <button id="boomerangButton">Boomerang</button>
                                     </div>
                         
-                                    <div id="orderContainer" hidden>
+                                    <div class="hidden" id="orderContainer">
                                           <div style="font-size: large; margin: 5px;">Transformations Order</div>
                                           <div class="order-item" draggable="true" data-key="T">Translation</div>
                                           <div class="order-item" draggable="true" data-key="R">Rotation</div>
@@ -135,6 +135,11 @@
                                                 <div class="tabMesh" id="matrixB"></div>
                                           </div>
                                           <div class="tabMid">
+                                                <div class="tabPre">
+                                                      <button data-preset="matrix.shear">Shear</button>
+                                                </div>
+                                          </div>
+                                          <div class="tabMid">
                                                 <div class="tabMod" id="matrixMod">
                                                       <div class="modTitle">
                                                             <b>Modifiers:</b><br>
@@ -153,6 +158,11 @@
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="eulerA"></div>
                                                 <div class="tabMesh" id="eulerB"></div>
+                                          </div>
+                                          <div class="tabMid">
+                                                <div class="tabPre">
+                                                      <button data-preset="euler.gimbalLock">Gimbal Lock</button>
+                                                </div>
                                           </div>
                                           <div class="tabMid">
                                                 <div class="tabMod" id="eulerMod">
@@ -183,6 +193,11 @@
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="axisangleA"></div>
                                                 <div class="tabMesh" id="axisangleB"></div>
+                                          </div>
+                                          <div class="tabMid">
+                                                <div class="tabPre">
+                                                      <button data-preset="axisangle.axisAmbiguity">Axis Ambiguity</button>
+                                                </div>
                                           </div>
                                           <div class="tabMid">
                                                 <div class="tabMod" id="axisangleMod">
@@ -219,6 +234,11 @@
                                                 <div class="tabMesh" id="quatB"></div>
                                           </div>
                                           <div class="tabMid">
+                                                <div class="tabPre">
+                                                      <button data-preset="quat.sp">Shortest Path</button>
+                                                </div>
+                                          </div>
+                                          <div class="tabMid">
                                                 <div class="tabMod" id="quatMod">
                                                       <div class="modTitle">
                                                             <b>Modifiers:</b><br>
@@ -248,6 +268,11 @@
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="dualquatA"></div>
                                                 <div class="tabMesh" id="dualquatB"></div>
+                                          </div>
+                                          <div class="tabMid">
+                                                <div class="tabPre">
+                                                      <button data-preset="dualquat.volumePreservation">Volume Preservation</button>
+                                                </div>
                                           </div>
                                           <div class="tabMid">
                                                 <div class="tabMod" id="dualquatMod">
