@@ -24,17 +24,33 @@
                               <div class="row" style="margin-bottom: 5px; align-items: center;">
                                     <div class="panelTitle" style="margin: 0;">Animation</div>
                                     <span style="flex: 1;"></span>
-                                    <button id="collapseSideBar">Collapse</button>
+                                    <button id="collapseSideBar" hidden>Collapse</button>
                               </div>
                               <div class="subSection">
                                     <div class="inline">
                                           <button id="playButton">Play</button>
-                                          <div id="progressWrapper" style="position: relative; width: 200px; height: 20px; ">
+                                          <div class="progressWrapper" style="position: relative; width: 200px; height: 20px; ">
                                                 <input id="progressBar" type="range" min="0" max="1" step="0.001" value="0" style="width:100%; position: absolute; top:0; left:0;">
                                                 <div id="phaseMarkers"></div>
                                           </div>
                                           <button id="reverseButton">Reverse</button>
                                           <button id="boomerangButton">Boomerang</button>
+                                    </div>
+
+                                    <div class="inline" style="margin: 5px 0 5px;">
+                                          <span>Animation Duration</span>
+                                          <div class="progressWrapper" style="position: relative;">
+                                                <input id="animationDurationSlider" type="range" min="1" max="10" step="1" value="3" style="width:100%; position: absolute; top:0; left:0;">
+                                          </div>
+                                          <span id="animationDurationText">3 sec</span>
+                                    </div>
+
+                                    <div class="inline">
+                                          <button id="stillshotBtn">Toggle Stillshot</button>
+                                          <div class="progressWrapper" style="position: relative;">
+                                                <input id="stillshotSlider" type="range" min="1" max="10" value="5" style="width:100%; position: absolute; top:0; left:0;">
+                                          </div>
+                                          <span id="stillshotText">5 mesh</span>
                                     </div>
                         
                                     <div class="hidden" id="orderContainer">
@@ -59,7 +75,7 @@
                                     <div class="subSection" style="width: 50%;">
                                           <div class="subTitle">Preset Views</div>
                                           <div class="buttonRow">
-                                                <button id="frontView">Front</button>
+                                                <button class="active" id="frontView">Front</button>
                                                 <button id="leftView">Left</button>
                                                 <button id="rightView">Right</button>
                                                 <button id="topView">Top</button>
@@ -77,33 +93,64 @@
                         <!-- SCENE SECTION -->
                         <div class="panelSection">
                               <div class="panelTitle">Scene</div>
-                              <div class="subSection">
-                                    <div class="subTitle">Reset</div>
-                                    
-                                    <div class="buttonRow">
-                                          Mesh1:
-                                          <button data-target="mesh1" data-action="resetPosition">Position</button>
-                                          <button data-target="mesh1" data-action="resetRotation">Rotation</button>
-                                          <button data-target="mesh1" data-action="resetScale">Scale</button>
+                              <div class="row">
+                                    <div class="subSection" style="width: 50%;">
+                                          <div class="subTitle">Reset</div>
+                                          
+                                          <div class="buttonRow">
+                                                Mesh1:
+                                                <button data-target="mesh1" data-action="resetAll">All</button>
+                                                <button data-target="mesh1" data-action="resetPosition">Position</button>
+                                                <button data-target="mesh1" data-action="resetRotation">Rotation</button>
+                                                <button data-target="mesh1" data-action="resetScale">Scale</button>
+                                          </div>
+
+                                          <div class="buttonRow">
+                                                Mesh2:
+                                                <button data-target="mesh2" data-action="resetAll">All</button>
+                                                <button data-target="mesh2" data-action="resetPosition">Position</button>
+                                                <button data-target="mesh2" data-action="resetRotation">Rotation</button>
+                                                <button data-target="mesh2" data-action="resetScale">Scale</button>
+                                          </div>
+
                                     </div>
 
-                                    <div class="buttonRow">
-                                          Mesh2:
-                                          <button data-target="mesh2" data-action="resetPosition">Position</button>
-                                          <button data-target="mesh2" data-action="resetRotation">Rotation</button>
-                                          <button data-target="mesh2" data-action="resetScale">Scale</button>
+                                    <div class="subSection" style="width: 50%;">
+                                          <div class="subTitle">Problematic Setups</div>
+                                          <div class="buttonRow">
+                                                <div class="presetSetup" id="matrixSetup">
+                                                      <button data-preset="matrix.shear">Shear</button>
+                                                </div>
+                                                <div class="presetSetup hidden" id="eulerSetup">
+                                                      <button data-preset="euler.gimbalLock">Gimbal Lock</button>
+                                                </div>
+                                                <div class="presetSetup hidden" id="axisangleSetup">
+                                                      <button data-preset="axisangle.axisAmbiguity">Axis Ambiguity</button>
+                                                </div>
+                                                <div class="presetSetup hidden" id="quatSetup">
+                                                      <button data-preset="quat.sp">Shortest Path</button>
+                                                </div>
+                                                <div class="presetSetup hidden" id="dualquatSetup">
+                                                      <button data-preset="dualquat.volumePreservation">Volume Preservation</button>
+                                                </div>
+                                          </div>
                                     </div>
-
                               </div>
                               
                               <div class="row">
                                     <div class="subSection" style="width: 50%;">
                                           <div class="subTitle">Model</div>
-                                          <select id="modelSelector">
-                                                <option value="model1">Model 1</option>
-                                                <option value="model2">Model 2</option>
-                                                <option value="model3">Model 3</option>
-                                          </select>
+                                          <div class="inline">
+                                                <select class="buttonRow" id="modelSelector">
+                                                      <option value="plane2.fbx" checked>Plane</option>
+                                                      <option value="model2">Tank</option>
+                                                      <option value="J10B-TSF.fbx">Mech</option>
+                                                </select>
+                                                <div class="progressWrapper" style="position: relative;">
+                                                      <input id="opacitySlider" type="range" min="0" max="1" step="0.05" value="0.25" style="width:100%; position: absolute; top:0; left:0;">
+                                                </div>
+                                                <span id="opacityText">25% opacity</span>
+                                          </div>
                                     </div>
 
                                     <div class="subSection" style="width: 50%;">
@@ -135,17 +182,12 @@
                                                 <div class="tabMesh" id="matrixB"></div>
                                           </div>
                                           <div class="tabMid">
-                                                <div class="tabPre">
-                                                      <button data-preset="matrix.shear">Shear</button>
-                                                </div>
-                                          </div>
-                                          <div class="tabMid">
                                                 <div class="tabMod" id="matrixMod">
                                                       <div class="modTitle">
                                                             <b>Modifiers:</b><br>
                                                       </div>
                                                       <div class="lastModEntry">
-                                                            No Modifiers :(<br>
+                                                            No Modifiers<br>
                                                       </div>
                                                 </div>
                                           </div>
@@ -160,11 +202,6 @@
                                                 <div class="tabMesh" id="eulerB"></div>
                                           </div>
                                           <div class="tabMid">
-                                                <div class="tabPre">
-                                                      <button data-preset="euler.gimbalLock">Gimbal Lock</button>
-                                                </div>
-                                          </div>
-                                          <div class="tabMid">
                                                 <div class="tabMod" id="eulerMod">
                                                       <div class="modTitle">
                                                             <b>Modifiers:</b><br>
@@ -176,6 +213,42 @@
                                                             <b>Euler rotation mode:</b>
                                                             <input type="radio" name="eulerRot" value="parallel" checked> Parallel Interpolation
                                                             <input type="radio" name="eulerRot" value="series"> Series Rotation
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <div class="inline">
+                                                                  <label>Transform Order:</label>
+                                                                  <select id="eulerTransformOrder">
+                                                                        <option value="TRS">Translate → Rotate → Scale (Default)</option>
+                                                                        <option value="TSR">Translate → Scale → Rotate</option>
+                                                                        <option value="RTS">Rotate → Translate → Scale</option>
+                                                                        <option value="RST">Rotate → Scale → Translate</option>
+                                                                        <option value="STR">Scale → Translate → Rotate</option>
+                                                                        <option value="SRT">Scale → Rotate → Translate</option>
+                                                                  </select>
+                                                            </div>
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <div class="inline">
+                                                                  <label>Rotation Order:</label>
+                                                                  <select id="eulerRotationOrder">
+                                                                        <optgroup label="Standard">
+                                                                              <option value="XYZ">XYZ</option>
+                                                                              <option value="XZY">XZY</option>
+                                                                              <option value="YXZ">YXZ</option>
+                                                                              <option value="YZX">YZX</option>
+                                                                              <option value="ZXY">ZXY</option>
+                                                                              <option value="ZYX">ZYX</option>
+                                                                        </optgroup>
+                                                                              <optgroup label="Repeated">
+                                                                              <option value="XYX">XYX</option>
+                                                                              <option value="XZX">XZX</option>
+                                                                              <option value="YXY">YXY</option>
+                                                                              <option value="YZY">YZY</option>
+                                                                              <option value="ZXZ">ZXZ</option>
+                                                                              <option value="ZYZ">ZYZ</option>
+                                                                        </optgroup>
+                                                                  </select>
+                                                            </div>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <b>Scale:</b>
@@ -195,11 +268,6 @@
                                                 <div class="tabMesh" id="axisangleB"></div>
                                           </div>
                                           <div class="tabMid">
-                                                <div class="tabPre">
-                                                      <button data-preset="axisangle.axisAmbiguity">Axis Ambiguity</button>
-                                                </div>
-                                          </div>
-                                          <div class="tabMid">
                                                 <div class="tabMod" id="axisangleMod">
                                                       <div class="modTitle">
                                                             <b>Modifiers:</b><br>
@@ -215,6 +283,19 @@
                                                             <b>Type of Interpolation:</b>
                                                             <input type="radio" name="axisangleInterp" value="nlerp" checked> N-Lerp
                                                             <input type="radio" name="axisangleInterp" value="slerp"> S-Lerp
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <div class="inline">
+                                                                  <label>Transform Order:</label>
+                                                                  <select id="axisangleTransformOrder">
+                                                                        <option value="TRS">Translate → Rotate → Scale (Default)</option>
+                                                                        <option value="TSR">Translate → Scale → Rotate</option>
+                                                                        <option value="RTS">Rotate → Translate → Scale</option>
+                                                                        <option value="RST">Rotate → Scale → Translate</option>
+                                                                        <option value="STR">Scale → Translate → Rotate</option>
+                                                                        <option value="SRT">Scale → Rotate → Translate</option>
+                                                                  </select>
+                                                            </div>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <b>Scale:</b>
@@ -234,23 +315,31 @@
                                                 <div class="tabMesh" id="quatB"></div>
                                           </div>
                                           <div class="tabMid">
-                                                <div class="tabPre">
-                                                      <button data-preset="quat.sp">Shortest Path</button>
-                                                </div>
-                                          </div>
-                                          <div class="tabMid">
                                                 <div class="tabMod" id="quatMod">
                                                       <div class="modTitle">
                                                             <b>Modifiers:</b><br>
                                                       </div>
                                                       <div class="modEntry">
-                                                            <input type="checkbox" id="quatSP" value>Shortest Path
+                                                            <input type="checkbox" id="quatSP" checked>Shortest Path
                                                       </div>
                                                       <div class="modEntry">
                                                             <b>Type of Interpolation:</b>
                                                             <input type="radio" name="quatInterp" value="nlerp" checked> N-Lerp
                                                             <input type="radio" name="quatInterp" value="slerp"> S-Lerp
                                                             <input type="radio" name="quatInterp" value="lerp"> Lerp
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <div class="inline">
+                                                                  <label>Transform Order:</label>
+                                                                  <select id="quatTransformOrder">
+                                                                        <option value="TRS">Translate → Rotate → Scale (Default)</option>
+                                                                        <option value="TSR">Translate → Scale → Rotate</option>
+                                                                        <option value="RTS">Rotate → Translate → Scale</option>
+                                                                        <option value="RST">Rotate → Scale → Translate</option>
+                                                                        <option value="STR">Scale → Translate → Rotate</option>
+                                                                        <option value="SRT">Scale → Rotate → Translate</option>
+                                                                  </select>
+                                                            </div>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <b>Scale:</b>
@@ -270,24 +359,28 @@
                                                 <div class="tabMesh" id="dualquatB"></div>
                                           </div>
                                           <div class="tabMid">
-                                                <div class="tabPre">
-                                                      <button data-preset="dualquat.volumePreservation">Volume Preservation</button>
-                                                </div>
-                                          </div>
-                                          <div class="tabMid">
                                                 <div class="tabMod" id="dualquatMod">
                                                       <div class="modTitle">
                                                             <b>Modifiers:</b><br>
                                                       </div>
                                                       <div class="modEntry">
-                                                            <input type="checkbox" id="dualquatSP" value>Shortest Path
+                                                            <input type="checkbox" id="dualquatSP" checked>Shortest Path
                                                       </div>
-                                                      <div class="modEntry hidden noTabHide" id="dualquatSPType">
-                                                            <input type="radio" name="dualquatSPType" value="primal" checked> Only Primal
-                                                            <input type="radio" name="dualquatSPType" value="both"> Both Primal and Dual
+                                                      <div class="modEntry" id="dualquatNormType" checked>
+                                                            <input type="checkbox" id="dualquatNormPrimal" checked> Normalize Primal
+                                                            <input type="checkbox" id="dualquatNormDual" checked> Normalize Dual
                                                       </div>
                                                       <div class="modEntry">
-                                                            <input type="checkbox" id="dualquatNormPrimal" checked>Normalize Primal
+                                                            <input type="checkbox" id="dualquatReHortDual" checked>Re-Hortogonalize Dual
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <div class="inline">
+                                                                  <label>Transform Order:</label>
+                                                                  <select id="dualquatTransformOrder">
+                                                                        <option value="TRS">Translate + Rotate → Scale (Default)</option>
+                                                                        <option value="STR">Scale → Translate + Rotate</option>
+                                                                  </select>
+                                                            </div>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <b>Scale:</b>
