@@ -1,5 +1,6 @@
+// import * as THREE from './../three/three/build/three.core.js';
 import * as THREE from 'three';
-import { OrbitControls } from '../three/three/addons/controls/OrbitControls.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { InteractionManager } from '../three/THREE.Interactive-1.8.0/build/three.interactive.js'
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
