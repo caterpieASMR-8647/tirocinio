@@ -197,7 +197,7 @@ let myMesh1 = new THREE.Group(), myMesh2 = new THREE.Group();
 let hovering = false;
 
 const modelSelector = document.getElementById( 'modelSelector' );
-let meshesPath = '../../../../../meshes/';
+let meshesPath = './meshes/';
 let modelName = 'plane2.fbx'
 
 modelSelector.addEventListener( 'change', (e) => {
