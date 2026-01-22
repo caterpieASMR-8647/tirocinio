@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 
-import { OrbitControls } from '@three/addons/controls/OrbitControls.js';
+import { OrbitControls } from '@addons/controls/OrbitControls.js';
 import { TransformControls } from '@addons/controls/TransformControls.js';
 import { FBXLoader } from '@addons/loaders/FBXLoader.js';
 import { EffectComposer } from '@addons/postprocessing/EffectComposer.js';
