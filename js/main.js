@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OrbitControls } from '../three/three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { InteractionManager } from '../three/THREE.Interactive-1.8.0/build/three.interactive.js'
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
@@ -9,10 +9,6 @@ import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { GammaCorrectionShader } from 'three/addons/shaders/GammaCorrectionShader.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
-
-// ########################################### Classes ########################################### //
-
-
 
 // ########################################## Elements ########################################### //
 
@@ -200,58 +196,178 @@ let meshesPath = '../../../../../meshes/';
 let modelName = 'plane2.fbx'
 
 modelSelector.addEventListener( 'change', (e) => {
+    e.preventDefault();
     modelName = e.target.value;
+
+    // Saves everything i need
+    const pos1 =  startMesh.position.clone();
+    const quat1 =  startMesh.quaternion.clone();
+    const scale1 =  startMesh.scale.clone();
+    const pos2 =  endMesh.position.clone();
+    const quat2 =  endMesh.quaternion.clone();
+    const scale2 =  endMesh.scale.clone();
+
+    let isStillshotActive = stillshotMeshes.length > 0;
+
+    [ startMesh, endMesh, animationMesh, ...stillshotMeshes ].forEach( mesh => {
+        disposeMesh( mesh );
+        // scene.remove( mesh );
+        // mesh.dispose();
+    });
 
     createInitialMeshes();
 
-    replaceCurrentMeshes();
+    startMesh.position = pos1.copy();
+    startMesh.quaternion = quat1.copy();
+    startMesh.sccale = scale1.copy();
+    endMesh.position = pos2.copy();
+    endMesh.quaternion = quat2.copy();
+    endMesh.sccale = scale2.copy();
+
+    if ( isStillshotActive ) generateStillshot();
+
+    if ( isPlaying ) applyPlayTransparency();
+
+    // replaceCurrentMeshes();
 });
-function replaceCurrentMeshes(newModel) {
-    const targets = [startMesh, endMesh, animationMesh, ...stillshotMeshes];
+function disposeMesh( root ) {
 
-    targets.forEach((oldMesh, idx) => {
-        if (!oldMesh) return;
+    if ( !root ) return;
 
-        // Clona il nuovo modello
-        const clone = newModel.clone(true);
-
-        // Copia trasformazioni
-        clone.position.copy(oldMesh.position);
-        clone.quaternion.copy(oldMesh.quaternion);
-        clone.scale.copy(oldMesh.scale);
-
-        // Copia solo le proprietà chiave dei materiali
-        oldMesh.traverse((oldChild, childIdx) => {
-            if (!oldChild.isMesh) return;
-            const cloneChild = clone.getObjectByName(oldChild.name) || clone.children[childIdx];
-            if (!cloneChild || !cloneChild.isMesh) return;
-
-            const oldMats = Array.isArray(oldChild.material) ? oldChild.material : [oldChild.material];
-            const newMats = oldMats.map(mat => {
-                const m = new THREE.MeshStandardMaterial();
-                if (mat.color && mat.color.isColor) m.color.copy(mat.color);
-                m.transparent = mat.transparent;
-                m.opacity = mat.opacity;
-                m.depthWrite = mat.depthWrite;
-                m.visible = mat.visible;
-                m.wireframe = mat.wireframe || false;
-                return m;
-            });
-            cloneChild.material = Array.isArray(oldChild.material) ? newMats : newMats[0];
-        });
-
-        // Rimuove vecchia mesh e aggiunge nuova
-        scene.add(clone);
-        scene.remove(oldMesh);
-
-        // Riattacca i listener se necessario
-        attachMeshListeners(clone, idx); // funzione che copia logica di createInitialMeshes
+    
+    // Traverse hierarchy
+    root.traverse( ( obj ) => {
+        
+        if ( obj.isMesh ) {
+            
+            // Geometry
+            if ( obj.geometry ) {
+                obj.geometry.dispose();
+            }
+            
+            // Materials
+            if ( obj.material ) {
+                const materials = Array.isArray( obj.material )
+                ? obj.material
+                : [ obj.material ];
+                
+                materials.forEach( material => {
+                    
+                    if ( !material ) return;
+                    
+                    // Dispose textures
+                    for ( const key in material ) {
+                        const value = material[ key ];
+                        if ( value && value.isTexture ) {
+                            value.dispose();
+                        }
+                    }
+                    
+                    material.dispose();
+                });
+            }
+        }
     });
 
-    // Aggiorna riferimenti globali
-    startMesh = targets[0];
-    endMesh = targets[1];
-    animationMesh = targets[2];
+    // Remove from parent (NOT only scene)
+    if ( root.parent ) {
+        root.parent.remove( root );
+    }
+
+}
+
+function createNewMeshes() {
+    //Loader for FBX Meshes + adds Events for mouse hover
+    const loader = new FBXLoader();
+    const modelPath = `${meshesPath}${modelName}`;
+
+    loader.load( modelPath,
+        ( mesh ) => {
+            // mesh.traverse(function (child) {
+            //     if (child.isMesh) {
+            //         (child).material = material;
+            //         if (child.material) {
+            //             child.material.transparent = false;
+            //         }
+            //     }
+            // })
+            
+            mesh.scale.set( .001, .001, .001 );
+            const box = new THREE.Box3().setFromObject( mesh );
+            const center = new THREE.Vector3();
+            box.getCenter( center );
+            
+            // Translates Mesh so that its Mass Center is in the Center of the Group
+            mesh.position.sub( center );
+
+            mesh.scale.set( .001, .001, .001 );
+            myMesh1.add( mesh );
+            
+            myMesh1.position.set( -1 , 0, 0 );
+
+            myMesh2 = myMesh1.clone();
+
+            myMesh2.position.set( 1 , 0, 0 );
+
+            if ( myMesh1 && myMesh2 ) createNewAnimationMesh(  );
+
+            function createNewAnimationMesh() {
+                // Create a deep clone of the starting mesh
+                animationMesh = startMesh.clone();
+
+                // Clean and prepare all mesh materials and data
+                animationMesh.traverse( ( child ) => {
+                    if ( child.isMesh ) {
+                        // Remove user data to prevent unwanted inheritance
+                        child.userData = {};
+
+                        // Safely clone the material
+                        if ( child.material && typeof child.material.clone === "function" ) {
+                            child.material = child.material.clone();
+                            child.material.transparent = false;
+                            child.material.opacity = 1.0;
+                            // child.material.depthWrite = true;
+                        }
+                    }
+                });
+
+                animationMesh.position.copy( myMesh1.position );
+
+                // Remove possible event listeners from the clone
+                animationMesh.children.forEach( ( child ) => {
+                    if ( child.removeEventListener ) {
+                        child.removeEventListener( "mouseover", () => {} );
+                        child.removeEventListener( "mouseout", () => {} );
+                        child.removeEventListener( "mousedown", () => {} );
+                        child.removeEventListener( "mouseup", () => {} );
+                    }
+                });
+
+                animationMesh.matrixAutoUpdate = false;
+
+                setMeshTransparency( animationMesh, true );
+                scene.add( animationMesh );
+
+                updateTransformation();
+
+                if ( myMesh1 && myMesh2 && animationMesh ) {
+                    cloneMaterials( startMesh );
+                    cloneMaterials( endMesh );
+                    cloneMaterials( animationMesh );
+                }
+
+                console.log( "Animation mesh created:", animationMesh );
+            }
+
+            render();
+        },
+        (xhr) => {
+            console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+        },
+        (error) => {
+            console.log(error);
+        }
+    )
 }
 
 // Creates 2 Meshes with proper TransformControls, Origin and EventListeners
@@ -947,15 +1063,22 @@ progressBar.addEventListener('input', (e) => {
 
 perspectiveButton.addEventListener('click', (e) => {
     e.target.blur();
+    if ( isTransitioning ) return;
     if ( currentCamera.isPerspectiveCamera && ! topViewButton.classList.contains( 'active' ) ) {
         smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
         setTimeout( () => {
             perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '3D' : '2D';
             changeCamera();
         }, smoothCameraDuration * 1010 );
+        [ frontViewButton, leftViewButton, rightViewButton ].forEach( button => {
+            button.classList.toggle( 'hidden' );
+        });
         return;
     }
     perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '3D' : '2D';
+    [ frontViewButton, leftViewButton, rightViewButton ].forEach( button => {
+        button.classList.toggle( 'hidden' );
+    });
     changeCamera();
 });
 
@@ -1872,7 +1995,11 @@ function getEulerTransform( mesh ) {
     };
 }
 
-const eulerSP = document.getElementById( 'eulerSP' )?.checked;
+const eulerSPCheckbox = document.getElementById( 'eulerSP' );
+let eulerSP = false;
+eulerSPCheckbox.addEventListener( 'change', () => {
+    eulerSP = eulerSPCheckbox.checked;
+});
 const eulerRotationOrderSelector = document.getElementById( 'eulerRotationOrder' );
 let eulerRotationOrder = 'XYZ';
 eulerRotationOrderSelector.addEventListener( 'change', () => {
@@ -1896,13 +2023,9 @@ function mixEulerTransform( a, b, t ) {
     }
 
     function lerpEuler( a1, b1, t ) {
-        return sp
+        return eulerSP
             ? lerpAngleSP( a1, b1, t )
             : lerpAngle( a1, b1, t );
-    }
-
-    function getEulerSP() {
-        return document.getElementById( 'eulerSP' )?.checked;
     }
 
     function getEulerMode() {
@@ -1919,7 +2042,6 @@ function mixEulerTransform( a, b, t ) {
     const scale = mixScale( a.scale, b.scale, t, getEulerScaleMode() );
 
     let mode = getEulerMode()
-    let sp = getEulerSP();
 
     if ( mode === "parallel" ) {
         // Interpolates Euler angles directly (not ideal for all cases)
@@ -2706,7 +2828,8 @@ renderer.domElement.addEventListener( 'mousedown', (event) => {
 
         case 2: // Right mouse button → rotate
             activeControl.setMode( 'rotate' );
-            activeControl.axis = 'XYZE';
+            if ( currentCamera.isPerspectiveCamera ) activeControl.axis = 'XYZE';
+            else activeControl.axis = "Y";
             event.preventDefault(); // prevents contextual menu
             break;
     }
