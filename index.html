@@ -5,6 +5,15 @@
             <meta charset="utf-8">
             <title>My first three.js app</title>
             <link rel="stylesheet" href="css/style.css"/>
+            <script type="importmap">
+            {
+                  "imports": {
+                        "three": "./../three/three/build/three.module.js",
+                        "three/addons/": "./../three/three/examples/jsm/",
+                        "three/interactive/": "./three/THREE.Interactive-1.8.0/"
+                  }
+            }
+            </script>
       </head>
       
       <body>
@@ -414,16 +423,6 @@
 
             </div>
 
-
-            <script type="importmap">
-            {
-                  "imports": {
-                        "three": "./../three/three/build/three.module.js",
-                        "three/addons/": "./../three/three/examples/jsm/",
-                        "three/interactive/": "./three/THREE.Interactive-1.8.0/"
-                  }
-            }
-            </script>
             <script type="module" src="js/main.js"></script>
       </body>
 
