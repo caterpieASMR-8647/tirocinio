@@ -2,7 +2,7 @@
 // IMPORTANT: "@addons/": "../three/three/examples/jsm/"
 // IMPORTANT: "@interactive/": "../three/THREE.Interactive-1.8.0/"
 
-import * as THREE from 'three/build/three.module.js';
+import * as THREE from '@three';
 
 import { OrbitControls } from '@three/addons/controls/OrbitControls.js';
 import { TransformControls } from '@addons/controls/TransformControls.js';
