@@ -1,5 +1,4 @@
 // import * as THREE from './../three/three/build/three.core.js';
-import * as THREE from './../three/three/build/three.core.js';
 import * as THREE from './../three/three/build/three.module.js';
 import { OrbitControls } from './../three/three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from './../three/three/examples/jsm/controls/TransformControls.js';
