@@ -1,6 +1,6 @@
-// IMPORTANT: "three": "./../three/three/build/three.module.js"
-// IMPORTANT: "@addons/": "../three/three/examples/jsm/"
-// IMPORTANT: "@interactive/": "../three/THREE.Interactive-1.8.0/"
+// IMPORTANT: "three": "././three/three/build/three.module.js"
+// IMPORTANT: "@addons/": "./three/three/examples/jsm/"
+// IMPORTANT: "@interactive/": "./three/THREE.Interactive-1.8.0/"
 
 import * as THREE from 'three';
 
