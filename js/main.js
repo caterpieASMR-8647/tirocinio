@@ -1,15 +1,15 @@
 // import * as THREE from './../three/three/build/three.core.js';
-import * as THREE from 'three/three/build/three.modules.js';
-import { OrbitControls } from 'three/three/addons/controls/OrbitControls.js';
-import { TransformControls } from 'three/three/addons/controls/TransformControls.js';
-import { InteractionManager } from '../three/THREE.Interactive-1.8.0/build/three.interactive.js'
-import { FBXLoader } from 'three/three/addons/loaders/FBXLoader.js';
-import { EffectComposer } from 'three/three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/three/addons/postprocessing/RenderPass.js';
-import { OutlinePass } from 'three/three/addons/postprocessing/OutlinePass.js';
-import { GammaCorrectionShader } from 'three/three/addons/shaders/GammaCorrectionShader.js';
-import { ShaderPass } from 'three/three/addons/postprocessing/ShaderPass.js';
-import { FXAAShader } from 'three/three/addons/shaders/FXAAShader.js';
+import * as THREE from 'public/three/build/three.modules.js';
+import { OrbitControls } from 'public/three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'public/three/addons/controls/TransformControls.js';
+import { InteractionManager } from 'public/THREE.Interactive-1.8.0/build/three.interactive.js'
+import { FBXLoader } from 'public/three/addons/loaders/FBXLoader.js';
+import { EffectComposer } from 'public/three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'public/three/addons/postprocessing/RenderPass.js';
+import { OutlinePass } from 'public/three/addons/postprocessing/OutlinePass.js';
+import { GammaCorrectionShader } from 'public/three/addons/shaders/GammaCorrectionShader.js';
+import { ShaderPass } from 'public/three/addons/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'public/three/addons/shaders/FXAAShader.js';
 
 // ########################################## Elements ########################################### //
 
