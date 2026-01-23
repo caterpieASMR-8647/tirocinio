@@ -229,7 +229,7 @@ modelSelector.addEventListener( 'change', (e) => {
     startMesh.sccale = scale1.copy();
     endMesh.position = pos2.copy();
     endMesh.quaternion = quat2.copy();
-    endMesh.sccale = scale2.copy();
+    endMesh.scale = scale2.copy();
 
     if ( isStillshotActive ) generateStillshot();
 
@@ -430,21 +430,24 @@ function createInitialMeshes(  ) {
             myMesh1.addEventListener('mousedown', (event) => {
                 if ( isPlaying ) return;
 
-                if ( hovering && ! control1.enabled ) {
+                if ( hovering && control1.enabled ) {
                     control1.pointerDown( control1._getPointer( event ) );
                     control1.pointerMove( control1._getPointer( event ) );
                 }
             });
-            myMesh1.addEventListener('mousemove', (event) => {
-                if ( isPlaying ) return;
-                if( control1.enabled ) {
-                    control1.pointerMove( control1._getPointer( event ) );
+            // myMesh1.addEventListener('mousemove', (event) => {
+            //     if ( isPlaying ) return;
+            //     if( !control1.enabled ) {
+            //         control1.pointerMove( control1._getPointer( event ) );
 
-                    matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
-                    updateStillshot();
-                    updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
-                }
-            });
+            //         myMesh1.updateMatrix();
+            //         myMesh1.updateMatrixWorld(true);
+
+            //         matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+            //         updateStillshot();
+            //         updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
+            //     }
+            // });
             myMesh1.addEventListener('mouseup', (event) => {
                 if ( isPlaying ) return;
 
@@ -483,22 +486,25 @@ function createInitialMeshes(  ) {
             myMesh2.addEventListener('mousedown', (event) => {
                 if ( isPlaying ) return;
 
-                if ( hovering && ! control2.enabled ) {
+                if ( hovering && control2.enabled ) {
                     control2.pointerDown( control2._getPointer( event ) );
                     control2.pointerMove( control2._getPointer( event ) );
                 }
             });
-            myMesh2.addEventListener('mousemove', (event) => {
-                if ( isPlaying ) return;
+            // myMesh2.addEventListener('mousemove', (event) => {
+            //     if ( isPlaying ) return;
 
-                if ( ! control2.enabled ) {
-                    control2.pointerMove( control2._getPointer( event ) );
+            //     if ( !control2.enabled ) {
+            //         control2.pointerMove( control2._getPointer( event ) );
 
-                    matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
-                    updateStillshot();
-                    updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
-                }
-            });
+            //         myMesh2.updateMatrix();
+            //         myMesh2.updateMatrixWorld(true);
+
+            //         matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+            //         updateStillshot();
+            //         updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
+            //     }
+            // });
             myMesh2.addEventListener('mouseup', (event) => {
                 if ( isPlaying ) return;
 
@@ -507,6 +513,32 @@ function createInitialMeshes(  ) {
                 matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
                 updateStillshot();
                 updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
+            });
+
+            document.addEventListener('mousemove', (event) => {
+                if ( isPlaying ) return;
+
+                if ( control1.enabled ) {
+                    control1.pointerMove( control1._getPointer( event ) );
+
+                    myMesh1.updateMatrix();
+                    myMesh1.updateMatrixWorld(true);
+
+                    matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+                    updateStillshot();
+                    updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
+                }
+
+                if ( control2.enabled ) {
+                    control2.pointerMove( control2._getPointer( event ) );
+
+                    myMesh2.updateMatrix();
+                    myMesh2.updateMatrixWorld(true);
+
+                    matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+                    updateStillshot();
+                    updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
+                }
             });
 
             interactionManager.add( myMesh2 );
@@ -527,6 +559,8 @@ function createInitialMeshes(  ) {
     // After Adding Mesh to TransformControls, adds TransformControl to Scene (Gizmo)
     scene.add( control1.getHelper() );
     scene.add( control2.getHelper() );
+    // scene.add( control1 );
+    // scene.add( control2 );
 }
 
 function createAnimationMesh() {
