@@ -535,17 +535,17 @@ function createAnimationMesh() {
     endMesh = myMesh2;
 
     // Saves Original Transforms for Mesh1 and 2 - I do it now to be sure they are properly set
-    // myMesh1.userData.original = {
-    //     position : myMesh1.position.clone(),
-    //     rotation : myMesh1.rotation.clone(),
-    //     scale    : myMesh1.scale.clone()
-    // };
+    myMesh1.userData.original = {
+        position : myMesh1.position.clone(),
+        rotation : myMesh1.rotation.clone(),
+        scale    : myMesh1.scale.clone()
+    };
 
-    // myMesh2.userData.original = {
-    //     position : myMesh2.position.clone(),
-    //     rotation : myMesh2.rotation.clone(),
-    //     scale    : myMesh2.scale.clone()
-    // };
+    myMesh2.userData.original = {
+        position : myMesh2.position.clone(),
+        rotation : myMesh2.rotation.clone(),
+        scale    : myMesh2.scale.clone()
+    };
 
     // Create a deep clone of the starting mesh
     animationMesh = startMesh.clone();
