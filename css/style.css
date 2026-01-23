@@ -471,6 +471,20 @@ html, body {
   align-items: center;
 }
 
+.tabVar {
+  width: 100%;
+  gap: 0;
+  background-color: rgba(25, 25, 25, 0.85);
+  border: 1px solid #555;
+  border-radius: 0px ;
+  padding: 6px 30px 6px 30px;
+  /* padding-top: 6px; */
+  margin: 0px 20px 0px 20px ;
+  color: white;
+  font-family: monospace;
+  white-space: normal;
+  overflow: hidden;
+}
 /* Tab content result boxes */
 .tabMesh, .tabMix, .tabSetM{
   /* flex: 1 1 auto; */

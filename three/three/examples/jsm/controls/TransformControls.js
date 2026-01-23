@@ -1807,12 +1807,13 @@ class TransformControlsGizmo extends Object3D {
 			handle.material.color.copy( handle.material._color );
 			handle.material.opacity = handle.material._opacity;
 
+			// NOT ORIGINAL HERE
 			if ( this.enabled && this.axis ) {
 
 				if ( handle.name === this.axis ) {
 
-					handle.material.color.copy( this.materialLib.active.color );
-					handle.material.opacity = 1.0;
+					// handle.material.color.copy( this.materialLib.active.color );
+					handle.material.opacity = 0.1;
 
 				} else if ( this.axis.split( '' ).some( function ( a ) {
 
@@ -1820,12 +1821,13 @@ class TransformControlsGizmo extends Object3D {
 
 				} ) ) {
 
-					handle.material.color.copy( this.materialLib.active.color );
-					handle.material.opacity = 1.0;
+					// handle.material.color.copy( this.materialLib.active.color );
+					handle.material.opacity = 0.1;
 
 				}
 
 			}
+			// END NOT ORIGINAL
 
 		}
 

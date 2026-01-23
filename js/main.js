@@ -30,7 +30,7 @@ const canvas = document.getElementById( "render3d" );
 canvas.addEventListener( "contextmenu", ( e ) => {
     e.preventDefault();
 } );
-const renderer = new THREE.WebGLRenderer( { canvas: canvas , antialias : true } );
+const renderer = new THREE.WebGLRenderer( { canvas: canvas , antialias : true , logarithmicDepthBuffer: true } );
 document.getElementById( "canvasContainer" ).appendChild( renderer.domElement );
 // renderer.physicallyCorrectLights = true;
 
@@ -134,6 +134,8 @@ control2.addEventListener( 'objectChange', () => {
 // Defaults to NO
 
 let showGizmo = false;
+
+console.log(control1);
 
 // ####################################### Hover and Click ####################################### //
 
@@ -400,6 +402,8 @@ function createInitialMeshes(  ) {
             // Translates Mesh so that its Mass Center is in the Center of the Group
             mesh.position.sub( center );
 
+            mesh.children[0].material.depthWrite = false;
+
             mesh.scale.set( .001, .001, .001 );
             myMesh1.add( mesh );
             
@@ -531,17 +535,17 @@ function createAnimationMesh() {
     endMesh = myMesh2;
 
     // Saves Original Transforms for Mesh1 and 2 - I do it now to be sure they are properly set
-    myMesh1.userData.original = {
-        position : myMesh1.position.clone(),
-        rotation : myMesh1.rotation.clone(),
-        scale    : myMesh1.scale.clone()
-    };
+    // myMesh1.userData.original = {
+    //     position : myMesh1.position.clone(),
+    //     rotation : myMesh1.rotation.clone(),
+    //     scale    : myMesh1.scale.clone()
+    // };
 
-    myMesh2.userData.original = {
-        position : myMesh2.position.clone(),
-        rotation : myMesh2.rotation.clone(),
-        scale    : myMesh2.scale.clone()
-    };
+    // myMesh2.userData.original = {
+    //     position : myMesh2.position.clone(),
+    //     rotation : myMesh2.rotation.clone(),
+    //     scale    : myMesh2.scale.clone()
+    // };
 
     // Create a deep clone of the starting mesh
     animationMesh = startMesh.clone();
@@ -585,6 +589,7 @@ function createAnimationMesh() {
     setMeshTransparency( animationMesh, true );
     scene.add( animationMesh );
 
+    startMesh.children[0].children[0].material.depthTest
     updateTransformation();
 
     if ( myMesh1 && myMesh2 && animationMesh ) {
@@ -931,11 +936,13 @@ let duration = 3.0; // seconds
 let lastTime = 0;
 
 const animationDurationSlider = document.getElementById( 'animationDurationSlider' );
-const animationDurationText = document.getElementById( 'animationDurationText' );
+// const animationDurationText = document.getElementById( 'animationDurationText' );
 animationDurationSlider.addEventListener('input', (e) => {
-    if ( isPlaying ) return;
-    duration = Number( animationDurationSlider.value );
-    animationDurationText.textContent = `${ Math.round( duration ) } sec`;
+    // if ( isPlaying ) return;
+
+    // Inverted ( max + min - value ) so speed goes from slower ( left ) to faster ( right )
+    duration = 10 + 1 - Number( animationDurationSlider.value );
+    // animationDurationText.textContent = `${ Math.round( duration ) } sec`;
 });
 
 let order = 'TRS';
@@ -970,10 +977,10 @@ const sidePanel = document.getElementById( 'sidePanel' );
 let animDirection = 1;
 playButton.addEventListener('click', (e) => {
     e.target.blur();
-    if ( animDirection == -1 && isPlaying ) {
-        isPlaying = ! isPlaying;
-    }
-    animDirection = 1;
+    // if ( animDirection == -1 && isPlaying ) {
+    //     isPlaying = ! isPlaying;
+    // }
+    if ( progress == 0 ) animDirection = 1;
     playAnim();
 });
 reverseButton.addEventListener('click', (e) => {
@@ -991,7 +998,11 @@ boomerangButton.addEventListener('click', (e) => {
     
     boomerangButton.classList.toggle( 'active', boomerang );
 
-    if ( boomerang && ! isPlaying ) playAnim();
+    if ( boomerang && ! isPlaying ) {
+        if ( progress == 1 ) animDirection = -1;
+        if ( progress == 0 ) animDirection = 1;
+        playAnim();
+    }
 });
 
 // Updates Progress Bar, text value, animation time
@@ -1007,8 +1018,11 @@ function playAnim (  ) {
     if ( ! isPlaying && progress == 1 && animDirection == 1 ) progress = 0;
     if ( ! isPlaying && progress == 0 && animDirection == -1 ) progress = 1;
 
+    // If stillshots are visible, toggle animationmesh visibility ( playing: visible )
+    if ( stillshotMeshes.length > 0 ) animationMesh.children[0].children[0].material.visible = ! animationMesh.children[0].children[0].material.visible;
+    
     isPlaying = ! isPlaying;
-    playButton.classList.toggle( 'active', isPlaying && animDirection == 1 );
+    playButton.classList.toggle( 'active', isPlaying && animDirection == 1 || isPlaying && animDirection == -1 );
     reverseButton.classList.toggle( 'active', isPlaying && animDirection == -1 );
     if ( isPlaying ) {
         setMeshTransparency( myMesh1, true );
@@ -1087,9 +1101,28 @@ perspectiveButton.addEventListener('click', (e) => {
     changeCamera();
 });
 
+const gizmoTranslate = document.getElementById( 'gizmoTransl' );
+const gizmoRotate = document.getElementById( 'gizmoRot' );
+const gizmoScale = document.getElementById( 'gizmoScale' );
 gizmoButton.addEventListener('click', (e) => {
     e.target.blur();
+    gizmoButton.classList.toggle( 'active' );
     toggleGizmo();
+});
+gizmoTranslate.addEventListener( 'click', (e) =>{
+    e.target.blur();
+    control1.setMode( 'translate' );
+    control2.setMode( 'translate' );
+});
+gizmoRotate.addEventListener( 'click', (e) =>{
+    e.target.blur();
+    control1.setMode( 'rotate' );
+    control2.setMode( 'rotate' );
+});
+gizmoScale.addEventListener( 'click', (e) =>{
+    e.target.blur();
+    control1.setMode( 'scale' );
+    control2.setMode( 'scale' );
 });
 
 indipendentTransformations.addEventListener('click', (e) => {
@@ -1382,6 +1415,8 @@ function updateTransformation() {
             progress = 1;
             if ( ! boomerang ) {
                 isPlaying = false;
+                playButton.classList.remove( 'active' );
+                if ( stillshotMeshes.length > 0 ) animationMesh.children[0].children[0].material.visible = false;
                 reEnableControlsOutline();
                 playButton.textContent = 'Play';
                 reverseButton.textContent = 'Reverse';
@@ -1394,6 +1429,8 @@ function updateTransformation() {
             progress = 0
             if ( ! boomerang ) {
                 isPlaying = false;
+                playButton.classList.remove( 'active' );
+                if ( stillshotMeshes.length > 0 ) animationMesh.children[0].children[0].material.visible = false;
                 reEnableControlsOutline();
                 playButton.textContent = 'Play';
                 reverseButton.textContent = 'Reverse';
@@ -1414,20 +1451,24 @@ function updateTransformation() {
 // Stillshot Code
 let stillshotMeshes = [];
 const baseMeshColor = new THREE.Color( 0.418546805942435, 0.418546805942435, 0.418546805942435 );
-const stillshotStartColor = 0x0000ff;
-const stillshotEndColor = 0xff0000;
+const stillshotStartColor = 0xffffff;
+const stillshotEndColor = 0x0000ff;
 const stillshotSlider = document.getElementById( "stillshotSlider" );
 const stillshotBtn = document.getElementById( "stillshotBtn" );
 const stillshotText = document.getElementById( "stillshotText" );
 
 stillshotSlider.addEventListener( "input", () => {
-    stillshotText.textContent = `${stillshotSlider.value} mesh`;
+    stillshotText.textContent = `${ Number( stillshotSlider.value ) + 2 } steps`;
     if ( stillshotMeshes.length == 0 ) return;
+    animationMesh.children[0].children[0].material.visible = true;
     generateStillshot( Number( stillshotSlider.value ) );
+    animationMesh.children[0].children[0].material.visible = false;
 });
 stillshotBtn.addEventListener( "click", () => {
     if ( stillshotMeshes.length == 0 ) generateStillshot( Number( stillshotSlider.value ) );
     else clearStillshot();
+    animationMesh.children[0].children[0].material.visible = ! animationMesh.children[0].children[0].material.visible;
+    stillshotBtn.classList.toggle( 'active' );
 });
 
 // Cleans the scene before generating the stillshot
@@ -1463,8 +1504,8 @@ function setMeshColor( meshGroup, color ) {
 
 function applyGradientColor( mesh, t ) {
     const color = new THREE.Color().lerpColors(
-        new THREE.Color( 0x0000ff ), // blue
-        new THREE.Color( 0xff0000 ), // red
+        new THREE.Color( stillshotStartColor ),
+        new THREE.Color( stillshotEndColor ),
         t
     );
 
@@ -1707,7 +1748,8 @@ let transparentOpacity = 0.25;
 const opaqueOpacity = 1.0;
 
 const transparentDepthWrite = false;
-const opaqueDepthWrite = true;
+// const opaqueDepthWrite = true;
+const opaqueDepthWrite = false;
 
 const opacitySlider = document.getElementById( "opacitySlider" );
 const opacityText   = document.getElementById( "opacityText" );
@@ -2775,6 +2817,7 @@ window.addEventListener( 'keydown', function(event) {
         // Disable / Enable Transformations
         case ' ':
             event.preventDefault();
+            if ( progress == 0 ) animDirection = 1;
             playAnim();
             break;
 

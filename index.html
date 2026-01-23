@@ -37,29 +37,33 @@
                               </div>
                               <div class="subSection">
                                     <div class="inline">
+                                          <span>Speed:</span>
+                                          <div class="progressWrapper" style="position: relative; width: 75px;">
+                                                <input id="animationDurationSlider" type="range" min="1" max="10" step="1" value="5" style="width:100%; position: absolute; top:0; left:0;">
+                                          </div>
                                           <button id="playButton">Play</button>
                                           <div class="progressWrapper" style="position: relative; width: 200px; height: 20px; ">
                                                 <input id="progressBar" type="range" min="0" max="1" step="0.001" value="0" style="width:100%; position: absolute; top:0; left:0;">
                                                 <div id="phaseMarkers"></div>
                                           </div>
-                                          <button id="reverseButton">Reverse</button>
+                                          <button id="reverseButton" hidden>Reverse</button>
                                           <button id="boomerangButton">Boomerang</button>
                                     </div>
 
                                     <div class="inline" style="margin: 5px 0 5px;">
-                                          <span>Animation Duration</span>
-                                          <div class="progressWrapper" style="position: relative;">
+                                          <!-- <span>Speed:</span>
+                                          <div class="progressWrapper" style="position: relative; width: 75px;">
                                                 <input id="animationDurationSlider" type="range" min="1" max="10" step="1" value="3" style="width:100%; position: absolute; top:0; left:0;">
-                                          </div>
-                                          <span id="animationDurationText">3 sec</span>
+                                          </div> -->
+                                          <!-- <span id="animationDurationText">3 sec</span> -->
                                     </div>
 
                                     <div class="inline">
-                                          <button id="stillshotBtn">Toggle Stillshot</button>
+                                          <button id="stillshotBtn">Stillshot</button>
                                           <div class="progressWrapper" style="position: relative;">
                                                 <input id="stillshotSlider" type="range" min="1" max="10" value="5" style="width:100%; position: absolute; top:0; left:0;">
                                           </div>
-                                          <span id="stillshotText">5 mesh</span>
+                                          <span id="stillshotText">7 steps</span>
                                     </div>
                         
                                     <div class="hidden" id="orderContainer">
@@ -165,7 +169,10 @@
                                     <div class="subSection" style="width: 50%;">
                                           <div class="subTitle">UI</div>
                                           <div class="buttonRow">
-                                                <button id="gizmoToggle" class="rightButton">Toggle Gizmos</button>
+                                                <button id="gizmoToggle">Gizmos</button>
+                                                <button id="gizmoTransl">T</button>
+                                                <button id="gizmoRot">R</button>
+                                                <button id="gizmoScale">S</button>
                                           </div>
                                     </div>
                               </div>
@@ -186,6 +193,16 @@
                               <div id="modeContent">
                                     <!-- You will fill this later -->
                                     <div class="tabContent" data-tab="matrix">
+                                          <div class="tabMid">
+                                                <div class="tabVar">
+                                                      <div class="modTitle">
+                                                            <b>Representation Variants:</b><br>
+                                                      </div>
+                                                      <div class="lastModEntry">
+                                                            No Variants Avaliable
+                                                      </div>
+                                                </div>
+                                          </div>
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="matrixA"></div>
                                                 <div class="tabMesh" id="matrixB"></div>
@@ -193,10 +210,10 @@
                                           <div class="tabMid">
                                                 <div class="tabMod" id="matrixMod">
                                                       <div class="modTitle">
-                                                            <b>Modifiers:</b><br>
+                                                            <b>Interpolation Options:</b><br>
                                                       </div>
                                                       <div class="lastModEntry">
-                                                            No Modifiers<br>
+                                                            No Options Avaliable<br>
                                                       </div>
                                                 </div>
                                           </div>
@@ -206,22 +223,10 @@
                                           </div>
                                     </div>
                                     <div class="tabContent hidden" data-tab="euler">
-                                          <div class="tabTop">
-                                                <div class="tabMesh" id="eulerA"></div>
-                                                <div class="tabMesh" id="eulerB"></div>
-                                          </div>
                                           <div class="tabMid">
-                                                <div class="tabMod" id="eulerMod">
+                                                <div class="tabVar">
                                                       <div class="modTitle">
-                                                            <b>Modifiers:</b><br>
-                                                      </div>
-                                                      <div class="modEntry">
-                                                            <input type="checkbox" id="eulerSP" value>Shortest Path
-                                                      </div>
-                                                      <div class="modEntry">
-                                                            <b>Euler rotation mode:</b>
-                                                            <input type="radio" name="eulerRot" value="parallel" checked> Parallel Interpolation
-                                                            <input type="radio" name="eulerRot" value="series"> Series Rotation
+                                                            <b>Representation Variants:</b><br>
                                                       </div>
                                                       <div class="modEntry">
                                                             <div class="inline">
@@ -237,6 +242,11 @@
                                                             </div>
                                                       </div>
                                                       <div class="modEntry">
+                                                            <b>Rotations Mode:</b>
+                                                            <input type="radio" name="eulerRot" value="parallel" checked> Parallel Interpolation
+                                                            <input type="radio" name="eulerRot" value="series"> Series Rotation
+                                                      </div>
+                                                      <div class="lastModEntry">
                                                             <div class="inline">
                                                                   <label>Rotation Order:</label>
                                                                   <select id="eulerRotationOrder">
@@ -259,6 +269,20 @@
                                                                   </select>
                                                             </div>
                                                       </div>
+                                                </div>
+                                          </div>
+                                          <div class="tabTop">
+                                                <div class="tabMesh" id="eulerA"></div>
+                                                <div class="tabMesh" id="eulerB"></div>
+                                          </div>
+                                          <div class="tabMid">
+                                                <div class="tabMod" id="eulerMod">
+                                                      <div class="modTitle">
+                                                            <b>Interpolation Options:</b><br>
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <input type="checkbox" id="eulerSP" value>Shortest Path
+                                                      </div>
                                                       <div class="lastModEntry">
                                                             <b>Scale:</b>
                                                             <input type="radio" name="eulerScale" value="arithmetic" checked> Arithmetic
@@ -272,6 +296,26 @@
                                           </div>
                                     </div>
                                     <div class="tabContent hidden" data-tab="axisangle">
+                                          <div class="tabMid">
+                                                <div class="tabVar">
+                                                      <div class="modTitle">
+                                                            <b>Representation Variants:</b><br>
+                                                      </div>
+                                                      <div class="lastModEntry">
+                                                            <div class="inline">
+                                                                  <label>Transform Order:</label>
+                                                                  <select id="axisangleTransformOrder">
+                                                                        <option value="TRS">Translate → Rotate → Scale (Default)</option>
+                                                                        <option value="TSR">Translate → Scale → Rotate</option>
+                                                                        <option value="RTS">Rotate → Translate → Scale</option>
+                                                                        <option value="RST">Rotate → Scale → Translate</option>
+                                                                        <option value="STR">Scale → Translate → Rotate</option>
+                                                                        <option value="SRT">Scale → Rotate → Translate</option>
+                                                                  </select>
+                                                            </div>
+                                                      </div>
+                                                </div>
+                                          </div>
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="axisangleA"></div>
                                                 <div class="tabMesh" id="axisangleB"></div>
@@ -279,7 +323,7 @@
                                           <div class="tabMid">
                                                 <div class="tabMod" id="axisangleMod">
                                                       <div class="modTitle">
-                                                            <b>Modifiers:</b><br>
+                                                            <b>Interpolation Options:</b><br>
                                                       </div>
                                                       <div class="modEntry">
                                                             <input type="checkbox" id="axisangleSP" value>Shortest Path
@@ -292,19 +336,6 @@
                                                             <b>Type of Interpolation:</b>
                                                             <input type="radio" name="axisangleInterp" value="nlerp" checked> N-Lerp
                                                             <input type="radio" name="axisangleInterp" value="slerp"> S-Lerp
-                                                      </div>
-                                                      <div class="modEntry">
-                                                            <div class="inline">
-                                                                  <label>Transform Order:</label>
-                                                                  <select id="axisangleTransformOrder">
-                                                                        <option value="TRS">Translate → Rotate → Scale (Default)</option>
-                                                                        <option value="TSR">Translate → Scale → Rotate</option>
-                                                                        <option value="RTS">Rotate → Translate → Scale</option>
-                                                                        <option value="RST">Rotate → Scale → Translate</option>
-                                                                        <option value="STR">Scale → Translate → Rotate</option>
-                                                                        <option value="SRT">Scale → Rotate → Translate</option>
-                                                                  </select>
-                                                            </div>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <b>Scale:</b>
@@ -319,25 +350,12 @@
                                           </div>
                                     </div>
                                     <div class="tabContent hidden" data-tab="quat">
-                                          <div class="tabTop">
-                                                <div class="tabMesh" id="quatA"></div>
-                                                <div class="tabMesh" id="quatB"></div>
-                                          </div>
                                           <div class="tabMid">
-                                                <div class="tabMod" id="quatMod">
+                                                <div class="tabVar">
                                                       <div class="modTitle">
-                                                            <b>Modifiers:</b><br>
+                                                            <b>Representation Variants:</b><br>
                                                       </div>
-                                                      <div class="modEntry">
-                                                            <input type="checkbox" id="quatSP" checked>Shortest Path
-                                                      </div>
-                                                      <div class="modEntry">
-                                                            <b>Type of Interpolation:</b>
-                                                            <input type="radio" name="quatInterp" value="nlerp" checked> N-Lerp
-                                                            <input type="radio" name="quatInterp" value="slerp"> S-Lerp
-                                                            <input type="radio" name="quatInterp" value="lerp"> Lerp
-                                                      </div>
-                                                      <div class="modEntry">
+                                                      <div class="lastModEntry">
                                                             <div class="inline">
                                                                   <label>Transform Order:</label>
                                                                   <select id="quatTransformOrder">
@@ -349,6 +367,26 @@
                                                                         <option value="SRT">Scale → Rotate → Translate</option>
                                                                   </select>
                                                             </div>
+                                                      </div>
+                                                </div>
+                                          </div>
+                                          <div class="tabTop">
+                                                <div class="tabMesh" id="quatA"></div>
+                                                <div class="tabMesh" id="quatB"></div>
+                                          </div>
+                                          <div class="tabMid">
+                                                <div class="tabMod" id="quatMod">
+                                                      <div class="modTitle">
+                                                            <b>Interpolation Options:</b><br>
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <input type="checkbox" id="quatSP" checked>Shortest Path
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <b>Type of Interpolation:</b>
+                                                            <input type="radio" name="quatInterp" value="nlerp" checked> N-Lerp
+                                                            <input type="radio" name="quatInterp" value="slerp"> S-Lerp
+                                                            <input type="radio" name="quatInterp" value="lerp"> Lerp
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <b>Scale:</b>
@@ -363,6 +401,22 @@
                                           </div>
                                     </div>
                                     <div class="tabContent hidden" data-tab="dualquat">
+                                          <div class="tabMid">
+                                                <div class="tabVar">
+                                                      <div class="modTitle">
+                                                            <b>Representation Variants:</b><br>
+                                                      </div>
+                                                      <div class="lastModEntry">
+                                                            <div class="inline">
+                                                                  <label>Transform Order:</label>
+                                                                  <select id="dualquatTransformOrder">
+                                                                        <option value="TRS">Translate + Rotate → Scale (Default)</option>
+                                                                        <option value="STR">Scale → Translate + Rotate</option>
+                                                                  </select>
+                                                            </div>
+                                                      </div>
+                                                </div>
+                                          </div>
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="dualquatA"></div>
                                                 <div class="tabMesh" id="dualquatB"></div>
@@ -370,7 +424,7 @@
                                           <div class="tabMid">
                                                 <div class="tabMod" id="dualquatMod">
                                                       <div class="modTitle">
-                                                            <b>Modifiers:</b><br>
+                                                            <b>Interpolation Options:</b><br>
                                                       </div>
                                                       <div class="modEntry">
                                                             <input type="checkbox" id="dualquatSP" checked>Shortest Path
@@ -381,15 +435,6 @@
                                                       </div>
                                                       <div class="modEntry">
                                                             <input type="checkbox" id="dualquatReHortDual" checked>Re-Hortogonalize Dual
-                                                      </div>
-                                                      <div class="modEntry">
-                                                            <div class="inline">
-                                                                  <label>Transform Order:</label>
-                                                                  <select id="dualquatTransformOrder">
-                                                                        <option value="TRS">Translate + Rotate → Scale (Default)</option>
-                                                                        <option value="STR">Scale → Translate + Rotate</option>
-                                                                  </select>
-                                                            </div>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <b>Scale:</b>
