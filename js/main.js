@@ -385,14 +385,6 @@ function createInitialMeshes(  ) {
 
     loader.load( modelPath,
         ( mesh ) => {
-            // mesh.traverse(function (child) {
-            //     if (child.isMesh) {
-            //         (child).material = material;
-            //         if (child.material) {
-            //             child.material.transparent = false;
-            //         }
-            //     }
-            // })
             
             mesh.scale.set( .001, .001, .001 );
             const box = new THREE.Box3().setFromObject( mesh );
@@ -435,19 +427,6 @@ function createInitialMeshes(  ) {
                     control1.pointerMove( control1._getPointer( event ) );
                 }
             });
-            // myMesh1.addEventListener('mousemove', (event) => {
-            //     if ( isPlaying ) return;
-            //     if( !control1.enabled ) {
-            //         control1.pointerMove( control1._getPointer( event ) );
-
-            //         myMesh1.updateMatrix();
-            //         myMesh1.updateMatrixWorld(true);
-
-            //         matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
-            //         updateStillshot();
-            //         updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
-            //     }
-            // });
             myMesh1.addEventListener('mouseup', (event) => {
                 if ( isPlaying ) return;
 
@@ -491,20 +470,6 @@ function createInitialMeshes(  ) {
                     control2.pointerMove( control2._getPointer( event ) );
                 }
             });
-            // myMesh2.addEventListener('mousemove', (event) => {
-            //     if ( isPlaying ) return;
-
-            //     if ( !control2.enabled ) {
-            //         control2.pointerMove( control2._getPointer( event ) );
-
-            //         myMesh2.updateMatrix();
-            //         myMesh2.updateMatrixWorld(true);
-
-            //         matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
-            //         updateStillshot();
-            //         updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
-            //     }
-            // });
             myMesh2.addEventListener('mouseup', (event) => {
                 if ( isPlaying ) return;
 
@@ -523,10 +488,6 @@ function createInitialMeshes(  ) {
 
                     myMesh1.updateMatrix();
                     myMesh1.updateMatrixWorld(true);
-
-                    matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
-                    updateStillshot();
-                    updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
                 }
 
                 if ( control2.enabled ) {
@@ -534,11 +495,11 @@ function createInitialMeshes(  ) {
 
                     myMesh2.updateMatrix();
                     myMesh2.updateMatrixWorld(true);
-
-                    matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
-                    updateStillshot();
-                    updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
                 }
+
+                matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+                updateStillshot();
+                updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
             });
 
             interactionManager.add( myMesh2 );
@@ -1052,10 +1013,12 @@ function playAnim (  ) {
     if ( ! isPlaying && progress == 1 && animDirection == 1 ) progress = 0;
     if ( ! isPlaying && progress == 0 && animDirection == -1 ) progress = 1;
 
-    // If stillshots are visible, toggle animationmesh visibility ( playing: visible )
-    if ( stillshotMeshes.length > 0 ) animationMesh.children[0].children[0].material.visible = ! animationMesh.children[0].children[0].material.visible;
-    
     isPlaying = ! isPlaying;
+
+    // If stillshots are visible, toggle animationmesh visibility ( playing: visible )
+    if ( stillshotMeshes.length > 0 && ! isPlaying ) animationMesh.children[0].children[0].material.visible = false;
+    else if ( stillshotMeshes.length > 0 && isPlaying ) animationMesh.children[0].children[0].material.visible = true;
+    
     playButton.classList.toggle( 'active', isPlaying && animDirection == 1 || isPlaying && animDirection == -1 );
     reverseButton.classList.toggle( 'active', isPlaying && animDirection == -1 );
     if ( isPlaying ) {
@@ -1501,7 +1464,8 @@ stillshotSlider.addEventListener( "input", () => {
 stillshotBtn.addEventListener( "click", () => {
     if ( stillshotMeshes.length == 0 ) generateStillshot( Number( stillshotSlider.value ) );
     else clearStillshot();
-    animationMesh.children[0].children[0].material.visible = ! animationMesh.children[0].children[0].material.visible;
+    if ( isPlaying ) applyPlayTransparency();
+    else animationMesh.children[0].children[0].material.visible = ! animationMesh.children[0].children[0].material.visible;
     stillshotBtn.classList.toggle( 'active' );
 });
 
@@ -2910,8 +2874,7 @@ renderer.domElement.addEventListener( 'mousedown', (event) => {
 
         case 2: // Right mouse button → rotate
             activeControl.setMode( 'rotate' );
-            if ( currentCamera.isPerspectiveCamera ) activeControl.axis = 'XYZE';
-            else activeControl.axis = "Y";
+            currentCamera.isOrthographicCamera ? activeControl.axis = 'Y' : activeControl.axis = 'XYZE';
             event.preventDefault(); // prevents contextual menu
             break;
     }
