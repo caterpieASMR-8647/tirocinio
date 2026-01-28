@@ -1033,7 +1033,7 @@ animationDurationSlider.addEventListener('input', (e) => {
     // animationDurationText.textContent = `${ Math.round( duration ) } sec`;
 });
 
-let order = 'STR';
+let order = 'SRT';
 const transformNames = {
     T: "Translation",
     R: "Rotation",
@@ -1689,7 +1689,7 @@ function generateStillshot( count ) {
     console.log( stillshotMeshes );
 }
 
-function matrixTransformation( meshA, meshB, animationMesh, t, order = 'STR' ) {
+function matrixTransformation( meshA, meshB, animationMesh, t, order = 'SRT' ) {
     // Determine which transform mode is currently active
     // (set by your tab buttons — e.g., 'matrix', 'euler', 'axis-angle', 'quaternion', 'dual-quaternion')
     const mode = currentTransformMode || 'matrix';
@@ -2340,7 +2340,7 @@ function getEulerTransform( mesh ) {
 
 // Euler HTML listeners
 const eulerTransformOrder = document.getElementById( 'eulerTransformOrder' );
-let eulerTRSOrder = 'STR';
+let eulerTRSOrder = 'SRT';
 eulerTransformOrder.addEventListener( 'change', () => {
     eulerTRSOrder = eulerTransformOrder.value;
 });
@@ -2463,7 +2463,7 @@ function mixEulerTransform( a, b, t ) {
 // ##### AXIS-ANGLE ##### //
 
 const axisAngleTransformOrder = document.getElementById( 'axisangleTransformOrder' );
-let axisAngleTRSOrder = 'STR';
+let axisAngleTRSOrder = 'SRT';
 axisAngleTransformOrder.addEventListener( 'change', ( e ) => {
     axisAngleTRSOrder = axisAngleTransformOrder.value;
 });
@@ -2608,7 +2608,7 @@ function mixAxisAngleTransform( a, b, t ) {
 // ##### QUATERNIONS ##### //
 
 const quatTransformOrder = document.getElementById( 'quatTransformOrder' );
-let quatTRSOrder = 'STR';
+let quatTRSOrder = 'SRT';
 quatTransformOrder.addEventListener( 'change', ( e ) => {
     quatTRSOrder = quatTransformOrder.value;
 });
