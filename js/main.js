@@ -350,8 +350,6 @@ function createNewMeshes() {
                     }
                 });
 
-                animationMesh.matrixAutoUpdate = false;
-
                 setMeshTransparency( animationMesh, true );
                 scene.add( animationMesh );
 
@@ -471,14 +469,6 @@ function applyRotationQuat( mesh, quat ) {
     commitMatrix( mesh );
 }
 
-// ONLY USED FOR TRANSFORMCONTROLS MANUAL TRANSFORMATION OF THE MESH
-// ( left/middle/right click and drag to translate/scale/rotate )
-function updateMatrixFromTransform( mesh ) {
-    // Converts position/quaternion/scale → matrix
-    mesh.matrix.compose( mesh.position, mesh.quaternion, mesh.scale );
-    commitMatrix( mesh );
-}
-
 // Creates 2 Meshes with proper TransformControls, Origin and EventListeners
 function createInitialMeshes(  ) {
     //Loader for FBX Meshes + adds Events for mouse hover
@@ -497,15 +487,10 @@ function createInitialMeshes(  ) {
             mesh.position.sub( center );
 
             mesh.children[0].material.depthWrite = false;
-            // mesh.matrixAutoUpdate = false;
-            // mesh.matrixWorldAutoUpdate = false;
 
-            setScale( mesh, .001 )
-            // mesh.scale.set( .001, .001, .001 );
             myMesh1.add( mesh );
             
-            setPosition( myMesh1, -1 , 0, 0 );
-            // myMesh1.position.set( -1 , 0, 0 );
+            myMesh1.position.set( -1 , 0, 0 );
         
             myMesh1.addEventListener('mouseover', (event) => {
                 if ( isPlaying ) return;
@@ -538,7 +523,7 @@ function createInitialMeshes(  ) {
                 
                 control1.pointerUp( control1._getPointer( event ) );
 
-                updateMatrixFromTransform( myMesh1 );
+                myMesh1.matrixWorldNeedsUpdate = true;
 
                 matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
                 updateStillshot();
@@ -551,8 +536,7 @@ function createInitialMeshes(  ) {
 
             myMesh2 = myMesh1.clone();
 
-            setPosition( myMesh2, 1 , 0, 0 );
-            // myMesh2.position.set( 1 , 0, 0 );
+            myMesh2.position.set( 1 , 0, 0 );
 
             myMesh2.addEventListener('mouseover', (event) => {
                 if ( isPlaying ) return;
@@ -585,7 +569,7 @@ function createInitialMeshes(  ) {
 
                 control2.pointerUp( control2._getPointer( event ) );
 
-                updateMatrixFromTransform( myMesh2 );
+                myMesh2.matrixWorldNeedsUpdate = true;
 
                 matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
                 updateStillshot();
@@ -598,13 +582,13 @@ function createInitialMeshes(  ) {
                 if ( control1.enabled ) {
                     control1.pointerMove( control1._getPointer( event ) );
 
-                    updateMatrixFromTransform( myMesh1 );
+                    myMesh1.matrixWorldNeedsUpdate = true;
                 }
 
                 if ( control2.enabled ) {
                     control2.pointerMove( control2._getPointer( event ) );
 
-                    updateMatrixFromTransform( myMesh2 );
+                    myMesh2.matrixWorldNeedsUpdate = true;
                 }
 
                 matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
@@ -641,22 +625,12 @@ function createAnimationMesh() {
 
     // Saves Original Transforms for Mesh1 and 2 - I do it now to be sure they are properly set
     myMesh1.userData.original = {
-        matrix : myMesh1.matrix,
         position : new THREE.Vector3( -1, 0, 0 )
     };
 
     myMesh2.userData.original = {
-        matrix : myMesh2.matrix,
         position : new THREE.Vector3( 1, 0, 0 )
     };
-
-    myMesh1.matrixAutoUpdate = false;
-    myMesh1.matrixWorldAutoUpdate = false;
-    myMesh2.matrixAutoUpdate = false;
-    myMesh2.matrixWorldAutoUpdate = false;
-
-    setPosition( myMesh1, -1 , 0, 0 );
-    setPosition( myMesh2, 1 , 0, 0 );
 
     // Create a deep clone of the starting mesh
     animationMesh = startMesh.clone();
@@ -1303,32 +1277,37 @@ resetButtons.forEach( ( btn ) => {
         if ( target === 'mesh1' ) mesh = myMesh1;
         if ( target === 'mesh2' ) mesh = myMesh2;
 
-        if ( ! mesh || ! mesh.userData.original ) return;
-
         // Execute the correct reset function
         if ( action === 'resetAll' ) {
             // Restore All
-            mesh.matrix.copy( mesh.userData.original.matrix );
+            if ( target === 'mesh1' ) mesh.position.set( new THREE.Vector3( -1, 0, 0 ) );
+            else mesh.position.set( 1, 0, 0 );
+            mesh.quaternion.identity();
+            mesh.scale.set( 1, 1, 1 );
         }
 
         if ( action === 'resetPosition' ) {
             // Restore original position
-            setPosition( mesh, mesh.userData.original.position.x, mesh.userData.original.position.y, mesh.userData.original.position.z )
+            if ( target === 'mesh1' ) mesh.position.set( new THREE.Vector3( -1, 0, 0 ) );
+            else mesh.position.set( 1, 0, 0 );
         }
 
         if ( action === 'resetRotation' ) {
             // Restore original rotation
-            setRotationQuat( mesh, new THREE.Quaternion( 0, 0, 0, 1) )
+            mesh.quaternion.identity();
         }
 
         if ( action === 'resetScale' ) {
             // Restore original scale
-            setScale( mesh, 1 );
+            mesh.scale.set( 1, 1, 1 );
         }
 
         // Update TransformControls after resetting
-        control1.updateMatrixWorld();
-        control2.updateMatrixWorld();
+        // control1.updateMatrixWorld();
+        // control2.updateMatrixWorld();
+
+        mesh.updateMatrix();
+        mesh.matrixWorldNeedsUpdate = true;
 
         render();
     });
@@ -1399,13 +1378,18 @@ const transformPresets = {
             resetMesh( startMesh );
             resetMesh( endMesh );
 
-            setRotationQuat( startMesh, new THREE.Euler( 0, Math.PI / 2, 0, eulerRotationOrder ) );
-            setRotationQuat( endMesh, new THREE.Euler( Math.PI / 2, 0, 0, eulerRotationOrder ) );
-            setPosition( startMesh, -1, 0, 0 );
-            setPosition( endMesh, 1, 0, 0 );
+            startMesh.rotation.set( 0, Math.PI / 2, 0 );
+            endMesh.rotation.set( Math.PI / 2, 0, 0 );
+            startMesh.position.set(  -1, 0, 0  );
+            endMesh.position.set(  1, 0, 0 );
 
-            // startMesh.updateMatrix();
-            // endMesh.updateMatrix();
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+            startMesh.matrixWorldNeedsUpdate = true;
+            endMesh.matrixWorldNeedsUpdate = true;
 
             smoothCameraTransition( new THREE.Vector3( 0, 0, 2 ) );
         }
@@ -1415,25 +1399,23 @@ const transformPresets = {
             resetMesh( startMesh );
             resetMesh( endMesh );
 
-            setRotationEuler( startMesh, new THREE.Euler( 
+            startMesh.rotation.set(
                 THREE.MathUtils.degToRad( 0 ),
                 THREE.MathUtils.degToRad( 90 ),
-                THREE.MathUtils.degToRad( 0 ),
-                eulerRotationOrder
-            ) );
+                THREE.MathUtils.degToRad( 0 )
+            );
+            endMesh.rotation.set(
+                THREE.MathUtils.degToRad( 90 ),
+                THREE.MathUtils.degToRad( 90 ),
+                THREE.MathUtils.degToRad( 0 )
+            );
+            startMesh.position.set(  0, 0, -1  );
+            endMesh.position.set(  0, 0, 1 );
 
-            setRotationEuler( endMesh, new THREE.Euler( 
-                THREE.MathUtils.degToRad( 90 ),
-                THREE.MathUtils.degToRad( 90 ),
-                THREE.MathUtils.degToRad( 0 ),
-                eulerRotationOrder
-            ) );
-            
-            setPosition( startMesh, -1, 0, 0 );
-            setPosition( endMesh, 1, 0, 0 );
-
-            // startMesh.updateMatrix();
-            // endMesh.updateMatrix();
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+            startMesh.matrixWorldNeedsUpdate = true;
+            endMesh.matrixWorldNeedsUpdate = true;
 
             smoothCameraTransition( new THREE.Vector3( -2, 0, 0 ) );
         },
@@ -1444,24 +1426,21 @@ const transformPresets = {
             resetMesh( startMesh );
             resetMesh( endMesh );
 
-            let tempQuat = new THREE.Quaternion();
-            tempQuat.setFromAxisAngle(
+            startMesh.quaternion.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
                 THREE.MathUtils.degToRad( 170 )
             );
-            setRotationQuat( startMesh, tempQuat );
-
-            tempQuat.setFromAxisAngle(
+            endMesh.quaternion.setFromAxisAngle(
                 new THREE.Vector3( 0, -1, 0 ),
                 THREE.MathUtils.degToRad( 190 )
             );
-            setRotationQuat( endMesh, tempQuat );
+            startMesh.position.set(  0, -1, 0  );
+            endMesh.position.set(  0, 1, 0 );
 
-            setPosition( startMesh, -1, 0, 0 );
-            setPosition( endMesh, 1, 0, 0 );
-
-            // startMesh.updateMatrix();
-            // endMesh.updateMatrix();
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+            startMesh.matrixWorldNeedsUpdate = true;
+            endMesh.matrixWorldNeedsUpdate = true;
 
             smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
         }
@@ -1471,24 +1450,21 @@ const transformPresets = {
             resetMesh( startMesh );
             resetMesh( endMesh );
 
-            let tempQuat = new THREE.Quaternion();
-            tempQuat.setFromAxisAngle(
+            startMesh.quaternion.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
                 THREE.MathUtils.degToRad( 10 )
             );
-            setRotationQuat( startMesh, tempQuat );
-
-            tempQuat.setFromAxisAngle(
+            startMesh.quaternion.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
                 THREE.MathUtils.degToRad( 350 )
             );
-            setRotationQuat( endMesh, tempQuat );
+            startMesh.position.set(  -1, 0, 0  );
+            endMesh.position.set(  1, 0, 0 );
 
-            setPosition( startMesh, -1, 0, 0 );
-            setPosition( endMesh, 1, 0, 0 );
-
-            // startMesh.updateMatrix();
-            // endMesh.updateMatrix();
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+            startMesh.matrixWorldNeedsUpdate = true;
+            endMesh.matrixWorldNeedsUpdate = true;
 
             smoothCameraTransition( new THREE.Vector3( 0, 0, 2 ) );
         }
@@ -1498,33 +1474,33 @@ const transformPresets = {
             resetMesh( startMesh );
             resetMesh( endMesh );
             
-            let tempQuat = new THREE.Quaternion();
-            tempQuat.setFromAxisAngle(
+            startMesh.quaternion.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
                 0
             );
-            setRotationQuat( startMesh, tempQuat );
-
-            tempQuat.setFromAxisAngle(
+            endMesh.quaternion.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
                 Math.PI
             );
-            setRotationQuat( endMesh, tempQuat );
+            startMesh.position.set( -1, 0, 0 );
+            endMesh.position.set(  1, 0, 0 );
 
-            setPosition( startMesh, -1, 0, 0 );
-            setPosition( endMesh, 1, 0, 0 );
-
-            // startMesh.updateMatrix();
-            // endMesh.updateMatrix();
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+            startMesh.matrixWorldNeedsUpdate = true;
+            endMesh.matrixWorldNeedsUpdate = true;
         }
     }
 };
 
 function resetMesh( mesh ) {
-    setPosition( mesh, 0, 0, 0 );
-    setRotationQuat( mesh, 0, 0, 0, 1 );
-    setScale( mesh, 1 );
-    // mesh.updateMatrix();
+    
+    mesh.position.set( 0, 0, 0 );
+    mesh.rotation.set( 0, 0, 0 );
+    mesh.quaternion.identity();
+    mesh.scale.set( 1, 1, 1 );
+    mesh.updateMatrix();
+    mesh.matrixWorldNeedsUpdate = true;
 }
 
 document.querySelectorAll( '[data-preset]' ).forEach( btn => {
