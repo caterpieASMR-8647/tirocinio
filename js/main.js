@@ -377,6 +377,108 @@ function createNewMeshes() {
     )
 }
 
+// Upadtes the Mesh
+// ( since scene.matrix = scene.matrixWorld = Identity, mesh.matrixWorld = mesh.matrix )
+function commitMatrix( mesh ) {
+    mesh.matrixWorld.copy( mesh.matrix );
+}
+
+// ======================== Functions to Set or Apply Translation/Rotation/Scale ======================== //
+function setPosition( mesh, x, y, z ) {
+    const m = mesh.matrix;
+
+    m.elements[12] = x;
+    m.elements[13] = y;
+    m.elements[14] = z;
+
+    commitMatrix( mesh );
+}
+function setScale( mesh, s ) {
+    const m = mesh.matrix;
+    const e = m.elements;
+
+    // extracs axes
+    const xAxis = new THREE.Vector3( e[0], e[1], e[2] ).normalize();
+    const yAxis = new THREE.Vector3( e[4], e[5], e[6] ).normalize();
+    const zAxis = new THREE.Vector3( e[8], e[9], e[10] ).normalize();
+
+    xAxis.multiplyScalar( s );
+    yAxis.multiplyScalar( s );
+    zAxis.multiplyScalar( s );
+
+    e[0] = xAxis.x; e[1] = xAxis.y; e[2] = xAxis.z;
+    e[4] = yAxis.x; e[5] = yAxis.y; e[6] = yAxis.z;
+    e[8] = zAxis.x; e[9] = zAxis.y; e[10] = zAxis.z;
+
+    commitMatrix( mesh );
+}
+function setRotationEuler( mesh, euler ) {
+    const m = mesh.matrix;
+
+    // saves translation
+    const tx = m.elements[12];
+    const ty = m.elements[13];
+    const tz = m.elements[14];
+
+    const r = new THREE.Matrix4();
+    r.makeRotationFromEuler( euler );
+
+    m.copy( r );
+
+    m.elements[12] = tx;
+    m.elements[13] = ty;
+    m.elements[14] = tz;
+
+    commitMatrix( mesh );
+}
+function setRotationQuat( mesh, quat ) {
+    const m = mesh.matrix;
+
+    const tx = m.elements[12];
+    const ty = m.elements[13];
+    const tz = m.elements[14];
+
+    const r = new THREE.Matrix4();
+    r.makeRotationFromQuaternion( quat );
+
+    m.copy( r );
+
+    m.elements[12] = tx;
+    m.elements[13] = ty;
+    m.elements[14] = tz;
+
+    commitMatrix( mesh );
+}
+function applyTranslation( mesh, dx, dy, dz ) {
+    const t = new THREE.Matrix4();
+    t.makeTranslation( dx, dy, dz );
+
+    mesh.matrix.multiply( t );
+    commitMatrix( mesh );
+}
+function applyScale( mesh, s ) {
+    const matrixScale = new THREE.Matrix4();
+    matrixScale.makeScale( s, s, s );
+
+    mesh.matrix.multiply( matrixScale );
+    commitMatrix( mesh );
+}
+function applyRotationQuat( mesh, quat ) {
+    const r = new THREE.Matrix4();
+    r.makeRotationFromQuaternion( quat );
+
+    mesh.matrix.multiply( r );
+    commitMatrix( mesh );
+}
+
+// ONLY USED FOR TRANSFORMCONTROLS MANUAL TRANSFORMATION OF THE MESH
+// ( left/middle/right click and drag to translate/scale/rotate )
+function updateMatrixFromTransform( mesh ) {
+    // Converts position/quaternion/scale → matrix
+    mesh.matrix.compose( mesh.position, mesh.quaternion, mesh.scale );
+    commitMatrix( mesh );
+}
+
 // Creates 2 Meshes with proper TransformControls, Origin and EventListeners
 function createInitialMeshes(  ) {
     //Loader for FBX Meshes + adds Events for mouse hover
@@ -395,11 +497,15 @@ function createInitialMeshes(  ) {
             mesh.position.sub( center );
 
             mesh.children[0].material.depthWrite = false;
+            // mesh.matrixAutoUpdate = false;
+            // mesh.matrixWorldAutoUpdate = false;
 
-            mesh.scale.set( .001, .001, .001 );
+            setScale( mesh, .001 )
+            // mesh.scale.set( .001, .001, .001 );
             myMesh1.add( mesh );
             
-            myMesh1.position.set( -1 , 0, 0 );
+            setPosition( myMesh1, -1 , 0, 0 );
+            // myMesh1.position.set( -1 , 0, 0 );
         
             myMesh1.addEventListener('mouseover', (event) => {
                 if ( isPlaying ) return;
@@ -429,11 +535,14 @@ function createInitialMeshes(  ) {
             });
             myMesh1.addEventListener('mouseup', (event) => {
                 if ( isPlaying ) return;
+                
+                control1.pointerUp( control1._getPointer( event ) );
+
+                updateMatrixFromTransform( myMesh1 );
 
                 matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
                 updateStillshot();
                 updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
-                control1.pointerUp( control1._getPointer( event ) );
             });
 
             interactionManager.add( myMesh1 );
@@ -442,7 +551,8 @@ function createInitialMeshes(  ) {
 
             myMesh2 = myMesh1.clone();
 
-            myMesh2.position.set( 1 , 0, 0 );
+            setPosition( myMesh2, 1 , 0, 0 );
+            // myMesh2.position.set( 1 , 0, 0 );
 
             myMesh2.addEventListener('mouseover', (event) => {
                 if ( isPlaying ) return;
@@ -475,6 +585,8 @@ function createInitialMeshes(  ) {
 
                 control2.pointerUp( control2._getPointer( event ) );
 
+                updateMatrixFromTransform( myMesh2 );
+
                 matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
                 updateStillshot();
                 updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
@@ -486,15 +598,13 @@ function createInitialMeshes(  ) {
                 if ( control1.enabled ) {
                     control1.pointerMove( control1._getPointer( event ) );
 
-                    myMesh1.updateMatrix();
-                    myMesh1.updateMatrixWorld(true);
+                    updateMatrixFromTransform( myMesh1 );
                 }
 
                 if ( control2.enabled ) {
                     control2.pointerMove( control2._getPointer( event ) );
 
-                    myMesh2.updateMatrix();
-                    myMesh2.updateMatrixWorld(true);
+                    updateMatrixFromTransform( myMesh2 );
                 }
 
                 matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
@@ -531,16 +641,22 @@ function createAnimationMesh() {
 
     // Saves Original Transforms for Mesh1 and 2 - I do it now to be sure they are properly set
     myMesh1.userData.original = {
-        position : myMesh1.position.clone(),
-        rotation : myMesh1.rotation.clone(),
-        scale    : myMesh1.scale.clone()
+        matrix : myMesh1.matrix,
+        position : new THREE.Vector3( -1, 0, 0 )
     };
 
     myMesh2.userData.original = {
-        position : myMesh2.position.clone(),
-        rotation : myMesh2.rotation.clone(),
-        scale    : myMesh2.scale.clone()
+        matrix : myMesh2.matrix,
+        position : new THREE.Vector3( 1, 0, 0 )
     };
+
+    myMesh1.matrixAutoUpdate = false;
+    myMesh1.matrixWorldAutoUpdate = false;
+    myMesh2.matrixAutoUpdate = false;
+    myMesh2.matrixWorldAutoUpdate = false;
+
+    setPosition( myMesh1, -1 , 0, 0 );
+    setPosition( myMesh2, 1 , 0, 0 );
 
     // Create a deep clone of the starting mesh
     animationMesh = startMesh.clone();
@@ -561,7 +677,8 @@ function createAnimationMesh() {
         }
     });
 
-    animationMesh.position.copy( myMesh1.position );
+    animationMesh.matrixAutoUpdate = false;
+    animationMesh.matrixWorldAutoUpdate = false;
 
     // Remove possible event listeners from the clone
     animationMesh.children.forEach( ( child ) => {
@@ -573,9 +690,6 @@ function createAnimationMesh() {
         }
     });
 
-    animationMesh.matrixAutoUpdate = false;
-    // animationMesh.matrixWorldAutoUpdate = false;
-
     // Place animation mesh at the scene center
     // animationMesh.visible = false;
 
@@ -584,7 +698,7 @@ function createAnimationMesh() {
     setMeshTransparency( animationMesh, true );
     scene.add( animationMesh );
 
-    startMesh.children[0].children[0].material.depthTest
+    // startMesh.children[0].children[0].material.depthTest
     updateTransformation();
 
     if ( myMesh1 && myMesh2 && animationMesh ) {
@@ -592,6 +706,10 @@ function createAnimationMesh() {
         cloneMaterials( endMesh );
         cloneMaterials( animationMesh );
     }
+
+    // update( startMesh );
+    // update( endMesh );
+    // update( animationMesh );
 
     console.log( "Animation mesh created:", animationMesh );
 }
@@ -919,6 +1037,7 @@ function smoothCameraTransition ( finalPosition ) {
 function toggleGizmo(  ) {
     // control.enabled = ! control.enabled;
     showGizmo = ! showGizmo;
+    gizmoButton.classList.toggle( 'active' );
 
     control1.showX = control1.showY = control1.showZ = ! control1.showX;
     control2.showX = control2.showY = control2.showZ = ! control2.showX;
@@ -940,7 +1059,7 @@ animationDurationSlider.addEventListener('input', (e) => {
     // animationDurationText.textContent = `${ Math.round( duration ) } sec`;
 });
 
-let order = 'TRS';
+let order = 'STR';
 const transformNames = {
     T: "Translation",
     R: "Rotation",
@@ -1010,8 +1129,8 @@ function playAnim (  ) {
     }
 
     // If Animation is Concluded, Restart
-    if ( ! isPlaying && progress == 1 && animDirection == 1 ) progress = 0;
-    if ( ! isPlaying && progress == 0 && animDirection == -1 ) progress = 1;
+    if ( ! isPlaying && progress == 1 && animDirection == 1 ) animDirection = -1;
+    if ( ! isPlaying && progress == 0 && animDirection == -1 ) animDirection = 1;
 
     isPlaying = ! isPlaying;
 
@@ -1068,7 +1187,7 @@ progressBar.addEventListener('input', (e) => {
     applyPlayTransparency();
 
     if ( scrubTransparencyTimeout ) clearTimeout( scrubTransparencyTimeout );
-
+    
     scrubTransparencyTimeout = setTimeout( () => {
         scrubTransparencyTimeout = null;
         // applyPauseTransparency();
@@ -1103,7 +1222,6 @@ const gizmoRotate = document.getElementById( 'gizmoRot' );
 const gizmoScale = document.getElementById( 'gizmoScale' );
 gizmoButton.addEventListener('click', (e) => {
     e.target.blur();
-    gizmoButton.classList.toggle( 'active' );
     toggleGizmo();
 });
 gizmoTranslate.addEventListener( 'click', (e) =>{
@@ -1190,24 +1308,22 @@ resetButtons.forEach( ( btn ) => {
         // Execute the correct reset function
         if ( action === 'resetAll' ) {
             // Restore All
-            mesh.position.copy( mesh.userData.original.position );
-            mesh.rotation.copy( mesh.userData.original.rotation );
-            mesh.scale.copy( mesh.userData.original.scale );
+            mesh.matrix.copy( mesh.userData.original.matrix );
         }
 
         if ( action === 'resetPosition' ) {
             // Restore original position
-            mesh.position.copy( mesh.userData.original.position );
+            setPosition( mesh, mesh.userData.original.position.x, mesh.userData.original.position.y, mesh.userData.original.position.z )
         }
 
         if ( action === 'resetRotation' ) {
             // Restore original rotation
-            mesh.rotation.copy( mesh.userData.original.rotation );
+            setRotationQuat( mesh, new THREE.Quaternion( 0, 0, 0, 1) )
         }
 
         if ( action === 'resetScale' ) {
             // Restore original scale
-            mesh.scale.copy( mesh.userData.original.scale );
+            setScale( mesh, 1 );
         }
 
         // Update TransformControls after resetting
@@ -1283,13 +1399,13 @@ const transformPresets = {
             resetMesh( startMesh );
             resetMesh( endMesh );
 
-            startMesh.rotation.set( 0, Math.PI / 2, 0 );
-            endMesh.rotation.set( Math.PI / 2, 0, 0 );
-            startMesh.position.set(  -1, 0, 0  );
-            endMesh.position.set(  1, 0, 0 );
+            setRotationQuat( startMesh, new THREE.Euler( 0, Math.PI / 2, 0, eulerRotationOrder ) );
+            setRotationQuat( endMesh, new THREE.Euler( Math.PI / 2, 0, 0, eulerRotationOrder ) );
+            setPosition( startMesh, -1, 0, 0 );
+            setPosition( endMesh, 1, 0, 0 );
 
-            startMesh.updateMatrix();
-            endMesh.updateMatrix();
+            // startMesh.updateMatrix();
+            // endMesh.updateMatrix();
 
             smoothCameraTransition( new THREE.Vector3( 0, 0, 2 ) );
         }
@@ -1299,21 +1415,25 @@ const transformPresets = {
             resetMesh( startMesh );
             resetMesh( endMesh );
 
-            startMesh.rotation.set(
+            setRotationEuler( startMesh, new THREE.Euler( 
                 THREE.MathUtils.degToRad( 0 ),
                 THREE.MathUtils.degToRad( 90 ),
-                THREE.MathUtils.degToRad( 0 )
-            );
-            endMesh.rotation.set(
-                THREE.MathUtils.degToRad( 90 ),
-                THREE.MathUtils.degToRad( 90 ),
-                THREE.MathUtils.degToRad( 0 )
-            );
-            startMesh.position.set(  0, 0, -1  );
-            endMesh.position.set(  0, 0, 1 );
+                THREE.MathUtils.degToRad( 0 ),
+                eulerRotationOrder
+            ) );
 
-            startMesh.updateMatrix();
-            endMesh.updateMatrix();
+            setRotationEuler( endMesh, new THREE.Euler( 
+                THREE.MathUtils.degToRad( 90 ),
+                THREE.MathUtils.degToRad( 90 ),
+                THREE.MathUtils.degToRad( 0 ),
+                eulerRotationOrder
+            ) );
+            
+            setPosition( startMesh, -1, 0, 0 );
+            setPosition( endMesh, 1, 0, 0 );
+
+            // startMesh.updateMatrix();
+            // endMesh.updateMatrix();
 
             smoothCameraTransition( new THREE.Vector3( -2, 0, 0 ) );
         },
@@ -1324,19 +1444,24 @@ const transformPresets = {
             resetMesh( startMesh );
             resetMesh( endMesh );
 
-            startMesh.quaternion.setFromAxisAngle(
+            let tempQuat = new THREE.Quaternion();
+            tempQuat.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
                 THREE.MathUtils.degToRad( 170 )
             );
-            endMesh.quaternion.setFromAxisAngle(
+            setRotationQuat( startMesh, tempQuat );
+
+            tempQuat.setFromAxisAngle(
                 new THREE.Vector3( 0, -1, 0 ),
                 THREE.MathUtils.degToRad( 190 )
             );
-            startMesh.position.set(  0, -1, 0  );
-            endMesh.position.set(  0, 1, 0 );
+            setRotationQuat( endMesh, tempQuat );
 
-            startMesh.updateMatrix();
-            endMesh.updateMatrix();
+            setPosition( startMesh, -1, 0, 0 );
+            setPosition( endMesh, 1, 0, 0 );
+
+            // startMesh.updateMatrix();
+            // endMesh.updateMatrix();
 
             smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
         }
@@ -1346,19 +1471,24 @@ const transformPresets = {
             resetMesh( startMesh );
             resetMesh( endMesh );
 
-            startMesh.quaternion.setFromAxisAngle(
+            let tempQuat = new THREE.Quaternion();
+            tempQuat.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
                 THREE.MathUtils.degToRad( 10 )
             );
-            startMesh.quaternion.setFromAxisAngle(
+            setRotationQuat( startMesh, tempQuat );
+
+            tempQuat.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
                 THREE.MathUtils.degToRad( 350 )
             );
-            startMesh.position.set(  -1, 0, 0  );
-            endMesh.position.set(  1, 0, 0 );
+            setRotationQuat( endMesh, tempQuat );
 
-            startMesh.updateMatrix();
-            endMesh.updateMatrix();
+            setPosition( startMesh, -1, 0, 0 );
+            setPosition( endMesh, 1, 0, 0 );
+
+            // startMesh.updateMatrix();
+            // endMesh.updateMatrix();
 
             smoothCameraTransition( new THREE.Vector3( 0, 0, 2 ) );
         }
@@ -1367,31 +1497,34 @@ const transformPresets = {
         volumePreservation: () => { 
             resetMesh( startMesh );
             resetMesh( endMesh );
-
             
-            startMesh.quaternion.setFromAxisAngle(
+            let tempQuat = new THREE.Quaternion();
+            tempQuat.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
                 0
             );
-            endMesh.quaternion.setFromAxisAngle(
+            setRotationQuat( startMesh, tempQuat );
+
+            tempQuat.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
                 Math.PI
             );
-            startMesh.position.set( -1, 0, 0 );
-            endMesh.position.set(  1, 0, 0 );
+            setRotationQuat( endMesh, tempQuat );
 
-            startMesh.updateMatrix();
-            endMesh.updateMatrix();
+            setPosition( startMesh, -1, 0, 0 );
+            setPosition( endMesh, 1, 0, 0 );
+
+            // startMesh.updateMatrix();
+            // endMesh.updateMatrix();
         }
     }
 };
 
 function resetMesh( mesh ) {
-    mesh.position.set( 0, 0, 0 );
-    mesh.rotation.set( 0, 0, 0 );
-    mesh.quaternion.identity();
-    mesh.scale.set( 1, 1, 1 );
-    mesh.updateMatrix();
+    setPosition( mesh, 0, 0, 0 );
+    setRotationQuat( mesh, 0, 0, 0, 1 );
+    setScale( mesh, 1 );
+    // mesh.updateMatrix();
 }
 
 document.querySelectorAll( '[data-preset]' ).forEach( btn => {
@@ -1580,166 +1713,48 @@ function generateStillshot( count ) {
     console.log( stillshotMeshes );
 }
 
-function matrixTransformation( meshA, meshB, animationMesh, t, order = 'TRS' ) {
-
-    const isIndependent = indipendentTransformations.checked;
-
+function matrixTransformation( meshA, meshB, animationMesh, t, order = 'STR' ) {
     // Determine which transform mode is currently active
     // (set by your tab buttons — e.g., 'matrix', 'euler', 'axis-angle', 'quaternion', 'dual-quaternion')
     const mode = currentTransformMode || 'matrix';
 
-    // Declare variables for reused results
-    let transformA, transformB, mixedTransform;
+    const matrixA = meshA.matrix;
+    const matrixB = meshB.matrix;
 
-    // Helper function to apply the chosen transformation type
-    function applyTransform( A, B, target, interp ) {
-        switch ( mode ) {
+    // encode
+    const encodedA = encode( matrixA );
+    const encodedB = encode( matrixB );
 
-            case 'matrix':
-                const mA = getMatrixTransform( A );
-                const mB = getMatrixTransform( B );
-                const mMix = mixMatrixTransform( mA, mB, interp );
-                setMatrixTransform( mMix, target );
-                break;
+    // interpolate
+    let encodedMix;
 
-            case 'euler':
-                const eA = getEulerTransform( A );
-                const eB = getEulerTransform( B );
-                const eMix = mixEulerTransform( eA, eB, interp );
-                setEulerMatrix( eMix, target );
-                break;
-
-            case 'axisangle':
-                const aaA = getAxisAngleTransform( A );
-                const aaB = getAxisAngleTransform( B );
-                const aaMix = mixAxisAngleTransform( aaA, aaB, interp );
-                setAxisAngleMatrix( aaMix, target );
-                break;
-
-            case 'quat':
-                const qA = getQuaternionTransform( A );
-                const qB = getQuaternionTransform( B );
-                const qMix = mixQuaternionTransform( qA, qB, interp );
-                setQuaternionMatrix( qMix, target );
-                break;
-
-            case 'dualquat':
-                const dqA = getDualQuaternionTransform( A );
-                const dqB = getDualQuaternionTransform( B );
-                const dqMix = mixDualQuaternionTransform( dqA, dqB, interp );
-                setDualQuaternionMatrix( dqMix, target );
-                break;
-
-            default:
-                console.warn( `Unknown transform mode: ${mode}` );
-                break;
-        }
+    switch ( mode ) {
+        case 'matrix':
+            encodedMix = mixMatrixTransform( encodedA, encodedB, t );
+            break;
+        case 'euler':
+            encodedMix = mixEulerTransform( encodedA, encodedB, t );
+            break;
+        case 'axisangle':
+            encodedMix = mixAxisAngleTransform( encodedA, encodedB, t );
+            break;
+        case 'quat':
+            encodedMix = mixQuaternionTransform( encodedA, encodedB, t );
+            break;
+        case 'dualquat':
+            encodedMix = mixDualQuaternionTransform( encodedA, encodedB, t );
+            break;
+        default:
+            console.warn( `Unknown transform mode: ${mode}` );
+            break;
     }
 
-    // All Transformations Together
-    if ( ! isIndependent ) {
-        applyTransform( meshA, meshB, animationMesh, t );
-    }
+    // decode
+    const resultMatrix = decode( encodedMix );
 
-    // Indipendent Transformations
-    else {
-        const step = 1 / 3;
-        const phase = Math.min( Math.floor( t / step ), 2 );
-        const localT = ( t - phase * step ) / step;
-
-        // Start from the A mesh
-        let currentMesh = meshA;
-
-        // Go through each phase of transformation (T, R, S)
-        for ( let i = 0; i <= phase; i++ ) {
-
-            let interpT = ( i === phase ) ? localT : 1;
-
-            // Temporarily interpolate only one transform type
-            const key = order[i];
-            let tempMesh = animationMesh.clone(); // create a temporary clone for progressive updates
-
-            // For each single phase, interpolate that specific component only
-            if ( key === 'T' ) {
-                const pos = new THREE.Vector3().lerpVectors( meshA.position, meshB.position, interpT );
-                tempMesh.position.copy( pos );
-            }
-            else if ( key === 'R' ) {
-                const rot = new THREE.Quaternion().slerpQuaternions( meshA.quaternion, meshB.quaternion, interpT );
-                tempMesh.quaternion.copy( rot );
-            }
-            else if ( key === 'S' ) {
-                const sca = new THREE.Vector3().lerpVectors( meshA.scale, meshB.scale, interpT );
-                tempMesh.scale.copy( sca );
-            }
-
-            // Apply depending on current transformation mode
-            applyTransform( meshA, tempMesh, animationMesh, interpT );
-        }
-    }
-}
-
-// let isAnimationMode = false;
-
-function transformState( ) {
-    // Disable gizmos if visible
-    if ( showGizmo ) toggleGizmo();
-
-    if ( changeModeButton.value === "Animation Mode" ) {
-        // Enter animation mode
-        // isAnimationMode = true; // <— animation mode ON
-        changeModeButton.value = "Move Mode";
-        transformUI.style.display = "block";
-
-        if ( ! animationMesh ) createAnimationMesh();
-        animationMesh.visible = true;
-        updatePhaseMarkers();
-
-        setMeshTransparency( myMesh1, true );
-        setMeshTransparency( myMesh2, true );
-        stillshotMeshes.forEach( m => {
-            setMeshTransparency( m, true );
-        });
-
-        control1.enabled = false;
-        control2.enabled = false;
-
-        outlinePersp.selectedObjects = [];
-        outlineOrtho.selectedObjects = [];
-        outlinePersp.enabled = false;
-        outlineOrtho.enabled = false;
-
-    } else {
-        // Exit animation mode
-        // isAnimationMode = false; // <— animation mode OFF
-        changeModeButton.value = "Animation Mode";
-        transformUI.style.display = "none";
-
-        phaseMarkersContainer.innerHTML = '';
-
-        setMeshTransparency( myMesh1, false );
-        setMeshTransparency( myMesh2, false );
-        stillshotMeshes.forEach( m => {
-            setMeshTransparency( m, false );
-        });
-
-        if ( animationMesh ) animationMesh.visible = false;
-
-        isPlaying = false;
-        progress = 0;
-        playButton.textContent = "Play";
-        progressBar.value = 0;
-
-        if ( startMesh && endMesh && animationMesh ) {
-            matrixTransformation( startMesh, endMesh, animationMesh, 0, order );
-        }
-
-        control1.enabled = true;
-        control2.enabled = true;
-
-        outlinePersp.enabled = true;
-        outlineOrtho.enabled = true;
-    }
+    // apply matrix directly
+    animationMesh.matrix.copy( resultMatrix );
+    commitMatrix( animationMesh );
 }
 
 let transparentOpacity = 0.25;
@@ -1886,57 +1901,6 @@ function applyPauseTransparency() {
     stillshotMeshes.forEach( m => setMeshTransparency( m, false ) );
 }
 
-// Sets up Dragging to Select Order of Transformations
-let draggedItem = null;
-
-// Activates Drag & Drop
-orderContainer.querySelectorAll( '.order-item' ).forEach( item => {
-    item.addEventListener('dragstart', () => {
-        draggedItem = item;
-        item.classList.add('dragging');
-    });
-    
-    item.addEventListener('dragend', () => {
-        draggedItem.classList.remove('dragging');
-        draggedItem = null;
-
-        updateOrder();
-    });
-});
-
-orderContainer.addEventListener( 'dragover', (e) => {
-    e.preventDefault();
-    const afterElement = getDragAfterElement( orderContainer, e.clientY );
-    if ( afterElement == null ) {
-        orderContainer.appendChild( draggedItem );
-    } else {
-        orderContainer.insertBefore( draggedItem, afterElement );
-    }
-});
-
-function getDragAfterElement( container, y ) {
-    const draggableElements = [...container.querySelectorAll('.order-item:not(.dragging)')];
-    return draggableElements.reduce( ( closest, child ) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if ( offset < 0 && offset > closest.offset ) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
-    }, { offset: Number.NEGATIVE_INFINITY } ).element;
-}
-
-// Updates the global variable "order" used in the animation
-function updateOrder() {
-    const items = Array.from(orderContainer.querySelectorAll('.order-item'));
-    order = items.map(i => i.dataset.key).join(''); // use data-key
-    console.log('Nuovo ordine:', order);
-
-    // Updates mesh animation
-    matrixTransformation(startMesh, endMesh, animationMesh, progress, order);
-}
-
 // Mode tab switching
 let currentTransformMode = 'matrix';
 
@@ -1982,18 +1946,382 @@ tabs.forEach( tab => {
     } );
 });
 
-function mixScale( a, b, t, mode ) {
-    if ( mode === 'geometric' ) {
-        // geometric interpolation: s(t) = a^(1-t) * b^t
-        return new THREE.Vector3(
-            Math.pow( a.x, 1 - t ) * Math.pow( b.x, t ),
-            Math.pow( a.y, 1 - t ) * Math.pow( b.y, t ),
-            Math.pow( a.z, 1 - t ) * Math.pow( b.z, t )
-        );
+// ######################### ENCODE AND DECODE FUNCTIONS ######################### //
+
+// TRS Order is Conceptual Order, meaning 'TRS' = 'T->R->S' = S*R*T
+function extractTRSFromMatrix( matrix, orderTRS ) {
+    let t = new THREE.Vector3();
+    
+    let e = matrix.elements;
+    
+    t.set( e[12], e[13], e[14] );
+    
+    let mat3 = new THREE.Matrix3();
+    mat3.set( e[0],e[1],e[2],
+            e[4],e[5],e[6],
+            e[8],e[9],e[10] );
+    // Find scale
+    let det = mat3.determinant();
+    const s = Math.pow( det, 1/3 );
+    // Find Rotation Matrix
+    for (let i = 0; i < 9; i++) mat3.elements[i] /= s;
+    mat3.transpose();
+    
+    switch ( orderTRS ) {
+        case 'TRS':
+        case 'TSR':
+            t.applyMatrix3( mat3.clone().transpose() );
+            t.divideScalar( s );
+            break;
+        case 'RST':
+        case 'SRT':
+            break;
+        case 'RTS': t.divideScalar( s ); break;
+        case 'STR': t.applyMatrix3( mat3.clone().transpose() ); break;    
+        default:
+            console.error("unknown transformation order");
+            break;
     }
 
+    const rot4 = new THREE.Matrix4();
+    rot4.setFromMatrix3( mat3 );
+
+    return{
+        translation : t,
+        rotation : rot4,
+        scale : s
+    };
+}
+
+// Encodes the Mesh Matrix Depending on the Current Representation and Transformation Order
+function encode( matrix ) {
+    switch ( currentTransformMode ) {
+        case 'matrix': return matrix;
+        case 'euler': return encodeEuler( matrix );
+        case 'axisangle': return encodeAxisAngle( matrix );
+        case 'quat': return encodeQuat( matrix );
+        case 'dualquat': return encodeDualQuat( matrix );
+        default: console.error("unknown transformation representation");
+    }
+}
+
+// Encodes Euler Matrix into Translation, rotation and scale
+function encodeEuler( matrix ) {
+    const transform = extractTRSFromMatrix( matrix, eulerTRSOrder );
+
+    let resultEuler = new THREE.Euler();    
+    resultEuler.setFromRotationMatrix( transform.rotation, eulerRotationOrder, false );
+    
+    return {
+        translation_x : transform.translation.x,
+        translation_y : transform.translation.y,
+        translation_z : transform.translation.z,
+        rotation_x : resultEuler.x, 
+        rotation_y : resultEuler.y, 
+        rotation_z : resultEuler.z,
+        scale: transform.scale
+    }
+}
+function encodeAxisAngle( matrix ) {
+    const transform = extractTRSFromMatrix( matrix, axisAngleTRSOrder );
+
+    const quat = new THREE.Quaternion();
+    quat.setFromRotationMatrix( transform.rotation );
+
+    const axis = new THREE.Vector3( 0, 1, 0 );
+    let angle = 0;
+
+    if ( quat.w > 1 ) quat.normalize();
+
+    angle = 2 * Math.acos( quat.w );
+    const s = Math.sqrt( 1 - quat.w * quat.w );
+
+    if ( s > 1e-6 ) {
+        axis.set(
+            quat.x / s,
+            quat.y / s,
+            quat.z / s
+        );
+    } else {
+        // angle ~ 0 → arbitrary axis ( y axis, for 2D )
+        axis.set( 0, 1, 0 );
+    }
+
+    return {
+        translation_x : transform.translation.x,
+        translation_y : transform.translation.y,
+        translation_z : transform.translation.z,
+        axis_x : axis.x,
+        axis_y : axis.y,
+        axis_z : axis.z,
+        angle : angle,
+        scale: transform.scale
+    }
+}
+function encodeQuat( matrix ) {
+    const transform = extractTRSFromMatrix( matrix, quatTRSOrder );
+
+    const quat = new THREE.Quaternion();
+    quat.setFromRotationMatrix( transform.rotation );
+    quat.normalize();
+
+    return {
+        translation_x : transform.translation.x,
+        translation_y : transform.translation.y,
+        translation_z : transform.translation.z,
+        quat_x : quat.x,
+        quat_y : quat.y,
+        quat_z : quat.z,
+        quat_w : quat.w,
+        scale: transform.scale
+    }
+}
+function encodeDualQuat( matrix ) {
+    const transform = extractTRSFromMatrix( matrix, dualquatTRSOrder );
+    
+    const t = transform.translation;
+
+    const rotation = new THREE.Matrix4();
+    rotation.extractRotation( matrix );
+
+    const real = new THREE.Quaternion();
+    real.setFromRotationMatrix( rotation );
+    real.normalize();
+
+    const tQuat = new THREE.Quaternion( t.x, t.y, t.z, 0 );
+    
+    // Dual quaternion = 0.5 * tQuat * real
+    const dual = tQuat.clone().multiply( real );
+    dual.x *= 0.5;
+    dual.y *= 0.5;
+    dual.z *= 0.5;
+    dual.w *= 0.5;
+
+    return {
+        real_x : real.x,
+        real_y : real.y,
+        real_z : real.z,
+        real_w : real.w,
+        dual_x : dual.x,
+        dual_y : dual.y,
+        dual_z : dual.z,
+        dual_w : dual.w,
+        scale: transform.scale
+    }
+}
+
+function makeMatrixFromOrder( translation, rotation, scale, orderTRS ) {
+    let result = new THREE.Matrix4();
+    switch ( orderTRS ) {
+        case 'TRS': 
+            result = scale;
+            result.multiply( rotation );
+            result.multiply( translation );
+            break;
+        case 'TSR':
+            result = rotation;
+            result.multiply( scale );
+            result.multiply( translation );
+            break;
+        case 'RST':
+            result = translation;
+            result.multiply( scale );
+            result.multiply( rotation );
+            break;
+        case 'SRT': 
+            result = translation;
+            result.multiply( rotation );
+            result.multiply( scale );
+            break;
+        case 'RTS':
+            result = scale;
+            result.multiply( translation );
+            result.multiply( rotation );
+            break;
+        case 'STR': 
+            result = rotation;
+            result.multiply( translation );
+            result.multiply( scale );
+            break;
+    }
+    return result;
+}
+
+function decode( encodedTransform ) {
+    switch ( currentTransformMode ) {
+        case 'matrix':
+            return encodedTransform;
+        case 'euler':
+            return decodeEuler( encodedTransform );
+        case 'axisangle':
+            return decodeAxisAngle( encodedTransform );
+        case 'quat':
+            return decodeQuat( encodedTransform );
+        case 'dualquat':
+            return decodeDualQuat( encodedTransform );
+        default:
+            break;
+    }
+}
+function decodeEuler( encodedTransform ) {
+    let rotation = new THREE.Matrix4();
+    rotation.makeRotationFromEuler( 
+        new THREE.Euler( encodedTransform.rotation_x,
+        encodedTransform.rotation_y, encodedTransform.rotation_z,
+        eulerRotationOrder
+    ) );
+
+    let translation = new THREE.Matrix4();
+    translation.makeTranslation( 
+        new THREE.Vector3( encodedTransform.translation_x,
+        encodedTransform.translation_y, encodedTransform.translation_z
+    ));
+    
+    let scale = new THREE.Matrix4();
+    scale.makeScale( encodedTransform.scale, encodedTransform.scale, encodedTransform.scale );
+
+    return makeMatrixFromOrder( translation, rotation, scale, eulerTRSOrder );
+}
+function decodeAxisAngle( encodedTransform ) {
+    let rotation = new THREE.Matrix4();
+    const axis = new THREE.Vector3(
+        encodedTransform.axis_x,
+        encodedTransform.axis_y,
+        encodedTransform.axis_z,
+    );
+    const angle = encodedTransform.angle;
+    rotation.makeRotationAxis( axis, angle );
+
+    let translation = new THREE.Matrix4();
+    translation.makeTranslation( 
+        new THREE.Vector3( encodedTransform.translation_x,
+        encodedTransform.translation_y, encodedTransform.translation_z
+    ));
+    
+    let scale = new THREE.Matrix4();
+    scale.makeScale( encodedTransform.scale, encodedTransform.scale, encodedTransform.scale );
+
+    return makeMatrixFromOrder( translation, rotation, scale, axisAngleTRSOrder );
+}
+function decodeQuat( encodedTransform ) {
+    let rotation = new THREE.Matrix4();
+    const quat = new THREE.Quaternion( 
+        encodedTransform.quat_x, 
+        encodedTransform.quat_y, 
+        encodedTransform.quat_z, 
+        encodedTransform.quat_w );
+    rotation.makeRotationFromQuaternion( quat );
+
+    let translation = new THREE.Matrix4();
+    translation.makeTranslation( 
+        new THREE.Vector3( encodedTransform.translation_x,
+        encodedTransform.translation_y, encodedTransform.translation_z
+    ));
+    
+    let scale = new THREE.Matrix4();
+    scale.makeScale( encodedTransform.scale, encodedTransform.scale, encodedTransform.scale );
+
+    return makeMatrixFromOrder( translation, rotation, scale, quatTRSOrder );
+}
+function decodeDualQuat( encodedTransform ) {
+    const real = new THREE.Quaternion(
+        encodedTransform.real_x,
+        encodedTransform.real_y,
+        encodedTransform.real_z,
+        encodedTransform.real_w
+    );
+
+    // Checks the checkbox to see if should normalize
+    if ( dualquatNormPrimal ) real.normalize();
+
+    const dual = new THREE.Quaternion(
+        encodedTransform.dual_x,
+        encodedTransform.dual_y,
+        encodedTransform.dual_z,
+        encodedTransform.dual_w
+    );
+    // dual = 1/2 translation * real
+    // --> translation = 2 * dual * conjugate_real
+    const realConjugate = real.clone().conjugate();
+    const tQuat = dual.clone().multiply( realConjugate );
+    tQuat.x *= 2;
+    tQuat.y *= 2;
+    tQuat.z *= 2;
+    tQuat.w *= 2;
+
+    let translation = new THREE.Matrix4();
+    translation.makeTranslation( new THREE.Vector3( tQuat.x, tQuat.y, tQuat.z ) );
+
+    let rotation = new THREE.Matrix4();
+    rotation.makeRotationFromQuaternion( real );
+
+    let scale = new THREE.Matrix4();
+    scale.makeScale( encodedTransform.scale, encodedTransform.scale, encodedTransform.scale );
+
+    return makeMatrixFromOrder( translation, rotation, scale, dualquatTRSOrder );
+}
+
+function testEncodesDecodes() {
+    console.log("===== TEST ENCODE / DECODE =====");
+
+    // valori di test
+    const testTranslation = new THREE.Vector3(1, 2, 3);
+    const testRotationEuler = new THREE.Euler(Math.PI / 4, Math.PI / 6, Math.PI / 3, eulerRotationOrder);
+    const testScale = 2;
+
+    // costruisco la matrice di test
+    const testRotationMatrix = new THREE.Matrix4().makeRotationFromEuler(testRotationEuler);
+    const testTranslationMatrix = new THREE.Matrix4().makeTranslation(testTranslation.x, testTranslation.y, testTranslation.z);
+    const testScaleMatrix = new THREE.Matrix4().makeScale(testScale, testScale, testScale);
+
+    const testMatrix = makeMatrixFromOrder(testTranslationMatrix, testRotationMatrix, testScaleMatrix, eulerTRSOrder);
+
+    console.log("Matrice originale:");
+    console.table(testMatrix.elements);
+
+    // lista di rappresentazioni da testare
+    const representations = ['euler', 'axisangle', 'quat', 'dualquat'];
+
+    representations.forEach(repr => {
+        currentTransformMode = repr;  // setto la rappresentazione corrente
+
+        console.log(`\n--- TEST ${repr.toUpperCase()} ---`);
+
+        // encode
+        const encoded = encode(testMatrix);
+        console.log("Encoded:");
+        console.log(encoded);
+
+        // decode
+        const decoded = decode(encoded);
+        console.log("Decoded Matrix:");
+        console.table(decoded.elements);
+
+        // confronto con la matrice originale
+        let diff = 0;
+        const eOriginal = testMatrix.elements;
+        const eDecoded = decoded.elements;
+
+        for (let i = 0; i < 16; i++) {
+            diff += Math.abs(eOriginal[i] - eDecoded[i]);
+        }
+
+        if (diff < 1e-5) {
+            console.log(`${repr} : tutto ok`);
+        } else {
+            console.warn(`${repr} : ERRORE, differenza totale = ${diff}`);
+        }
+    });
+
+    console.log("===== FINE TEST =====");
+}
+
+function mixScale( scaleA, scaleB, t, mode ) {
+    // geometric interpolation: s(t) = a^(1-t) * b^t
+    if ( mode === 'geometric' ) return Math.pow( scaleA, 1 - t ) * Math.pow( scaleB, t );
+
     // arithmetic ( default )
-    return new THREE.Vector3().lerpVectors( a, b, t ); 
+    return ( 1 - t ) * scaleA + t * scaleB;
 }
 
 // ##### MATRIX ##### //
@@ -2008,8 +2336,8 @@ function getMatrixTransform( mesh ) {
 function mixMatrixTransform( matrixA, matrixB, t ) {
 
     // Clone and Convert to arrays for element-wise math
-    const ae = matrixA.clone().elements;
-    const be = matrixB.clone().elements;
+    const ae = matrixA.elements;
+    const be = matrixB.elements;
 
     // Make result
     const result = new THREE.Matrix4();
@@ -2023,12 +2351,6 @@ function mixMatrixTransform( matrixA, matrixB, t ) {
     return result;
 }
 
-// Applies the given matrix to the target mesh
-function setMatrixTransform( m, mesh ) {
-    mesh.matrix.copy( m );
-    mesh.matrixWorldNeedsUpdate = true
-}
-
 // ##### EULER ANGLES ##### //
 
 // Extracts position, rotation (Euler), and scale from the mesh
@@ -2040,9 +2362,16 @@ function getEulerTransform( mesh ) {
     };
 }
 
+// Euler HTML listeners
+const eulerTransformOrder = document.getElementById( 'eulerTransformOrder' );
+let eulerTRSOrder = 'STR';
+eulerTransformOrder.addEventListener( 'change', () => {
+    eulerTRSOrder = eulerTransformOrder.value;
+});
 const eulerSPCheckbox = document.getElementById( 'eulerSP' );
 let eulerSP = false;
-eulerSPCheckbox.addEventListener( 'change', () => {
+eulerSPCheckbox.addEventListener( 'change', (e) => {
+    e.target.blur();
     eulerSP = eulerSPCheckbox.checked;
 });
 const eulerRotationOrderSelector = document.getElementById( 'eulerRotationOrder' );
@@ -2050,13 +2379,26 @@ let eulerRotationOrder = 'XYZ';
 eulerRotationOrderSelector.addEventListener( 'change', () => {
     eulerRotationOrder = eulerRotationOrderSelector.value;
 });
+let eulerScaleMode = 'arithmetic';
+document.querySelectorAll('input[name="eulerScale"]').forEach( ( elem ) => {
+    elem.addEventListener( 'change', ( event ) => {
+        eulerScaleMode = event.target.value;
+    });
+});
+const eulerRot = document.getElementById( 'eulerRot' );
+let eulerRotMode = 'parallel';
+document.querySelectorAll('input[name="eulerRot"]').forEach( ( elem ) => {
+    elem.addEventListener( 'change', ( event ) => {
+        eulerRotMode = event.target.value;
+    });
+});
 // Interpolates between two Euler-based transforms
 function mixEulerTransform( a, b, t ) {
 
     function lerpAngle( a1, b1, t ) {
         return a1 + ( b1 - a1 ) * t;
     }
-
+    // Lerp with shortest path
     function lerpAngleSP( a1, b1, t ) {
         let delta = ( ( b1 - a1 + Math.PI ) % ( 2 * Math.PI ) ) - Math.PI;
         return delta < - Math.PI ? a1 + ( delta + 2 * Math.PI ) * t : a1 + delta * t;
@@ -2066,41 +2408,35 @@ function mixEulerTransform( a, b, t ) {
         
         // return  a1 + ( Math.abs( - Math.PI - b1 ) + Math.abs( Math.PI - a1 ) ) * t;
     }
-
     function lerpEuler( a1, b1, t ) {
         return eulerSP
             ? lerpAngleSP( a1, b1, t )
             : lerpAngle( a1, b1, t );
     }
 
-    function getEulerMode() {
-        const r = document.querySelector('input[name="eulerRot"]:checked');
-        return r.value;
-    }
+    const tx = THREE.MathUtils.lerp( a.translation_x, b.translation_x, t );
+    const ty = THREE.MathUtils.lerp( a.translation_y, b.translation_y, t );
+    const tz = THREE.MathUtils.lerp( a.translation_z, b.translation_z, t );
 
-    function getEulerScaleMode() {
-        const r = document.querySelector('input[name="eulerScale"]:checked');
-        return r.value;
-    }
+    const scale = mixScale( a.scale, b.scale, t, eulerScaleMode );
 
-    const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
-    const scale = mixScale( a.scale, b.scale, t, getEulerScaleMode() );
-
-    let mode = getEulerMode()
-
-    if ( mode === "parallel" ) {
+    if ( eulerRotMode === "parallel" ) {
         // Interpolates Euler angles directly (not ideal for all cases)
-        const rot = new THREE.Euler(
-            lerpEuler( a.rotation.x, b.rotation.x, t ),
-            lerpEuler( a.rotation.y, b.rotation.y, t ),
-            lerpEuler( a.rotation.z, b.rotation.z, t ),
-            // a.rotation.order
-            eulerRotationOrder
-        );
+        const rx = lerpEuler( a.rotation_x, b.rotation_x, t );
+        const ry = lerpEuler( a.rotation_y, b.rotation_y, t );
+        const rz = lerpEuler( a.rotation_z, b.rotation_z, t );
 
-        return { position: pos, rotation: rot, scale: scale };
+        return { 
+            translation_x : tx, 
+            translation_y : ty, 
+            translation_z : tz,
+            rotation_x: rx,
+            rotation_y: ry,
+            rotation_z: rz,
+            scale: scale
+        };
     }
-
+    // DA SISTEMARE
     else {
         let rx = a.rotation.x;
         let ry = a.rotation.y;
@@ -2148,93 +2484,49 @@ function mixEulerTransform( a, b, t ) {
     }
 }
 
-const eulerTransformOrder = document.getElementById( 'eulerTransformOrder' );
-let eulerTRSOrder = 'TRS';
-eulerTransformOrder.addEventListener( 'change', () => {
-    eulerTRSOrder = eulerTransformOrder.value;
-});
-
-// Applies Euler transform to a mesh
-function setEulerMatrix( transform, mesh ) {
-    const matrix = new THREE.Matrix4();
-
-    const T = new THREE.Matrix4().makeTranslation( transform.position.x, transform.position.y, transform.position.z );
-    const R = new THREE.Matrix4().makeRotationFromEuler( transform.rotation );
-    const S = new THREE.Matrix4().makeScale( transform.scale.x, transform.scale.y, transform.scale.z );
-
-    // const q = new THREE.Quaternion().setFromEuler( transform.rotation );
-    // matrix.compose( transform.position, q, transform.scale );
-
-    // For now just T*R*S composition
-    switch( eulerTRSOrder ) {
-        case 'TRS': matrix.multiplyMatrices(T, R).multiply(S); break;
-        case 'TSR': matrix.multiplyMatrices(T, S).multiply(R); break;
-        case 'RTS': matrix.multiplyMatrices(R, T).multiply(S); break;
-        case 'RST': matrix.multiplyMatrices(R, S).multiply(T); break;
-        case 'STR': matrix.multiplyMatrices(S, T).multiply(R); break;
-        case 'SRT': matrix.multiplyMatrices(S, R).multiply(T); break;
-    }
-    // matrix.multiplyMatrices( translation, rotation );
-    // matrix.multiply( scaling );
-
-    mesh.matrix.copy( matrix );
-    mesh.matrixWorldNeedsUpdate = true;
-}
-
 // ##### AXIS-ANGLE ##### //
 
+const axisAngleTransformOrder = document.getElementById( 'axisangleTransformOrder' );
+let axisAngleTRSOrder = 'STR';
+axisAngleTransformOrder.addEventListener( 'change', ( e ) => {
+    axisAngleTRSOrder = axisAngleTransformOrder.value;
+});
 const spAxisAngleCheckbox = document.getElementById( 'axisangleSP' );
 const spAxisAngleTypeDiv  = document.getElementById( 'axisangleSPType' );
-
-spAxisAngleCheckbox.addEventListener( 'change', () => {
+let axisangleSPMode = 'none';
+spAxisAngleCheckbox.addEventListener( 'change', (e) => {
+    e.target.blur();
     spAxisAngleTypeDiv.classList.toggle( 'hidden', ! spAxisAngleCheckbox.checked );
+    if ( spAxisAngleTypeDiv.classList.contains( 'hidden' ) ) axisangleSPMode = 'none';
 });
+document.querySelectorAll('input[name="axisangleSPType"]').forEach( ( elem ) => {
+    if ( spAxisAngleTypeDiv.classList.contains( 'hidden' ) ) axisangleSPMode = 'none';
 
-// Extracts axis-angle representation from a mesh
-function getAxisAngleTransform( mesh ) {
-    const q = mesh.quaternion.clone().normalize();
-    const axis = new THREE.Vector3( 1, 0, 0 );
-    let angle = 0;
-    angle = 2 * Math.acos( q.w );
-    const s = Math.sqrt( 1 - q.w * q.w );
-    if ( s > 0.0001 ) {
-        axis.set( q.x / s, q.y / s, q.z / s );
-    }
-    return {
-        position: mesh.position.clone(),
-        axis: axis,
-        angle: angle,
-        scale: mesh.scale.clone()
-    };
-}
+    elem.addEventListener( 'change', ( event ) => {
+        axisangleSPMode = event.target.value;
+    });
+});
+let axisangleScaleMode = 'arithmetic';
+document.querySelectorAll('input[name="axisangleScale"]').forEach( ( elem ) => {
+    elem.addEventListener( 'change', ( event ) => {
+        axisangleScaleMode = event.target.value;
+    });
+});
+let axisangleInterpMode = 'nlerp';
+document.querySelectorAll('input[name="axisangleInterp"]').forEach( ( elem ) => {
+    elem.addEventListener( 'change', ( event ) => {
+        axisangleInterpMode = event.target.value;
+    });
+});
 
 // Interpolates between two axis-angle transforms
 function mixAxisAngleTransform( a, b, t ) {
-
-    function getAxisAngleScaleMode() {
-        const r = document.querySelector( 'input[name="axisangleScale"]:checked' );
-        return r.value;
-    }
-
-    function getAxisAngleInterpMode() {
-        const r = document.querySelector( 'input[name="axisangleInterp"]:checked' );
-        return r ? r.value : 'nlerp';
-    }
-
-    function getAxisAngleSPMode() {
-        if ( !spAxisAngleCheckbox || !spAxisAngleCheckbox.checked ) return 'none';
-
-        const r = document.querySelector( 'input[name="axisangleSPType"]:checked' );
-        // console.log(r.value)
-        return r ? r.value : 'perAngle';
-    }
 
     function normalizeAngle0To2PI( a ) {
         a = a % ( Math.PI * 2 );
         if ( a < 0 ) a += Math.PI * 2;
         return a;
     }
-
     function shortestAngleDelta( a, b ) {
         let d = b - a;
         if ( d > Math.PI )  d -= Math.PI * 2;
@@ -2242,25 +2534,35 @@ function mixAxisAngleTransform( a, b, t ) {
         return d;
     }
 
-    const pos   = new THREE.Vector3().lerpVectors( a.position, b.position, t );
-    const scale = mixScale( a.scale, b.scale, t, getAxisAngleScaleMode() );
+    const tx = THREE.MathUtils.lerp( a.translation_x, b.translation_x, t );
+    const ty = THREE.MathUtils.lerp( a.translation_y, b.translation_y, t );
+    const tz = THREE.MathUtils.lerp( a.translation_z, b.translation_z, t );
 
-    const spMode = getAxisAngleSPMode();
+    const scale = mixScale( a.scale, b.scale, t, axisangleScaleMode );
+
+    const axisA = new THREE.Vector3( a.axis_x, a.axis_y, a.axis_z );
+    const axisB = new THREE.Vector3( b.axis_x, b.axis_y, b.axis_z );
 
     // ---------- NO SHORTEST PATH ----------
-    if ( spMode === 'none' ) {
-
-        const axis  = new THREE.Vector3().lerpVectors( a.axis, b.axis, t ).normalize();
+    if ( axisangleSPMode === 'none' ) {
+        const axis = new THREE.Vector3().lerpVectors( axisA, axisB, t ).normalize();
         const angle = ( 1 - t ) * a.angle + t * b.angle;
 
-        const q = new THREE.Quaternion().setFromAxisAngle( axis, angle );
-        return { position: pos, quaternion: q, scale: scale };
+        return {
+            translation_x: tx,
+            translation_y: ty,
+            translation_z: tz,
+            axis_x: axis.x,
+            axis_y: axis.y,
+            axis_z: axis.z,
+            angle: angle,
+            scale: scale
+        };
     }
 
     // ---------- PER ANGLE ----------
-    if ( spMode === 'perAngle' ) {
-
-        const axis = new THREE.Vector3().lerpVectors( a.axis, b.axis, t ).normalize();
+    if ( axisangleSPMode === 'perAngle' ) {
+        const axis = new THREE.Vector3().lerpVectors( axisA, axisB, t ).normalize();
 
         const a0 = normalizeAngle0To2PI( a.angle );
         const b0 = normalizeAngle0To2PI( b.angle );
@@ -2268,15 +2570,23 @@ function mixAxisAngleTransform( a, b, t ) {
         const delta = shortestAngleDelta( a0, b0 );
         const angle = a0 + delta * t;
 
-        const q = new THREE.Quaternion().setFromAxisAngle( axis, angle );
-        return { position: pos, quaternion: q, scale: scale };
+        return {
+            translation_x: tx,
+            translation_y: ty,
+            translation_z: tz,
+            axis_x: axis.x,
+            axis_y: axis.y,
+            axis_z: axis.z,
+            angle: angle,
+            scale: scale
+        };
     }
 
     // ---------- GLOBAL ----------
-    if ( spMode === 'global' ) {
+    if ( axisangleSPMode === 'global' ) {
 
-        const qa = new THREE.Quaternion().setFromAxisAngle( a.axis, a.angle ).normalize();
-        const qb = new THREE.Quaternion().setFromAxisAngle( b.axis, b.angle ).normalize();
+        const qa = new THREE.Quaternion().setFromAxisAngle( axisA, a.angle ).normalize();
+        const qb = new THREE.Quaternion().setFromAxisAngle( axisB, b.angle ).normalize();
 
         // forces global shortest path
         if ( qa.dot( qb ) < 0 ) {
@@ -2286,9 +2596,9 @@ function mixAxisAngleTransform( a, b, t ) {
             qb.w = -qb.w;
         }
 
-        const interp = getAxisAngleInterpMode();
+        // N-Lerp or S-Lerp
         const q =
-            interp === 'slerp'
+            axisangleInterpMode === 'slerp'
                 ? new THREE.Quaternion().slerpQuaternions( qa, qb, t )
                 : new THREE.Quaternion(
                     qa.x * ( 1 - t ) + qb.x * t,
@@ -2297,72 +2607,67 @@ function mixAxisAngleTransform( a, b, t ) {
                     qa.w * ( 1 - t ) + qb.w * t
                 ).normalize();
 
-        // const q = new THREE.Quaternion().slerpQuaternions( qa, qb, t );
-        return { position: pos, quaternion: q, scale: scale };
+        // Re-convert to axis-angle
+        let angle = 2 * Math.acos( Math.min( 1, Math.abs( q.w ) ) );
+        const s = Math.sqrt( 1 - q.w * q.w );
+        
+        let axis = new THREE.Vector3( 0, 1, 0 );
+        if ( s > 1e-6 ) {
+            axis.set( q.x / s, q.y / s, q.z / s );
+        }
+
+        return {
+            translation_x: tx,
+            translation_y: ty,
+            translation_z: tz,
+            axis_x: axis.x,
+            axis_y: axis.y,
+            axis_z: axis.z,
+            angle: angle,
+            scale: scale
+        };
     }
-}
-
-const axisAngleTransformOrder = document.getElementById( 'axisangleTransformOrder' );
-let axisAngleTRSOrder = 'TRS';
-axisAngleTransformOrder.addEventListener( 'change', ( e ) => {
-    axisAngleTRSOrder = axisAngleTransformOrder.value;
-});
-
-// Applies interpolated axis-angle transform
-function setAxisAngleMatrix( transform, mesh ) {
-    const matrix = new THREE.Matrix4();
-    // matrix.compose( transform.position, transform.quaternion, transform.scale );
-    const T = new THREE.Matrix4().makeTranslation(transform.position.x, transform.position.y, transform.position.z);
-    const R = new THREE.Matrix4().makeRotationFromQuaternion(transform.quaternion);
-    const S = new THREE.Matrix4().makeScale(transform.scale.x, transform.scale.y, transform.scale.z);
-
-    switch( axisAngleTRSOrder ) {
-        case 'TRS': matrix.multiplyMatrices(T, R).multiply(S); break;
-        case 'TSR': matrix.multiplyMatrices(T, S).multiply(R); break;
-        case 'RTS': matrix.multiplyMatrices(R, T).multiply(S); break;
-        case 'RST': matrix.multiplyMatrices(R, S).multiply(T); break;
-        case 'STR': matrix.multiplyMatrices(S, T).multiply(R); break;
-        case 'SRT': matrix.multiplyMatrices(S, R).multiply(T); break;
-    }
-
-    mesh.matrix.copy( matrix );
-    mesh.matrixWorldNeedsUpdate = true
 }
 
 // ##### QUATERNIONS ##### //
-function getQuaternionTransform( mesh ) {
-    return {
-        position: mesh.position.clone(),
-        quaternion: mesh.quaternion.clone(),
-        scale: mesh.scale.clone()
-    };
-}
+
+const quatTransformOrder = document.getElementById( 'quatTransformOrder' );
+let quatTRSOrder = 'STR';
+quatTransformOrder.addEventListener( 'change', ( e ) => {
+    quatTRSOrder = quatTransformOrder.value;
+});
+const quatSPCheckbox = document.getElementById( 'quatSP' );
+let quatSP = true;
+quatSPCheckbox.addEventListener( 'change', (e) => {
+    e.target.blur();
+    quatSP = quatSPCheckbox.checked;
+});
+let quatScaleMode = 'arithmetic';
+document.querySelectorAll('input[name="quatScale"]').forEach( ( elem ) => {
+    elem.addEventListener( 'change', ( event ) => {
+        quatScaleMode = event.target.value;
+    });
+});
+let quatInterpMode = 'nlerp';
+document.querySelectorAll('input[name="quatInterp"]').forEach( ( elem ) => {
+    elem.addEventListener( 'change', ( event ) => {
+        quatInterpMode = event.target.value;
+    });
+});
 
 function mixQuaternionTransform( a, b, t ) {
-    function getQuatScaleMode() {
-        const r = document.querySelector('input[name="quatScale"]:checked');
-        return r.value;
-    }
 
-    function getQuatInterpMode() {
-        const r = document.querySelector('input[name="quatInterp"]:checked');
-        return r ? r.value : 'slerp';
-    }
+    const tx = THREE.MathUtils.lerp( a.translation_x, b.translation_x, t );
+    const ty = THREE.MathUtils.lerp( a.translation_y, b.translation_y, t );
+    const tz = THREE.MathUtils.lerp( a.translation_z, b.translation_z, t );
+    
+    const scale = mixScale( a.scale, b.scale, t, quatScaleMode );
 
-    function getQuatSPMode() {
-        const cb = document.getElementById('quatSP');
-        return cb && cb.checked;
-    }
-
-    const pos = new THREE.Vector3().lerpVectors( a.position, b.position, t );
-    // const quat = new THREE.Quaternion().slerpQuaternions( a.quaternion, b.quaternion, t );
-    const scale = mixScale( a.scale, b.scale, t, getQuatScaleMode() );
-
-    let qa = a.quaternion.clone().normalize();
-    let qb = b.quaternion.clone().normalize();
+    let qa = new THREE.Quaternion( a.quat_x, a.quat_y, a.quat_z, a.quat_w ).normalize();
+    let qb = new THREE.Quaternion( b.quat_x, b.quat_y, b.quat_z, b.quat_w ).normalize();
 
     // ---------- SHORTEST PATH ----------
-    if ( getQuatSPMode() ) {
+    if ( quatSP ) {
         if ( qa.dot( qb ) < 0 ) {
             qb.x *= -1;
             qb.y *= -1;
@@ -2371,16 +2676,15 @@ function mixQuaternionTransform( a, b, t ) {
         }
     }
 
-    const interp = getQuatInterpMode();
     let q;
 
     // ---------- SLERP ----------
-    if ( interp === 'slerp' ) {
+    if ( quatInterpMode === 'slerp' ) {
         q = new THREE.Quaternion().slerpQuaternions( qa, qb, t );
     }
 
     // ---------- NLERP ----------
-    else if ( interp === 'nlerp' ) {
+    else if ( quatInterpMode === 'nlerp' ) {
         q = new THREE.Quaternion(
             qa.x * ( 1 - t ) + qb.x * t,
             qa.y * ( 1 - t ) + qb.y * t,
@@ -2390,7 +2694,7 @@ function mixQuaternionTransform( a, b, t ) {
     }
 
     // ---------- LERP ----------
-    else if ( interp === 'lerp' ) {
+    else if ( quatInterpMode === 'lerp' ) {
         q = new THREE.Quaternion(
             qa.x * ( 1 - t ) + qb.x * t,
             qa.y * ( 1 - t ) + qb.y * t,
@@ -2400,104 +2704,105 @@ function mixQuaternionTransform( a, b, t ) {
         // NO normalize()
     }
 
-    return { position: pos, quaternion: q, scale: scale };
-}
-
-const quatTransformOrder = document.getElementById( 'quatTransformOrder' );
-let quatTRSOrder = 'TRS';
-quatTransformOrder.addEventListener( 'change', ( e ) => {
-    quatTRSOrder = quatTransformOrder.value;
-});
-
-function setQuaternionMatrix( transform, mesh ) {
-    const matrix = new THREE.Matrix4();
-    // matrix.compose( transform.position, transform.quaternion, transform.scale );
-    const T = new THREE.Matrix4().makeTranslation(transform.position.x, transform.position.y, transform.position.z);
-    const R = new THREE.Matrix4().makeRotationFromQuaternion(transform.quaternion);
-    const S = new THREE.Matrix4().makeScale(transform.scale.x, transform.scale.y, transform.scale.z);
-
-    switch( quatTRSOrder ) {
-        case 'TRS': matrix.multiplyMatrices(T, R).multiply(S); break;
-        case 'TSR': matrix.multiplyMatrices(T, S).multiply(R); break;
-        case 'RTS': matrix.multiplyMatrices(R, T).multiply(S); break;
-        case 'RST': matrix.multiplyMatrices(R, S).multiply(T); break;
-        case 'STR': matrix.multiplyMatrices(S, T).multiply(R); break;
-        case 'SRT': matrix.multiplyMatrices(S, R).multiply(T); break;
-    }
-
-    mesh.matrix.copy( matrix );
-    mesh.matrixWorldNeedsUpdate = true
+    return {
+        translation_x: tx,
+        translation_y: ty,
+        translation_z: tz,
+        quat_x: q.x,
+        quat_y: q.y,
+        quat_z: q.z,
+        quat_w: q.w,
+        scale: scale
+    };
 }
 
 // ##### DUAL QUATERNIONS ##### //
 
-const spDualQuatCheckbox = document.getElementById( 'dualquatSP' );
-const dualQuatNormPrimal  = document.getElementById( 'dualquatNormPrimal' );
-const dualQuatNormDual  = document.getElementById( 'dualquatNormDual' );
-const dualQuatReHortDual = document.getElementById( 'dualquatReHortDual' );
-
-// Convert a standard transform to dual quaternion
-function getDualQuaternionTransform( mesh ) {
-    const q = mesh.quaternion.clone().normalize();
-    const t = mesh.position.clone();
-
-    const dqPrimal = q.clone();
-    const dqDual = new THREE.Quaternion(
-        0.5 * (  t.x * q.w + t.y * q.z - t.z * q.y ),
-        0.5 * ( -t.x * q.z + t.y * q.w + t.z * q.x ),
-        0.5 * (  t.x * q.y - t.y * q.x + t.z * q.w ),
-        -0.5 * ( t.x * q.x + t.y * q.y + t.z * q.z )
-    );
-
-    return { primal: dqPrimal, dual: dqDual, scale: mesh.scale.clone() };
-}
-
+const dualquatTransformOrder = document.getElementById( 'dualquatTransformOrder' );
+let dualquatTRSOrder = 'STR';
+dualquatTransformOrder.addEventListener( 'change', ( e ) => {
+    dualquatTRSOrder = dualquatTransformOrder.value;
+});
+const dualquatSPCheckbox = document.getElementById( 'dualquatSP' );
+let dualquatSP = true;
+dualquatSPCheckbox.addEventListener( 'change', (e) => {
+    e.target.blur();
+    dualquatSP = dualquatSPCheckbox.checked;
+});
+const dualquatNormPrimalCheckbox  = document.getElementById( 'dualquatNormPrimal' );
+let dualquatNormPrimal = true;
+dualquatNormPrimalCheckbox.addEventListener( 'change', (e) => {
+    e.target.blur();
+    dualquatNormPrimal = dualquatNormPrimalCheckbox.checked;
+});
+const dualquatNormDualCheckbox  = document.getElementById( 'dualquatNormDual' );
+let dualquatNormDual = true;
+dualquatNormDualCheckbox.addEventListener( 'change', (e) => {
+    e.target.blur();
+    dualquatNormDual = dualquatNormDualCheckbox.checked;
+});
+const dualquatReHortDualCheckbox = document.getElementById( 'dualquatReHortDual' );
+let dualquatReHortDual = true;
+dualquatReHortDualCheckbox.addEventListener( 'change', (e) => {
+    e.target.blur();
+    dualquatReHortDual = dualquatReHortDualCheckbox.checked;
+});
+let dualquatScaleMode = 'arithmetic';
+document.querySelectorAll('input[name="dualquatScale"]').forEach( ( elem ) => {
+    elem.addEventListener( 'change', ( event ) => {
+        dualquatScaleMode = event.target.value;
+    });
+});
 // Linearly blends dual quaternions (normalized afterwards)
 function mixDualQuaternionTransform( a, b, t ) {
 
-    function getDualQuatScaleMode() {
-        const r = document.querySelector('input[name="dualquatScale"]:checked');
-        return r.value;
-    }
+    const primalA = new THREE.Quaternion( a.real_x, a.real_y, a.real_z, a.real_w );
+    const dualA = new THREE.Quaternion( a.dual_x, a.dual_y, a.dual_z, a.dual_w );
 
-    const scale = mixScale( a.scale, b.scale, t, getDualQuatScaleMode() );
+    let primalB = new THREE.Quaternion( b.real_x, b.real_y, b.real_z, b.real_w );
+    let dualB = new THREE.Quaternion( b.dual_x, b.dual_y, b.dual_z, b.dual_w );
 
-    // Ensure consistent orientation between the two primal quaternions
-    let primalB = b.primal.clone();
-    let dualB = b.dual.clone();
+    const scale = mixScale( a.scale, b.scale, t, dualquatScaleMode );
 
-    if ( spDualQuatCheckbox.checked ) {
+    // ---------- SHORTEST PATH ----------
+    if ( dualquatSP ) {
         // Flip both if they point in opposite directions
-        if ( a.primal.dot( b.primal ) < 0 ) {
-            primalB.x = -primalB.x; primalB.y = -primalB.y; primalB.z = -primalB.z; primalB.w = -primalB.w;
-            dualB.x = -dualB.x; dualB.y = -dualB.y; dualB.z = -dualB.z; dualB.w = -dualB.w;
+        if ( primalA.dot( primalB ) < 0 ) {
+            primalB.x = -primalB.x; 
+            primalB.y = -primalB.y; 
+            primalB.z = -primalB.z; 
+            primalB.w = -primalB.w;
+            dualB.x = -dualB.x; 
+            dualB.y = -dualB.y; 
+            dualB.z = -dualB.z; 
+            dualB.w = -dualB.w;
         }
     }
 
     // Pure linear interpolation of both components
     const primal = new THREE.Quaternion(
-        a.primal.x * ( 1 - t ) + primalB.x * t,
-        a.primal.y * ( 1 - t ) + primalB.y * t,
-        a.primal.z * ( 1 - t ) + primalB.z * t,
-        a.primal.w * ( 1 - t ) + primalB.w * t
+        primalA.x * ( 1 - t ) + primalB.x * t,
+        primalA.y * ( 1 - t ) + primalB.y * t,
+        primalA.z * ( 1 - t ) + primalB.z * t,
+        primalA.w * ( 1 - t ) + primalB.w * t
     );
 
     const dual = new THREE.Quaternion(
-        a.dual.x * ( 1 - t ) + dualB.x * t,
-        a.dual.y * ( 1 - t ) + dualB.y * t,
-        a.dual.z * ( 1 - t ) + dualB.z * t,
-        a.dual.w * ( 1 - t ) + dualB.w * t
+        dualA.x * ( 1 - t ) + dualB.x * t,
+        dualA.y * ( 1 - t ) + dualB.y * t,
+        dualA.z * ( 1 - t ) + dualB.z * t,
+        dualA.w * ( 1 - t ) + dualB.w * t
     );
 
     // Normalize result
     const norm = Math.sqrt( primal.x**2 + primal.y**2 + primal.z**2 + primal.w**2 );
-    if ( dualQuatNormPrimal.checked ) {
+    if ( dualquatNormPrimal ) {
         primal.x /= norm;
         primal.y /= norm;
         primal.z /= norm;
         primal.w /= norm;
     }
-    if ( dualQuatNormDual.checked ) {
+    if ( dualquatNormDual ) {
         dual.x /= norm;
         dual.y /= norm;
         dual.z /= norm;
@@ -2505,7 +2810,7 @@ function mixDualQuaternionTransform( a, b, t ) {
     }
 
     // Re-Hortogonalize dual
-    if ( dualQuatReHortDual.checked ) {
+    if ( dualquatReHortDual ) {
         const dot =
             primal.x * dual.x +
             primal.y * dual.y +
@@ -2518,243 +2823,203 @@ function mixDualQuaternionTransform( a, b, t ) {
         dual.w -= primal.w * dot;
     }
 
-    return { primal, dual, scale };
+    return {
+        real_x: primal.x,
+        real_y: primal.y,
+        real_z: primal.z,
+        real_w: primal.w,
+        dual_x: dual.x,
+        dual_y: dual.y,
+        dual_z: dual.z,
+        dual_w: dual.w,
+        scale: scale
+    };
 }
 
-const dualquatTransformOrder = document.getElementById( 'dualquatTransformOrder' );
-let dualquatTRSOrder = 'TRS';
-dualquatTransformOrder.addEventListener( 'change', ( e ) => {
-    dualquatTRSOrder = dualquatTransformOrder.value;
-});
+// ##### END INTERPOLATION SECTION ##### //
 
-// Converts a dual quaternion back to standard matrix
-function setDualQuaternionMatrix( transform, mesh ) {
-    let q = new THREE.Quaternion;
-    if ( dualQuatNormPrimal.checked ){
-        q = transform.primal.clone().normalize();
-    }
-    const qd = transform.dual.clone();
-
-    const qc = q.clone().conjugate();
-    const t = new THREE.Vector3().set(
-        2 * ( qd.x * qc.w + qd.w * qc.x + qd.y * qc.z - qd.z * qc.y ),
-        2 * ( qd.y * qc.w + qd.w * qc.y + qd.z * qc.x - qd.x * qc.z ),
-        2 * ( qd.z * qc.w + qd.w * qc.z + qd.x * qc.y - qd.y * qc.x )
-    );
-
-    const R = new THREE.Matrix4().makeRotationFromQuaternion(q);
-    const T = new THREE.Matrix4().makeTranslation(t.x, t.y, t.z);
-    const S = new THREE.Matrix4().makeScale(transform.scale.x, transform.scale.y, transform.scale.z);
-
-    const matrix = new THREE.Matrix4();
-    // matrix.compose( t, q, transform.scale );
-    switch ( dualquatTRSOrder ) {
-        case 'TRS': matrix.multiplyMatrices(T, R).multiply(S); break;
-        case 'STR': matrix.multiplyMatrices(S, T).multiply(R); break;
-    }
-
-    mesh.matrix.copy( matrix );
-    mesh.matrixWorldNeedsUpdate = true
-}
 
 // Updates the Content of the Selected Tab
 function updateTabDisplay( mode, meshA, meshB, t ) {
 
-    let getA, getB, mix, setM;
+    // Encode
+    const encodedA = encode( meshA.matrix );
+    const encodedB = encode( meshB.matrix );
 
+    // Mix
+    let encodedMix;
     switch ( mode ) {
         case 'matrix':
-            getA = getMatrixTransform( meshA );
-            getB = getMatrixTransform( meshB );
-            mix = mixMatrixTransform( getA, getB, t );
-            setM = mix.clone();
+            encodedMix = mixMatrixTransform( encodedA, encodedB, t );
             break;
-
         case 'euler':
-            getA = getEulerTransform( meshA );
-            getB = getEulerTransform( meshB );
-            mix = mixEulerTransform( getA, getB, t );
-            {
-                const dummy = new THREE.Object3D();
-                setEulerMatrix( mix, dummy );
-                setM = dummy.matrix.clone();
-            }
+            encodedMix = mixEulerTransform( encodedA, encodedB, t );
             break;
-
         case 'axisangle':
-            getA = getAxisAngleTransform( meshA );
-            getB = getAxisAngleTransform( meshB );
-            mix = mixAxisAngleTransform( getA, getB, t );
-            {
-                const dummy = new THREE.Object3D();
-                setAxisAngleMatrix( mix, dummy );
-                setM = dummy.matrix.clone();
-            }
+            encodedMix = mixAxisAngleTransform( encodedA, encodedB, t );
             break;
-
         case 'quat':
-            getA = getQuaternionTransform( meshA );
-            getB = getQuaternionTransform( meshB );
-            mix = mixQuaternionTransform( getA, getB, t );
-            {
-                const dummy = new THREE.Object3D();
-                setQuaternionMatrix( mix, dummy );
-                setM = dummy.matrix.clone();
-            }
+            encodedMix = mixQuaternionTransform( encodedA, encodedB, t );
             break;
-
         case 'dualquat':
-            getA = getDualQuaternionTransform( meshA );
-            getB = getDualQuaternionTransform( meshB );
-            mix = mixDualQuaternionTransform( getA, getB, t );
-            {
-                const dummy = new THREE.Object3D();
-                setDualQuaternionMatrix( mix, dummy );
-                setM = dummy.matrix.clone();
-            }
+            encodedMix = mixDualQuaternionTransform( encodedA, encodedB, t );
+            break;
+        default:
+            console.warn( `Unknown transform mode: ${mode}` );
+            encodedMix = encodedA; // fallback
             break;
     }
 
-    function input( value, field ) {
-        return `<input 
-            type="number" 
-            step="0.001"
-            value="${value}"
-            data-field="${field}"
-        >`;
+    // Decode
+    const resultMatrix = decode( encodedMix );
+
+    // Update UI
+    updateTabElements( mode, encodedA, encodedB, encodedMix, resultMatrix, t );
+}
+
+// Separate function for UI updates
+function updateTabElements( mode, encodedA, encodedB, encodedMix, resultMatrix, t ) {
+    const tabA    = document.getElementById( `${mode}A` );
+    const tabB    = document.getElementById( `${mode}B` );
+    const tabMix  = document.getElementById( `${mode}Mix` );
+    const tabSetM = document.getElementById( `${mode}SetM` );
+
+    if ( tabA )   tabA.innerHTML   = buildSummaryHTML( 'Start', encodedA, mode );
+    if ( tabB )   tabB.innerHTML   = buildSummaryHTML( 'End', encodedB, mode );
+    if ( tabMix ) tabMix.innerHTML = buildSummaryHTML( `Mix (t=${t.toFixed(2)})`, encodedMix, mode );
+    if ( tabSetM ) tabSetM.innerHTML = buildMatrixHTML( resultMatrix );
+}
+
+// Builds the HTML for the result matrix
+function buildMatrixHTML( matrix ) {
+    return `<b>Set Matrix:</b><br>${formatMatrix( matrix )}`;
+}
+// Builds the HTML summary for encoded data based on mode
+function buildSummaryHTML( label, encoded, mode ) {
+    let html = `<b>${label}:</b><br>`;
+    
+    switch ( mode ) {
+        case 'matrix':
+            html += formatMatrix( encoded );
+            break;
+            
+        case 'euler':
+            html += formatTranslation( encoded );
+            html += formatEulerRotation( encoded );
+            html += formatScale( encoded );
+            break;
+            
+        case 'axisangle':
+            html += formatTranslation( encoded );
+            html += formatAxisAngle( encoded );
+            html += formatScale( encoded );
+            break;
+            
+        case 'quat':
+            html += formatTranslation( encoded );
+            html += formatQuaternion( encoded );
+            html += formatScale( encoded );
+            break;
+            
+        case 'dualquat':
+            html += formatDualQuaternion( encoded );
+            html += formatScale( encoded );
+            break;
     }
+    
+    return html;
+}
 
-    // Function to simplify vector/quaternion display
-    function fmt( v, decimals = 3 ) {
-        function cut( n ) {
-            // If NaN or undefined
-            if ( isNaN( n ) || n === null ) return "0";
-            // Truncate to `decimals` digits (not round)
-            const str = n.toFixed( decimals );
-            // Remove trailing zeros and decimal if not needed
-            return str.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.$/,'');
-        }
-        function cutFixed( n, decimals = 3, width = 7 ) {
-            if ( isNaN( n ) || n === null ) return " ".repeat( width );
-            // Format with fixed decimals
-            let s = n.toFixed( decimals );
-            // Pad on the left to ensure identical width
-            if ( s.length < width ) {
-                s = " ".repeat( width - s.length ) + s;
-            }
-            return s;
-        }
+// ========== FORMATTING FUNCTIONS ==========
 
-        if ( v instanceof THREE.Vector3 ) {
-            return `(${cut(v.x)}, ${cut(v.y)}, ${cut(v.z)})`;
-        }
-        if ( v instanceof THREE.Quaternion ) {
-            return `(${cut(v.x)}, ${cut(v.y)}, ${cut(v.z)}, ${cut(v.w)})`;
-        }
-        if ( v instanceof THREE.Euler ) {
-            const degX = THREE.MathUtils.radToDeg( v.x );
-            const degY = THREE.MathUtils.radToDeg( v.y );
-            const degZ = THREE.MathUtils.radToDeg( v.z );
+function formatTranslation( encoded ) {
+    const tx = cut( encoded.translation_x );
+    const ty = cut( encoded.translation_y );
+    const tz = cut( encoded.translation_z );
+    return `pos = (${tx}, ${ty}, ${tz})<br>`;
+}
 
-            return `(${cut(degX)}°, ${cut(degY)}°, ${cut(degZ)}°)`;
-        }
-        if ( v instanceof THREE.Matrix4 ) {
-            const e = v.elements.map( n => cutFixed(n) );
-            // return `[${e.slice(0,4)}  ]<br>[${e.slice(4,8)}  ]<br>[${e.slice(8,12)}  ]<br>[${e.slice(12,16)}  ]`;
-            let html = '';
-            for ( let r = 0; r < 4; r++ ) {
-                const row = [];
-                for ( let c = 0; c < 4; c++ ) {
-                    row.push( e[ c * 4 + r ] ); // column-major → row
-                }
-                html += `[${row.join(' ')}  ]<br>`;
-            }
+function formatEulerRotation( encoded ) {
+    const degX = THREE.MathUtils.radToDeg( encoded.rotation_x );
+    const degY = THREE.MathUtils.radToDeg( encoded.rotation_y );
+    const degZ = THREE.MathUtils.radToDeg( encoded.rotation_z );
+    return `rot = (${cut(degX)}°, ${cut(degY)}°, ${cut(degZ)}°)<br>`;
+}
 
-            return html;
-        }
-        if ( typeof v === 'number' ) {
-            return cut( v );
-        }
-        return v;
+function formatAxisAngle( encoded ) {
+    const ax = cut( encoded.axis_x );
+    const ay = cut( encoded.axis_y );
+    const az = cut( encoded.axis_z );
+    const deg = THREE.MathUtils.radToDeg( encoded.angle );
+    let html = `axis = (${ax}, ${ay}, ${az})<br>`;
+    html += `angle = ${cut(deg)}°<br>`;
+    return html;
+}
+
+function formatQuaternion( encoded ) {
+    const qx = cut( encoded.quat_x );
+    const qy = cut( encoded.quat_y );
+    const qz = cut( encoded.quat_z );
+    const qw = cut( encoded.quat_w );
+    return `quat = (${qx}, ${qy}, ${qz}, ${qw})<br>`;
+}
+
+function formatDualQuaternion( encoded ) {
+    const rx = cut( encoded.real_x );
+    const ry = cut( encoded.real_y );
+    const rz = cut( encoded.real_z );
+    const rw = cut( encoded.real_w );
+    const dx = cut( encoded.dual_x );
+    const dy = cut( encoded.dual_y );
+    const dz = cut( encoded.dual_z );
+    const dw = cut( encoded.dual_w );
+    let html = `real = (${rx}, ${ry}, ${rz}, ${rw})<br>`;
+    html += `dual = (${dx}, ${dy}, ${dz}, ${dw})<br>`;
+    return html;
+}
+
+function formatScale( encoded ) {
+    const s = cut( encoded.scale );
+    return `scale = ${s}<br>`;
+}
+
+function formatMatrix( matrix ) {
+    if ( !( matrix instanceof THREE.Matrix4 ) ) {
+        return 'Invalid matrix';
     }
-
-    const tabA   = document.getElementById(`${mode}A`);
-    const tabB   = document.getElementById(`${mode}B`);
-    const tabMod = document.getElementById(`${mode}Mod`);
-    const tabMix = document.getElementById(`${mode}Mix`);
-    const tabSetM  = document.getElementById( `${mode}SetM` );
-
-    if ( tabA )   tabA.innerHTML   = `<b>Start:</b><br>${fmtSummary(getA)}`;
-    if ( tabB )   tabB.innerHTML   = `<b>End:</b><br>${fmtSummary(getB)}`;
-    // if ( tabMod ) tabMod.innerHTML = `<b>Modifiers:</b><br>`;
-    if ( tabMix ) tabMix.innerHTML = `<b>Mix (t=${t.toFixed(2)}):</b><br>${fmtSummary(mix)}`;
-    if ( tabSetM )  tabSetM.innerHTML = `<b>Set Matrix:</b><br>${fmt( setM )}`;
-
-    // Helper for structured display of nested transform objects
-    function fmtSummary( obj ) {
-
-        if ( obj instanceof THREE.Matrix4 ) return fmt( obj );
-
-        if ( obj.position ) {
-            let str = '';
-
-            if ( obj.position )   
-                str += `pos = ${fmt( obj.position )}<br>`;
-
-            if ( obj.rotation )   
-                str += `rot = ${fmt( obj.rotation )}<br>`;
-
-            if ( obj.quaternion ) 
-                str += `quat = ${fmt( obj.quaternion )}<br>`;
-
-            if ( obj.axis )       
-                str += `axis = ${fmt( obj.axis )}<br>`;
-
-            if ( obj.angle !== undefined ) {
-                var deg = THREE.MathUtils.radToDeg( obj.angle );
-                str += `angle = ${deg.toFixed(3)}°<br>`;
-            }
-
-            // Uniform scale detection
-            if ( obj.scale ) {
-                const s = obj.scale;
-                const uniform = Math.abs( s.x - s.y ) < 1e-6 && Math.abs( s.y - s.z ) < 1e-6;
-                if ( uniform ) {
-                        str += `scale = ${fmt( s.x )}<br>`;
-                } else {
-                        str += `scale = ${fmt( s )}<br>`;
-                }
-            }
-
-            // Proper display for dual quaternion
-            if ( obj.primal )       
-                str += `primal = ${fmt( obj.primal )}<br>`;
-            if ( obj.dual )       
-                str += `dual = ${fmt( obj.dual )}<br>`;
-
-            return str;
+    
+    const e = matrix.elements.map( n => cutFixed( n ) );
+    let html = '';
+    
+    // Display matrix in row-major order (more readable)
+    for ( let r = 0; r < 4; r++ ) {
+        const row = [];
+        for ( let c = 0; c < 4; c++ ) {
+            row.push( e[ c * 4 + r ] ); // column-major → row-major
         }
-
-        // For dual quaternion objects (when passed directly)
-        if ( obj.primal && obj.dual ) {
-            let str = '';
-            str += `primal = ${fmt( obj.primal )}<br>`;
-            str += `dual = ${fmt( obj.dual )}<br>`;
-            if ( obj.scale ) {
-                const s = obj.scale;
-                const uniform = Math.abs( s.x - s.y ) < 1e-6 && Math.abs( s.y - s.z ) < 1e-6;
-                if ( uniform ) {
-                        str += `scale = ${fmt( s.x )}<br>`;
-                } else {
-                        str += `scale = ${fmt( s )}<br>`;
-                }
-            }
-            return str;
-        }
-
-        return fmt( obj );
+        html += `[${row.join(' ')}]<br>`;
     }
+    
+    return html;
+}
 
+// ========== UTILITY FUNCTIONS ==========
+
+function cut( n, decimals = 3 ) {
+    if ( isNaN( n ) || n === null ) return "0";
+    const str = n.toFixed( decimals );
+    // Remove trailing zeros and unnecessary decimal point
+    return str.replace( /(\.\d*?[1-9])0+$/, '$1' ).replace( /\.$/, '' );
+}
+
+function cutFixed( n, decimals = 3, width = 7 ) {
+    if ( isNaN( n ) || n === null ) return " ".repeat( width );
+    let s = n.toFixed( decimals );
+    // Pad left to ensure uniform width
+    if ( s.length < width ) {
+        s = " ".repeat( width - s.length ) + s;
+    }
+    return s;
 }
 
 // ########################################### Keybinds ########################################### //
@@ -2983,6 +3248,7 @@ createInitialMeshes();
 startMesh = scene.children[10];
 endMesh = scene.children[11];
 console.log(scene);
+// testEncodesDecodes();
 
 render();
 animate();
