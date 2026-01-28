@@ -30,7 +30,7 @@ const canvas = document.getElementById( "render3d" );
 canvas.addEventListener( "contextmenu", ( e ) => {
     e.preventDefault();
 } );
-const renderer = new THREE.WebGLRenderer( { canvas: canvas , antialias : true , logarithmicDepthBuffer: true } );
+const renderer = new THREE.WebGLRenderer( { canvas: canvas , antialias : true, logarithmicDepthBuffer: true } ); 
 document.getElementById( "canvasContainer" ).appendChild( renderer.domElement );
 // renderer.physicallyCorrectLights = true;
 
@@ -486,7 +486,7 @@ function createInitialMeshes(  ) {
             // Translates Mesh so that its Mass Center is in the Center of the Group
             mesh.position.sub( center );
 
-            mesh.children[0].material.depthWrite = false;
+            mesh.children[0].material.depthWrite = true;
 
             myMesh1.add( mesh );
             
@@ -525,9 +525,8 @@ function createInitialMeshes(  ) {
 
                 myMesh1.matrixWorldNeedsUpdate = true;
 
-                matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+                displayTransformation( startMesh, endMesh, animationMesh, progress );
                 updateStillshot();
-                updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
             });
 
             interactionManager.add( myMesh1 );
@@ -571,17 +570,17 @@ function createInitialMeshes(  ) {
 
                 myMesh2.matrixWorldNeedsUpdate = true;
 
-                matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+                displayTransformation( startMesh, endMesh, animationMesh, progress );
                 updateStillshot();
-                updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
             });
 
             document.addEventListener('mousemove', (event) => {
                 if ( isPlaying ) return;
 
+                
                 if ( control1.enabled ) {
                     control1.pointerMove( control1._getPointer( event ) );
-
+                    
                     myMesh1.matrixWorldNeedsUpdate = true;
                 }
 
@@ -591,9 +590,8 @@ function createInitialMeshes(  ) {
                     myMesh2.matrixWorldNeedsUpdate = true;
                 }
 
-                matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+                displayTransformation( startMesh, endMesh, animationMesh, progress );
                 updateStillshot();
-                updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
             });
 
             interactionManager.add( myMesh2 );
@@ -1047,17 +1045,9 @@ const playButton = document.getElementById( 'playButton' );
 const reverseButton = document.getElementById( 'reverseButton' );
 const boomerangButton = document.getElementById( 'boomerangButton' );
 const progressBar = document.getElementById( 'progressBar' );
-const phaseMarkersContainer = document.getElementById( 'phaseMarkers' );
-const orderContainer = document.getElementById( 'orderContainer' );
-const transformUI = document.getElementById( 'transformUI' );
 const gizmoButton = document.getElementById( 'gizmoToggle' );
 const perspectiveButton = document.getElementById( 'perspectiveChange' );
-const indipendentTransformations = document.getElementById( 'indipendentTransforms' );
 const resetButtons = document.querySelectorAll( 'button[data-target][data-action]' );
-const collapseButton = document.getElementById( 'collapseSideBar' );
-const expandButton = document.getElementById( 'expandSideBar' );
-const expandBox = document.querySelectorAll( '.expandBox' );
-const collapsableClass = document.querySelectorAll( '.panelSection' );
 const legendToggle = document.getElementById( 'legendToggle' );
 const legendContent = document.getElementById( 'legendContent' );
 const sidePanel = document.getElementById( 'sidePanel' );
@@ -1155,7 +1145,7 @@ function reEnableControlsOutline() {
 let scrubTransparencyTimeout = null;
 progressBar.addEventListener('input', (e) => {
     progress = parseFloat( e.target.value );
-    matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+    displayTransformation( startMesh, endMesh, animationMesh, progress );
     if ( isPlaying ) playAnim();
 
     applyPlayTransparency();
@@ -1214,29 +1204,6 @@ gizmoScale.addEventListener( 'click', (e) =>{
     control2.setMode( 'scale' );
 });
 
-indipendentTransformations.addEventListener('click', (e) => {
-    e.target.blur();
-    updatePhaseMarkers();
-});
-
-phaseMarkersContainer.addEventListener('click', (e) => {
-    if ( ! indipendentTransformations.checked ) return;
-
-    const rect = phaseMarkersContainer.getBoundingClientRect();
-    const clickX = ( e.clientX - rect.left ) / rect.width;
-    const phases = [1/3, 2/3];
-    const tolerance = 0.05;
-
-    for ( const p of phases ) {
-        if ( Math.abs( clickX - p ) < tolerance ) {
-            progress = p;
-            progressBar.value = progress;
-            matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
-            break;
-        }
-    }
-});
-
 // Sets Camera in Front View
 frontViewButton.addEventListener('click', (e) => {
     e.target.blur();
@@ -1280,7 +1247,7 @@ resetButtons.forEach( ( btn ) => {
         // Execute the correct reset function
         if ( action === 'resetAll' ) {
             // Restore All
-            if ( target === 'mesh1' ) mesh.position.set( new THREE.Vector3( -1, 0, 0 ) );
+            if ( target === 'mesh1' ) mesh.position.set( -1, 0, 0 );
             else mesh.position.set( 1, 0, 0 );
             mesh.quaternion.identity();
             mesh.scale.set( 1, 1, 1 );
@@ -1288,7 +1255,7 @@ resetButtons.forEach( ( btn ) => {
 
         if ( action === 'resetPosition' ) {
             // Restore original position
-            if ( target === 'mesh1' ) mesh.position.set( new THREE.Vector3( -1, 0, 0 ) );
+            if ( target === 'mesh1' ) mesh.position.set( -1, 0, 0 );
             else mesh.position.set( 1, 0, 0 );
         }
 
@@ -1314,63 +1281,11 @@ resetButtons.forEach( ( btn ) => {
 
 });
 
-// Collapses SideBar
-collapseButton.addEventListener( 'click', (e) => {
-    e.target.blur();
-
-    sidePanel.classList.add( 'collapsed' );
-    collapsableClass.forEach( ( panel ) => {
-        panel.classList.add( 'collapsed' );
-    });
-
-    setTimeout( function() { expandBox[0].style.display = 'block'; }, 200 );
-});
-// Expands Collapsed Sidebar
-expandButton.addEventListener( 'click', (e) => {
-    e.target.blur();
-
-    sidePanel.classList.remove( 'collapsed' );
-    collapsableClass.forEach( ( panel ) => {
-        panel.classList.remove( 'collapsed' );
-    });
-    expandBox[0].style.display = 'none';
-});
-
 // Toggles Legend
 legendToggle.addEventListener( 'click', (e) => {
     e.target.blur();
     legendContent.style.display = legendContent.style.display == 'block' ? 'none' : 'block';
 });
-
-let phaseLines = [];
-
-function updatePhaseMarkers() {
-    // Cancella vecchie linee
-    phaseMarkersContainer.innerHTML = '';
-    phaseLines = [];
-
-    // Mostra linee solo se in animation mode + trasformazioni indipendenti
-    // if ( ! isAnimationMode || ! indipendentTransformations.checked ) return;
-    if ( ! indipendentTransformations.checked ) return;
-
-    const phases = [1/3, 2/3];
-    phases.forEach( (phase, i) => {
-        const line = document.createElement( 'div' );
-        line.classList.add( 'phase-line' );
-        line.style.left = `${phase * 100}%`;
-        line.dataset.value = phase;
-
-        // Area di tolleranza per il click (±0.03)
-        line.addEventListener('click', (e) => {
-            progress = parseFloat( line.dataset.value );
-            progressBar.value = progress;
-            matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
-        });
-
-        phaseMarkersContainer.appendChild( line );
-        phaseLines.push( line );
-    });
-}
 
 const transformPresets = {
     matrix: {
@@ -1434,8 +1349,8 @@ const transformPresets = {
                 new THREE.Vector3( 0, -1, 0 ),
                 THREE.MathUtils.degToRad( 190 )
             );
-            startMesh.position.set(  0, -1, 0  );
-            endMesh.position.set(  0, 1, 0 );
+            startMesh.position.set( 0, -1, 0 );
+            endMesh.position.set( 0, 1, 0 );
 
             startMesh.updateMatrix();
             endMesh.updateMatrix();
@@ -1452,12 +1367,14 @@ const transformPresets = {
 
             startMesh.quaternion.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
-                THREE.MathUtils.degToRad( 10 )
+                THREE.MathUtils.degToRad( 170 )
             );
-            startMesh.quaternion.setFromAxisAngle(
-                new THREE.Vector3( 0, 1, 0 ),
-                THREE.MathUtils.degToRad( 350 )
+            
+            endMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 0, -1, 0 ),
+                THREE.MathUtils.degToRad( 170 )
             );
+
             startMesh.position.set(  -1, 0, 0  );
             endMesh.position.set(  1, 0, 0 );
 
@@ -1547,10 +1464,9 @@ function updateTransformation() {
         }
 
         progressBar.value = progress;
-        matrixTransformation( startMesh, endMesh, animationMesh, progress, order );
+        displayTransformation( startMesh, endMesh, animationMesh, progress );
     }
 
-    updateTabDisplay( currentTransformMode, startMesh, endMesh, progress );
     requestAnimationFrame( updateTransformation );
 }
 
@@ -1628,13 +1544,7 @@ function updateStillshot() {
     if ( count == 0 ) return;
     for ( let i = 0; i < count; i++ ) {
         const t = ( i + 1 ) / ( count + 1 );
-        matrixTransformation(
-            startMesh,
-            endMesh,
-            stillshotMeshes[ i ],
-            t,
-            order
-        );
+        displayTransformation( startMesh, endMesh, stillshotMeshes[ i ], t );
     }
 }
 
@@ -1669,13 +1579,7 @@ function generateStillshot( count ) {
         });
 
         // applies same interpolation as it would with an animation
-        matrixTransformation(
-            startMesh,
-            endMesh,
-            clone,
-            t,
-            order
-        );
+        displayTransformation( startMesh, endMesh, clone, t );
 
         applyGradientColor( clone, t );
 
@@ -1689,56 +1593,12 @@ function generateStillshot( count ) {
     console.log( stillshotMeshes );
 }
 
-function matrixTransformation( meshA, meshB, animationMesh, t, order = 'SRT' ) {
-    // Determine which transform mode is currently active
-    // (set by your tab buttons — e.g., 'matrix', 'euler', 'axis-angle', 'quaternion', 'dual-quaternion')
-    const mode = currentTransformMode || 'matrix';
-
-    const matrixA = meshA.matrix;
-    const matrixB = meshB.matrix;
-
-    // encode
-    const encodedA = encode( matrixA );
-    const encodedB = encode( matrixB );
-
-    // interpolate
-    let encodedMix;
-
-    switch ( mode ) {
-        case 'matrix':
-            encodedMix = mixMatrixTransform( encodedA, encodedB, t );
-            break;
-        case 'euler':
-            encodedMix = mixEulerTransform( encodedA, encodedB, t );
-            break;
-        case 'axisangle':
-            encodedMix = mixAxisAngleTransform( encodedA, encodedB, t );
-            break;
-        case 'quat':
-            encodedMix = mixQuaternionTransform( encodedA, encodedB, t );
-            break;
-        case 'dualquat':
-            encodedMix = mixDualQuaternionTransform( encodedA, encodedB, t );
-            break;
-        default:
-            console.warn( `Unknown transform mode: ${mode}` );
-            break;
-    }
-
-    // decode
-    const resultMatrix = decode( encodedMix );
-
-    // apply matrix directly
-    animationMesh.matrix.copy( resultMatrix );
-    commitMatrix( animationMesh );
-}
-
 let transparentOpacity = 0.25;
 const opaqueOpacity = 1.0;
 
-const transparentDepthWrite = false;
+const transparentDepthWrite = true;
 // const opaqueDepthWrite = true;
-const opaqueDepthWrite = false;
+const opaqueDepthWrite = true;
 
 const opacitySlider = document.getElementById( "opacitySlider" );
 const opacityText   = document.getElementById( "opacityText" );
@@ -1918,7 +1778,6 @@ tabs.forEach( tab => {
         if ( activeSetup ) {
             activeSetup.classList.remove( 'hidden' );
         }
-
     } );
 });
 
@@ -1969,19 +1828,85 @@ function extractTRSFromMatrix( matrix, orderTRS ) {
     };
 }
 
+// Function to check if axis is negated ( to preserve it, despite matrix )
+function checkAxisNegated( mesh ) {
+    if ( !mesh || !mesh.quaternion ) return false;
+    
+    // extract axis-angle from matrix ( canon form )
+    const matrixQuat = new THREE.Quaternion();
+    matrixQuat.setFromRotationMatrix( 
+        new THREE.Matrix4().extractRotation( mesh.matrix ) 
+    );
+    matrixQuat.normalize();
+    
+    // extract axis-angle canon from matrix
+    let canonicalAxis = new THREE.Vector3( 0, 1, 0 );
+    let canonicalAngle = 2 * Math.acos( Math.min( 1, Math.abs( matrixQuat.w ) ) );
+    const s = Math.sqrt( 1 - matrixQuat.w * matrixQuat.w );
+    if ( s > 1e-6 ) {
+        canonicalAxis.set(
+            matrixQuat.x / s,
+            matrixQuat.y / s,
+            matrixQuat.z / s
+        );
+    }
+    
+    // extract axis-angle from mesh.quaternion
+    const meshQuat = mesh.quaternion.clone().normalize();
+    let meshAxis = new THREE.Vector3( 0, 1, 0 );
+    let meshAngle = 2 * Math.acos( Math.min( 1, Math.abs( meshQuat.w ) ) );
+    const meshS = Math.sqrt( 1 - meshQuat.w * meshQuat.w );
+    if ( meshS > 1e-6 ) {
+        meshAxis.set(
+            meshQuat.x / meshS,
+            meshQuat.y / meshS,
+            meshQuat.z / meshS
+        );
+    }
+    
+    // if axes point in opposite direction, axis is negated
+    const dot = canonicalAxis.dot( meshAxis );
+    return dot < 0;
+}
+// Function to check if quaternion is negated ( to preserve it, despite matrix )
+function checkQuatNegated( mesh ) {
+    if ( !mesh || !mesh.quaternion ) return false;
+    
+    const matrixQuat = new THREE.Quaternion();
+    matrixQuat.setFromRotationMatrix( 
+        new THREE.Matrix4().extractRotation( mesh.matrix ) 
+    );
+    matrixQuat.normalize();
+    
+    return (mesh.quaternion.w < 0 && matrixQuat.w > 0) || 
+           (mesh.quaternion.w > 0 && matrixQuat.w < 0);
+}
+
 // Encodes the Mesh Matrix Depending on the Current Representation and Transformation Order
-function encode( matrix ) {
+function encode( mesh ) {
+    const matrix = mesh.matrix;
+    const axisNegated = checkAxisNegated( mesh );
+    const quatNegated = checkQuatNegated( mesh );
+
     switch ( currentTransformMode ) {
-        case 'matrix': return matrix;
+        case 'matrix': return encodeMatrix( matrix );
         case 'euler': return encodeEuler( matrix );
-        case 'axisangle': return encodeAxisAngle( matrix );
-        case 'quat': return encodeQuat( matrix );
-        case 'dualquat': return encodeDualQuat( matrix );
+        case 'axisangle': return encodeAxisAngle( matrix, axisNegated );
+        case 'quat': return encodeQuat( matrix, quatNegated );
+        case 'dualquat': return encodeDualQuat( matrix, quatNegated );
         default: console.error("unknown transformation representation");
     }
 }
 
-// Encodes Euler Matrix into Translation, rotation and scale
+function encodeMatrix( matrix ) {
+    const e = matrix.elements;
+    return {
+        m0:  e[0],  m1:  e[1],  m2:  e[2],  m3:  e[3],
+        m4:  e[4],  m5:  e[5],  m6:  e[6],  m7:  e[7],
+        m8:  e[8],  m9:  e[9],  m10: e[10], m11: e[11],
+        m12: e[12], m13: e[13], m14: e[14], m15: e[15]
+    };
+}
 function encodeEuler( matrix ) {
     const transform = extractTRSFromMatrix( matrix, eulerTRSOrder );
 
@@ -1998,7 +1923,7 @@ function encodeEuler( matrix ) {
         scale: transform.scale
     }
 }
-function encodeAxisAngle( matrix ) {
+function encodeAxisAngle( matrix, negated = false ) {
     const transform = extractTRSFromMatrix( matrix, axisAngleTRSOrder );
 
     const quat = new THREE.Quaternion();
@@ -2023,6 +1948,13 @@ function encodeAxisAngle( matrix ) {
         axis.set( 0, 1, 0 );
     }
 
+    if ( negated ) {
+        if ( transform.translation.y > 0.5 ) {
+            axis.negate();
+            angle = 2 * Math.PI - angle;
+        }
+    }
+
     return {
         translation_x : transform.translation.x,
         translation_y : transform.translation.y,
@@ -2034,12 +1966,20 @@ function encodeAxisAngle( matrix ) {
         scale: transform.scale
     }
 }
-function encodeQuat( matrix ) {
+function encodeQuat( matrix, negated = false ) {
     const transform = extractTRSFromMatrix( matrix, quatTRSOrder );
 
     const quat = new THREE.Quaternion();
     quat.setFromRotationMatrix( transform.rotation );
     quat.normalize();
+
+    // if quaternion is negated, invert all signs
+    if ( negated ) {
+        quat.x = -quat.x;
+        quat.y = -quat.y;
+        quat.z = -quat.z;
+        quat.w = -quat.w;
+    }
 
     return {
         translation_x : transform.translation.x,
@@ -2052,7 +1992,7 @@ function encodeQuat( matrix ) {
         scale: transform.scale
     }
 }
-function encodeDualQuat( matrix ) {
+function encodeDualQuat( matrix, negated = false ) {
     const transform = extractTRSFromMatrix( matrix, dualquatTRSOrder );
     
     const t = transform.translation;
@@ -2072,6 +2012,18 @@ function encodeDualQuat( matrix ) {
     dual.y *= 0.5;
     dual.z *= 0.5;
     dual.w *= 0.5;
+
+    // if quaternion negated, negate both real and dual
+    if ( negated ) {
+        real.x = -real.x;
+        real.y = -real.y;
+        real.z = -real.z;
+        real.w = -real.w;
+        dual.x = -dual.x;
+        dual.y = -dual.y;
+        dual.z = -dual.z;
+        dual.w = -dual.w;
+    }
 
     return {
         real_x : real.x,
@@ -2126,7 +2078,7 @@ function makeMatrixFromOrder( translation, rotation, scale, orderTRS ) {
 function decode( encodedTransform ) {
     switch ( currentTransformMode ) {
         case 'matrix':
-            return encodedTransform;
+            return decodeMatrix( encodedTransform );
         case 'euler':
             return decodeEuler( encodedTransform );
         case 'axisangle':
@@ -2138,6 +2090,17 @@ function decode( encodedTransform ) {
         default:
             break;
     }
+}
+
+function decodeMatrix( encodedTransform ) {
+    const m = new THREE.Matrix4();
+    m.set(
+        encodedTransform.m0,  encodedTransform.m4,  encodedTransform.m8,  encodedTransform.m12,
+        encodedTransform.m1,  encodedTransform.m5,  encodedTransform.m9,  encodedTransform.m13,
+        encodedTransform.m2,  encodedTransform.m6,  encodedTransform.m10, encodedTransform.m14,
+        encodedTransform.m3,  encodedTransform.m7,  encodedTransform.m11, encodedTransform.m15
+    );
+    return m;
 }
 function decodeEuler( encodedTransform ) {
     let rotation = new THREE.Matrix4();
@@ -2302,41 +2265,29 @@ function mixScale( scaleA, scaleB, t, mode ) {
 
 // ##### MATRIX ##### //
 
-// Extracts the full transformation matrix from a mesh
-function getMatrixTransform( mesh ) {
-  // Returns a clone to prevent unwanted reference sharing
-  return mesh.matrix.clone();
-}
-
 // Interpolates linearly between two matrices
-function mixMatrixTransform( matrixA, matrixB, t ) {
-
-    // Clone and Convert to arrays for element-wise math
-    const ae = matrixA.elements;
-    const be = matrixB.elements;
-
-    // Make result
-    const result = new THREE.Matrix4();
-    const re = result.elements;
-
-    // Element-wise blend (syntactically compact): in threejs matrix don't support + nor * operators
-    for ( let i = 0; i < 16; i++ ) {
-        re[i] = ae[i] * ( 1 - t ) + be[i] * t;
+function mixMatrixTransform( encodedA, encodedB, t ) {
+    return {
+        m0:  encodedA.m0  * ( 1 - t ) + encodedB.m0  * t,
+        m1:  encodedA.m1  * ( 1 - t ) + encodedB.m1  * t,
+        m2:  encodedA.m2  * ( 1 - t ) + encodedB.m2  * t,
+        m3:  encodedA.m3  * ( 1 - t ) + encodedB.m3  * t,
+        m4:  encodedA.m4  * ( 1 - t ) + encodedB.m4  * t,
+        m5:  encodedA.m5  * ( 1 - t ) + encodedB.m5  * t,
+        m6:  encodedA.m6  * ( 1 - t ) + encodedB.m6  * t,
+        m7:  encodedA.m7  * ( 1 - t ) + encodedB.m7  * t,
+        m8:  encodedA.m8  * ( 1 - t ) + encodedB.m8  * t,
+        m9:  encodedA.m9  * ( 1 - t ) + encodedB.m9  * t,
+        m10: encodedA.m10 * ( 1 - t ) + encodedB.m10 * t,
+        m11: encodedA.m11 * ( 1 - t ) + encodedB.m11 * t,
+        m12: encodedA.m12 * ( 1 - t ) + encodedB.m12 * t,
+        m13: encodedA.m13 * ( 1 - t ) + encodedB.m13 * t,
+        m14: encodedA.m14 * ( 1 - t ) + encodedB.m14 * t,
+        m15: encodedA.m15 * ( 1 - t ) + encodedB.m15 * t
     }
-
-    return result;
 }
 
 // ##### EULER ANGLES ##### //
-
-// Extracts position, rotation (Euler), and scale from the mesh
-function getEulerTransform( mesh ) {
-    return {
-        position: mesh.position.clone(),
-        rotation: mesh.rotation.clone(),
-        scale: mesh.scale.clone()
-    };
-}
 
 // Euler HTML listeners
 const eulerTransformOrder = document.getElementById( 'eulerTransformOrder' );
@@ -2361,7 +2312,6 @@ document.querySelectorAll('input[name="eulerScale"]').forEach( ( elem ) => {
         eulerScaleMode = event.target.value;
     });
 });
-const eulerRot = document.getElementById( 'eulerRot' );
 let eulerRotMode = 'parallel';
 document.querySelectorAll('input[name="eulerRot"]').forEach( ( elem ) => {
     elem.addEventListener( 'change', ( event ) => {
@@ -2814,15 +2764,15 @@ function mixDualQuaternionTransform( a, b, t ) {
 
 // ##### END INTERPOLATION SECTION ##### //
 
+// Unified function that computes transformation AND updates UI
+function displayTransformation( meshA, meshB, animationMesh, t ) {
+    const mode = currentTransformMode || 'matrix';
 
-// Updates the Content of the Selected Tab
-function updateTabDisplay( mode, meshA, meshB, t ) {
+    // ========== ENCODE ==========
+    const encodedA = encode( meshA );
+    const encodedB = encode( meshB );
 
-    // Encode
-    const encodedA = encode( meshA.matrix );
-    const encodedB = encode( meshB.matrix );
-
-    // Mix
+    // ========== MIX ==========
     let encodedMix;
     switch ( mode ) {
         case 'matrix':
@@ -2846,10 +2796,14 @@ function updateTabDisplay( mode, meshA, meshB, t ) {
             break;
     }
 
-    // Decode
+    // ========== DECODE ==========
     const resultMatrix = decode( encodedMix );
 
-    // Update UI
+    // ========== APPLY TO ANIMATION MESH ==========
+    animationMesh.matrix.copy( resultMatrix );
+    commitMatrix( animationMesh );
+
+    // ========== UPDATE UI ==========
     updateTabElements( mode, encodedA, encodedB, encodedMix, resultMatrix, t );
 }
 
@@ -2876,7 +2830,7 @@ function buildSummaryHTML( label, encoded, mode ) {
     
     switch ( mode ) {
         case 'matrix':
-            html += formatMatrix( encoded );
+            html += formatEncodedMatrix( encoded );
             break;
             
         case 'euler':
@@ -2957,6 +2911,30 @@ function formatDualQuaternion( encoded ) {
 function formatScale( encoded ) {
     const s = cut( encoded.scale );
     return `scale = ${s}<br>`;
+}
+
+// Format encoded matrix (object with m0-m15)
+function formatEncodedMatrix( encoded ) {
+    // Construct array from encoded object
+    const e = [
+        encoded.m0,  encoded.m1,  encoded.m2,  encoded.m3,
+        encoded.m4,  encoded.m5,  encoded.m6,  encoded.m7,
+        encoded.m8,  encoded.m9,  encoded.m10, encoded.m11,
+        encoded.m12, encoded.m13, encoded.m14, encoded.m15
+    ].map( n => cutFixed( n ) );
+    
+    let html = '';
+    
+    // Display matrix in row-major order (more readable)
+    for ( let r = 0; r < 4; r++ ) {
+        const row = [];
+        for ( let c = 0; c < 4; c++ ) {
+            row.push( e[ c * 4 + r ] ); // column-major → row-major
+        }
+        html += `[${row.join(' ')}]<br>`;
+    }
+    
+    return html;
 }
 
 function formatMatrix( matrix ) {

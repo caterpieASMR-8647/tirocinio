@@ -50,13 +50,7 @@
                                           <button id="boomerangButton">Boomerang</button>
                                     </div>
 
-                                    <div class="inline" style="margin: 5px 0 5px;">
-                                          <!-- <span>Speed:</span>
-                                          <div class="progressWrapper" style="position: relative; width: 75px;">
-                                                <input id="animationDurationSlider" type="range" min="1" max="10" step="1" value="3" style="width:100%; position: absolute; top:0; left:0;">
-                                          </div> -->
-                                          <!-- <span id="animationDurationText">3 sec</span> -->
-                                    </div>
+                                    <div class="inline" style="margin: 5px 0 5px;"></div>
 
                                     <div class="inline">
                                           <button id="stillshotBtn">Stillshot</button>
@@ -233,10 +227,10 @@
                                                                   <label>Transform Order:</label>
                                                                   <select id="eulerTransformOrder">
                                                                         <option value="SRT">Translate → Rotate → Scale (Default)</option>
-                                                                        <option value="STR">Translate → Scale → Rotate</option>
-                                                                        <option value="SRT">Rotate → Translate → Scale</option>
-                                                                        <option value="RTS">Rotate → Scale → Translate</option>
-                                                                        <option value="TSR">Scale → Translate → Rotate</option>
+                                                                        <option value="RST">Translate → Scale → Rotate</option>
+                                                                        <option value="STR">Rotate → Translate → Scale</option>
+                                                                        <option value="TSR">Rotate → Scale → Translate</option>
+                                                                        <option value="RTS">Scale → Translate → Rotate</option>
                                                                         <option value="TRS">Scale → Rotate → Translate</option>
                                                                   </select>
                                                             </div>
@@ -250,14 +244,14 @@
                                                             <div class="inline">
                                                                   <label>Rotation Order:</label>
                                                                   <select id="eulerRotationOrder">
-                                                                        <optgroup label="Standard">
-                                                                              <option value="XYZ">XYZ</option>
-                                                                              <option value="XZY">XZY</option>
-                                                                              <option value="YXZ">YXZ</option>
-                                                                              <option value="YZX">YZX</option>
-                                                                              <option value="ZXY">ZXY</option>
-                                                                              <option value="ZYX">ZYX</option>
-                                                                        </optgroup>
+                                                                        <!-- <optgroup label="Standard"> -->
+                                                                        <option value="XYZ">XYZ</option>
+                                                                        <option value="XZY">XZY</option>
+                                                                        <option value="YXZ">YXZ</option>
+                                                                        <option value="YZX">YZX</option>
+                                                                        <option value="ZXY">ZXY</option>
+                                                                        <option value="ZYX">ZYX</option>
+                                                                        <!-- </optgroup>
                                                                               <optgroup label="Repeated">
                                                                               <option value="XYX">XYX</option>
                                                                               <option value="XZX">XZX</option>
@@ -265,7 +259,7 @@
                                                                               <option value="YZY">YZY</option>
                                                                               <option value="ZXZ">ZXZ</option>
                                                                               <option value="ZYZ">ZYZ</option>
-                                                                        </optgroup>
+                                                                        </optgroup> -->
                                                                   </select>
                                                             </div>
                                                       </div>
@@ -292,7 +286,7 @@
                                           </div>
                                           <div class="tabBot">
                                                 <div class="tabMix" id="eulerMix"></div>
-                                                <div class="tabSetM" id="eulerSetM"></div>
+                                                <div class="tabSetM hidden" id="eulerSetM"></div>
                                           </div>
                                     </div>
                                     <div class="tabContent hidden" data-tab="axisangle">
@@ -306,10 +300,10 @@
                                                                   <label>Transform Order:</label>
                                                                   <select id="axisangleTransformOrder">
                                                                         <option value="SRT">Translate → Rotate → Scale (Default)</option>
-                                                                        <option value="STR">Translate → Scale → Rotate</option>
-                                                                        <option value="SRT">Rotate → Translate → Scale</option>
-                                                                        <option value="RTS">Rotate → Scale → Translate</option>
-                                                                        <option value="TSR">Scale → Translate → Rotate</option>
+                                                                        <option value="RST">Translate → Scale → Rotate</option>
+                                                                        <option value="STR">Rotate → Translate → Scale</option>
+                                                                        <option value="TSR">Rotate → Scale → Translate</option>
+                                                                        <option value="RTS">Scale → Translate → Rotate</option>
                                                                         <option value="TRS">Scale → Rotate → Translate</option>
                                                                   </select>
                                                             </div>
@@ -360,10 +354,10 @@
                                                                   <label>Transform Order:</label>
                                                                   <select id="quatTransformOrder">
                                                                         <option value="SRT">Translate → Rotate → Scale (Default)</option>
-                                                                        <option value="STR">Translate → Scale → Rotate</option>
-                                                                        <option value="SRT">Rotate → Translate → Scale</option>
-                                                                        <option value="RTS">Rotate → Scale → Translate</option>
-                                                                        <option value="TSR">Scale → Translate → Rotate</option>
+                                                                        <option value="RST">Translate → Scale → Rotate</option>
+                                                                        <option value="STR">Rotate → Translate → Scale</option>
+                                                                        <option value="TSR">Rotate → Scale → Translate</option>
+                                                                        <option value="RTS">Scale → Translate → Rotate</option>
                                                                         <option value="TRS">Scale → Rotate → Translate</option>
                                                                   </select>
                                                             </div>
