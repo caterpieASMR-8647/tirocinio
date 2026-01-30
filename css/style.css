@@ -488,12 +488,12 @@ html, body {
 /* Tab content result boxes */
 .tabMesh, .tabMix, .tabSetM{
   /* flex: 1 1 auto; */
+  text-align: center;
   width: 50%;
   background-color: rgba(25, 25, 25, 0.85);
   border: 1px solid #555;
   border-radius: 6px;
-  padding: 10px;
-  padding-top: 6px;
+  padding: 6px 0px;
   color: white;
   font-family: monospace;
   font-variant-numeric: tabular-nums;

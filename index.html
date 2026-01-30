@@ -55,7 +55,7 @@
                                     <div class="inline">
                                           <button id="stillshotBtn">Stillshot</button>
                                           <div class="progressWrapper" style="position: relative;">
-                                                <input id="stillshotSlider" type="range" min="1" max="10" value="5" style="width:100%; position: absolute; top:0; left:0;">
+                                                <input id="stillshotSlider" type="range" min="1" max="13" value="5" style="width:100%; position: absolute; top:0; left:0;">
                                           </div>
                                           <span id="stillshotText">7 steps</span>
                                     </div>
@@ -174,7 +174,7 @@
 
                         <!-- MODE SECTION — TABS -->
                         <div class="panelSection">
-                              <div class="panelTitle">Transform Mode</div>
+                              <div class="panelTitle"> Transform Representation</div>
 
                               <div id="modeTabs">
                                     <div class="tab active" data-tab="matrix">Matrix</div>
@@ -190,12 +190,16 @@
                                           <div class="tabMid">
                                                 <div class="tabVar">
                                                       <div class="modTitle">
-                                                            <b>Representation Variants:</b><br>
+                                                            <b>Variants:</b><br>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             No Variants Avaliable
                                                       </div>
                                                 </div>
+                                          </div>
+                                          <div class="inline">
+                                                <span style="width: 50%;"><b>Start:</b></span>
+                                                <span style="width: 50%;"><b>End:</b></span>
                                           </div>
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="matrixA"></div>
@@ -204,7 +208,7 @@
                                           <div class="tabMid">
                                                 <div class="tabMod" id="matrixMod">
                                                       <div class="modTitle">
-                                                            <b>Interpolation Options:</b><br>
+                                                            <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             No Options Avaliable<br>
@@ -212,15 +216,17 @@
                                                 </div>
                                           </div>
                                           <div class="tabBot">
+                                                <span style="flex: 1"></span>
                                                 <div class="tabMix" id="matrixMix"></div>
-                                                <div class="tabSetM" id="matrixSetM"></div>
+                                                <span style="flex: 1"></span>
+                                                <div class="tabSetM hidden" id="matrixSetM"></div>
                                           </div>
                                     </div>
                                     <div class="tabContent hidden" data-tab="euler">
                                           <div class="tabMid">
                                                 <div class="tabVar">
                                                       <div class="modTitle">
-                                                            <b>Representation Variants:</b><br>
+                                                            <b>Variants:</b><br>
                                                       </div>
                                                       <div class="modEntry">
                                                             <div class="inline">
@@ -244,26 +250,20 @@
                                                             <div class="inline">
                                                                   <label>Rotation Order:</label>
                                                                   <select id="eulerRotationOrder">
-                                                                        <!-- <optgroup label="Standard"> -->
                                                                         <option value="XYZ">XYZ</option>
                                                                         <option value="XZY">XZY</option>
                                                                         <option value="YXZ">YXZ</option>
                                                                         <option value="YZX">YZX</option>
-                                                                        <option value="ZXY">ZXY</option>
+                                                                        <option value="ZXY">ZXY (Nautical)</option>
                                                                         <option value="ZYX">ZYX</option>
-                                                                        <!-- </optgroup>
-                                                                              <optgroup label="Repeated">
-                                                                              <option value="XYX">XYX</option>
-                                                                              <option value="XZX">XZX</option>
-                                                                              <option value="YXY">YXY</option>
-                                                                              <option value="YZY">YZY</option>
-                                                                              <option value="ZXZ">ZXZ</option>
-                                                                              <option value="ZYZ">ZYZ</option>
-                                                                        </optgroup> -->
                                                                   </select>
                                                             </div>
                                                       </div>
                                                 </div>
+                                          </div>
+                                          <div class="inline">
+                                                <span style="width: 50%;"><b>Start:</b></span>
+                                                <span style="width: 50%;"><b>End:</b></span>
                                           </div>
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="eulerA"></div>
@@ -272,7 +272,7 @@
                                           <div class="tabMid">
                                                 <div class="tabMod" id="eulerMod">
                                                       <div class="modTitle">
-                                                            <b>Interpolation Options:</b><br>
+                                                            <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="modEntry">
                                                             <input type="checkbox" id="eulerSP" value>Shortest Path
@@ -285,7 +285,9 @@
                                                 </div>
                                           </div>
                                           <div class="tabBot">
+                                                <span style="flex: 1"></span>
                                                 <div class="tabMix" id="eulerMix"></div>
+                                                <span style="flex: 1"></span>
                                                 <div class="tabSetM hidden" id="eulerSetM"></div>
                                           </div>
                                     </div>
@@ -293,7 +295,7 @@
                                           <div class="tabMid">
                                                 <div class="tabVar">
                                                       <div class="modTitle">
-                                                            <b>Representation Variants:</b><br>
+                                                            <b>Variants:</b><br>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <div class="inline">
@@ -310,26 +312,32 @@
                                                       </div>
                                                 </div>
                                           </div>
+                                          <div class="inline">
+                                                <span style="width: 50%;"><b>Start:</b></span>
+                                                <span style="width: 50%;"><b>End:</b></span>
+                                          </div>
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="axisangleA"></div>
                                                 <div class="tabMesh" id="axisangleB"></div>
                                           </div>
                                           <div class="tabMid">
                                                 <div class="tabMod" id="axisangleMod">
-                                                      <div class="modTitle">
-                                                            <b>Interpolation Options:</b><br>
-                                                      </div>
-                                                      <div class="modEntry">
-                                                            <input type="checkbox" id="axisangleSP" value>Shortest Path
+                                                      <div class="modTitle" id="interpTitle">
+                                                            <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="modEntry hidden noTabHide" id="axisangleSPType">
                                                             <input type="radio" name="axisangleSPType" value="perAngle" checked> Per Angle
                                                             <input type="radio" name="axisangleSPType" value="global"> Global
                                                       </div>
                                                       <div class="modEntry">
-                                                            <b>Type of Interpolation:</b>
+                                                            <b>Axis:</b>
                                                             <input type="radio" name="axisangleInterp" value="nlerp" checked> N-Lerp
                                                             <input type="radio" name="axisangleInterp" value="slerp"> S-Lerp
+                                                            <input type="checkbox" id="axisangleSP" value>Shortest Path
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <b>Angle:</b>
+                                                            <input type="checkbox" id="axisangleSPAngle" value>Shortest Path
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <b>Scale:</b>
@@ -339,15 +347,17 @@
                                                 </div>
                                           </div>
                                           <div class="tabBot">
+                                                <span style="flex: 1"></span>
                                                 <div class="tabMix" id="axisangleMix"></div>
-                                                <div class="tabSetM" id="axisangleSetM"></div>
+                                                <span style="flex: 1"></span>
+                                                <div class="tabSetM hidden" id="axisangleSetM"></div>
                                           </div>
                                     </div>
                                     <div class="tabContent hidden" data-tab="quat">
                                           <div class="tabMid">
                                                 <div class="tabVar">
                                                       <div class="modTitle">
-                                                            <b>Representation Variants:</b><br>
+                                                            <b>Variants:</b><br>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <div class="inline">
@@ -364,6 +374,10 @@
                                                       </div>
                                                 </div>
                                           </div>
+                                          <div class="inline">
+                                                <span style="width: 50%;"><b>Start:</b></span>
+                                                <span style="width: 50%;"><b>End:</b></span>
+                                          </div>
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="quatA"></div>
                                                 <div class="tabMesh" id="quatB"></div>
@@ -371,7 +385,7 @@
                                           <div class="tabMid">
                                                 <div class="tabMod" id="quatMod">
                                                       <div class="modTitle">
-                                                            <b>Interpolation Options:</b><br>
+                                                            <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="modEntry">
                                                             <input type="checkbox" id="quatSP" checked>Shortest Path
@@ -390,15 +404,17 @@
                                                 </div>
                                           </div>
                                           <div class="tabBot">
+                                                <span style="flex: 1"></span>
                                                 <div class="tabMix" id="quatMix"></div>
-                                                <div class="tabSetM" id="quatSetM"></div>
+                                                <span style="flex: 1"></span>
+                                                <div class="tabSetM hidden" id="quatSetM"></div>
                                           </div>
                                     </div>
                                     <div class="tabContent hidden" data-tab="dualquat">
                                           <div class="tabMid">
                                                 <div class="tabVar">
                                                       <div class="modTitle">
-                                                            <b>Representation Variants:</b><br>
+                                                            <b>Variants:</b><br>
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <div class="inline">
@@ -411,6 +427,10 @@
                                                       </div>
                                                 </div>
                                           </div>
+                                          <div class="inline">
+                                                <span style="width: 50%;"><b>Start:</b></span>
+                                                <span style="width: 50%;"><b>End:</b></span>
+                                          </div>
                                           <div class="tabTop">
                                                 <div class="tabMesh" id="dualquatA"></div>
                                                 <div class="tabMesh" id="dualquatB"></div>
@@ -418,10 +438,15 @@
                                           <div class="tabMid">
                                                 <div class="tabMod" id="dualquatMod">
                                                       <div class="modTitle">
-                                                            <b>Interpolation Options:</b><br>
+                                                            <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="modEntry">
                                                             <input type="checkbox" id="dualquatSP" checked>Shortest Path
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <b>Type:</b>
+                                                            <input type="radio" name="dualquatInterp" value="lerp" checked> Lerp
+                                                            <input type="radio" name="dualquatInterp" value="slerp"> S-Lerp
                                                       </div>
                                                       <div class="modEntry" id="dualquatNormType" checked>
                                                             <input type="checkbox" id="dualquatNormPrimal" checked> Normalize Primal
@@ -438,8 +463,10 @@
                                                 </div>
                                           </div>
                                           <div class="tabBot">
+                                                <span style="flex: 1"></span>
                                                 <div class="tabMix" id="dualquatMix"></div>
-                                                <div class="tabSetM" id="dualquatSetM"></div>
+                                                <span style="flex: 1"></span>
+                                                <div class="tabSetM hidden" id="dualquatSetM"></div>
                                           </div>
                                     </div>
                               </div>

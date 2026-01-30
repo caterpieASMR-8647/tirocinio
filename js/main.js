@@ -54,7 +54,10 @@ var rightGrid = new THREE.GridHelper( 10, 20, 0x444444, 0x444444 );
 rightGrid.rotation.x = Math.PI * 0.5;
 rightGrid.rotation.z = Math.PI * 0.5;
 rightGrid.position.x += 5;
-scene.add( bottomGrid, topGrid, frontGrid, leftGrid, rightGrid );
+var behindGrid = new THREE.GridHelper( 10, 20, 0x444444, 0x444444 );
+behindGrid.rotation.x = Math.PI * 0.5;
+behindGrid.position.z += 5;
+scene.add( bottomGrid, topGrid, frontGrid, leftGrid, rightGrid, behindGrid );
 
 // const light = new THREE.PointLight( 0xffffff, 1000000000 );
 // light.position.set(0.8, 1.4, 1.0);
@@ -111,12 +114,14 @@ orbit.addEventListener( 'change', render );
 
 let control1 = new TransformControls( currentCamera, renderer.domElement );
 control1.showX = control1.showY = control1.showZ = false;
+control1._gizmo.helper.visible = false;
 control1.addEventListener( 'change', render );
 control1.addEventListener( 'dragging-changed', function (event) {
     orbit.enabled = ! event.value;
 } );
 control1.addEventListener( 'objectChange', () => {
     if ( control1.mode !== 'scale' ) return;
+    enforceIsotropicScale( control1, control1.object );
     clampScale( control1.object );
 });
 
@@ -128,6 +133,7 @@ control2.addEventListener( 'dragging-changed', function (event) {
 } );
 control2.addEventListener( 'objectChange', () => {
     if ( control2.mode !== 'scale' ) return;
+    enforceIsotropicScale( control2, control2.object );
     clampScale( control2.object );
 });
 
@@ -592,6 +598,12 @@ function createInitialMeshes(  ) {
 
                 displayTransformation( startMesh, endMesh, animationMesh, progress );
                 updateStillshot();
+            });
+            document.addEventListener( 'click', () => {
+                displayTransformation( startMesh, endMesh, animationMesh, progress );
+                updateStillshot();
+
+                render();
             });
 
             interactionManager.add( myMesh2 );
@@ -1093,8 +1105,9 @@ function playAnim (  ) {
     }
 
     // If Animation is Concluded, Restart
-    if ( ! isPlaying && progress == 1 && animDirection == 1 ) animDirection = -1;
-    if ( ! isPlaying && progress == 0 && animDirection == -1 ) animDirection = 1;
+    if ( ! isPlaying && progress == 1 && animDirection == 1 && boomerang ) animDirection = -1;
+    if ( ! isPlaying && progress == 1 && animDirection == 1 && ! boomerang ) progress = 0;
+    if ( ! isPlaying && progress == 0 && animDirection == -1) animDirection = 1;
 
     isPlaying = ! isPlaying;
 
@@ -1273,6 +1286,9 @@ resetButtons.forEach( ( btn ) => {
         // control1.updateMatrixWorld();
         // control2.updateMatrixWorld();
 
+        displayTransformation( startMesh, endMesh, animationMesh, progress );
+        updateStillshot(),
+
         mesh.updateMatrix();
         mesh.matrixWorldNeedsUpdate = true;
 
@@ -1435,8 +1451,8 @@ function updateTransformation() {
 
         progress += delta * animDirection / duration;
         if ( progress > 1 ) {
-            progress = 1;
-            if ( ! boomerang ) {
+            if ( ! boomerang ) progress = 0;
+            if ( ! isPlaying ) {
                 isPlaying = false;
                 playButton.classList.remove( 'active' );
                 if ( stillshotMeshes.length > 0 ) animationMesh.children[0].children[0].material.visible = false;
@@ -1450,7 +1466,7 @@ function updateTransformation() {
         }
         if ( progress < 0 ) {
             progress = 0
-            if ( ! boomerang ) {
+            if ( ! isPlaying ) {
                 isPlaying = false;
                 playButton.classList.remove( 'active' );
                 if ( stillshotMeshes.length > 0 ) animationMesh.children[0].children[0].material.visible = false;
@@ -1560,7 +1576,7 @@ function generateStillshot( count ) {
     setMeshColor( endMesh, stillshotEndColor );
 
     // just to be sure
-    count = Math.max( 1, Math.min( count, 10 ) );
+    count = Math.max( 1, Math.min( count, 13 ) );
 
     for ( let i = 0; i < count; i++ ) {
 
@@ -2581,6 +2597,51 @@ document.querySelectorAll('input[name="quatInterp"]').forEach( ( elem ) => {
     });
 });
 
+// SLERP personalizzato senza shortest path automatico
+function customQuatSlerp( qa, qb, t ) {
+    // Clona per non modificare gli originali
+    const q1 = qa.clone();
+    const q2 = qb.clone();
+    
+    // Calcola il dot product
+    let cosHalfTheta = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z;
+    
+    // if dot negative, quaternions are opposites
+
+    if ( Math.abs( cosHalfTheta ) >= 1.0 ) {
+        return new THREE.Quaternion(
+            q1.x,
+            q1.y,
+            q1.z,
+            q1.w
+        );
+    }
+    
+    // computes angle between quaternions
+    const halfTheta = Math.acos( cosHalfTheta );
+    const sinHalfTheta = Math.sqrt( 1.0 - cosHalfTheta * cosHalfTheta );
+    
+    if ( Math.abs( sinHalfTheta ) < 0.001 ) {
+        return new THREE.Quaternion(
+            q1.x * 0.5 + q2.x * 0.5,
+            q1.y * 0.5 + q2.y * 0.5,
+            q1.z * 0.5 + q2.z * 0.5,
+            q1.w * 0.5 + q2.w * 0.5
+        );
+    }
+    
+    // computes slerp coefficients
+    const ratioA = Math.sin( ( 1 - t ) * halfTheta ) / sinHalfTheta;
+    const ratioB = Math.sin( t * halfTheta ) / sinHalfTheta;
+    
+    return new THREE.Quaternion(
+        q1.x * ratioA + q2.x * ratioB,
+        q1.y * ratioA + q2.y * ratioB,
+        q1.z * ratioA + q2.z * ratioB,
+        q1.w * ratioA + q2.w * ratioB
+    );
+}
+
 function mixQuaternionTransform( a, b, t ) {
 
     const tx = THREE.MathUtils.lerp( a.translation_x, b.translation_x, t );
@@ -2606,7 +2667,7 @@ function mixQuaternionTransform( a, b, t ) {
 
     // ---------- SLERP ----------
     if ( quatInterpMode === 'slerp' ) {
-        q = new THREE.Quaternion().slerpQuaternions( qa, qb, t );
+        q = customQuatSlerp( qa, qb, t );
     }
 
     // ---------- NLERP ----------
@@ -2655,6 +2716,12 @@ dualquatSPCheckbox.addEventListener( 'change', (e) => {
     e.target.blur();
     dualquatSP = dualquatSPCheckbox.checked;
 });
+let dualquatInterpMode = 'lerp'
+document.querySelectorAll('input[name="dualquatInterp"]').forEach( ( elem ) => {
+    elem.addEventListener( 'change', ( event ) => {
+        dualquatInterpMode = event.target.value;
+    });
+});
 const dualquatNormPrimalCheckbox  = document.getElementById( 'dualquatNormPrimal' );
 let dualquatNormPrimal = true;
 dualquatNormPrimalCheckbox.addEventListener( 'change', (e) => {
@@ -2679,6 +2746,70 @@ document.querySelectorAll('input[name="dualquatScale"]').forEach( ( elem ) => {
         dualquatScaleMode = event.target.value;
     });
 });
+
+// SLERP per Dual Quaternion (ScLERP)
+function customDualQuatSlerp( realA, dualA, realB, dualB, t ) {
+    // Clona per non modificare gli originali
+    const r1 = realA.clone();
+    const d1 = dualA.clone();
+    const r2 = realB.clone();
+    const d2 = dualB.clone();
+    
+    // Calcola il dot product del real
+    let cosHalfTheta = r1.w * r2.w + r1.x * r2.x + r1.y * r2.y + r1.z * r2.z;
+    
+    // Se sono quasi identici, usa lerp
+    if ( Math.abs( cosHalfTheta ) >= 1.0 ) {
+        return {
+            real: r1.clone(),
+            dual: d1.clone()
+        };
+    }
+    
+    // Calcola l'angolo tra i quaternioni
+    const halfTheta = Math.acos( cosHalfTheta );
+    const sinHalfTheta = Math.sqrt( 1.0 - cosHalfTheta * cosHalfTheta );
+    
+    // Se l'angolo è troppo piccolo, usa lerp
+    if ( Math.abs( sinHalfTheta ) < 0.001 ) {
+        return {
+            real: new THREE.Quaternion(
+                r1.x * 0.5 + r2.x * 0.5,
+                r1.y * 0.5 + r2.y * 0.5,
+                r1.z * 0.5 + r2.z * 0.5,
+                r1.w * 0.5 + r2.w * 0.5
+            ),
+            dual: new THREE.Quaternion(
+                d1.x * 0.5 + d2.x * 0.5,
+                d1.y * 0.5 + d2.y * 0.5,
+                d1.z * 0.5 + d2.z * 0.5,
+                d1.w * 0.5 + d2.w * 0.5
+            )
+        };
+    }
+    
+    // Calcola i coefficienti dello slerp
+    const ratioA = Math.sin( ( 1 - t ) * halfTheta ) / sinHalfTheta;
+    const ratioB = Math.sin( t * halfTheta ) / sinHalfTheta;
+    
+    // Applica gli stessi pesi sia al real che al dual
+    const real = new THREE.Quaternion(
+        r1.x * ratioA + r2.x * ratioB,
+        r1.y * ratioA + r2.y * ratioB,
+        r1.z * ratioA + r2.z * ratioB,
+        r1.w * ratioA + r2.w * ratioB
+    );
+    
+    const dual = new THREE.Quaternion(
+        d1.x * ratioA + d2.x * ratioB,
+        d1.y * ratioA + d2.y * ratioB,
+        d1.z * ratioA + d2.z * ratioB,
+        d1.w * ratioA + d2.w * ratioB
+    );
+    
+    return { real, dual };
+}
+
 // Linearly blends dual quaternions (normalized afterwards)
 function mixDualQuaternionTransform( a, b, t ) {
 
@@ -2705,20 +2836,29 @@ function mixDualQuaternionTransform( a, b, t ) {
         }
     }
 
-    // Pure linear interpolation of both components
-    const primal = new THREE.Quaternion(
-        primalA.x * ( 1 - t ) + primalB.x * t,
-        primalA.y * ( 1 - t ) + primalB.y * t,
-        primalA.z * ( 1 - t ) + primalB.z * t,
-        primalA.w * ( 1 - t ) + primalB.w * t
-    );
+    let primal, dual;
 
-    const dual = new THREE.Quaternion(
-        dualA.x * ( 1 - t ) + dualB.x * t,
-        dualA.y * ( 1 - t ) + dualB.y * t,
-        dualA.z * ( 1 - t ) + dualB.z * t,
-        dualA.w * ( 1 - t ) + dualB.w * t
-    );
+    
+    if ( dualquatInterpMode === 'slerp' ) {  // ← aggiungi questa modalità
+        const result = customDualQuatSlerp( primalA, dualA, primalB, dualB, t );
+        primal = result.real;
+        dual = result.dual;
+    } else {
+        // Pure linear interpolation
+        primal = new THREE.Quaternion(
+            primalA.x * ( 1 - t ) + primalB.x * t,
+            primalA.y * ( 1 - t ) + primalB.y * t,
+            primalA.z * ( 1 - t ) + primalB.z * t,
+            primalA.w * ( 1 - t ) + primalB.w * t
+        );
+
+        dual = new THREE.Quaternion(
+            dualA.x * ( 1 - t ) + dualB.x * t,
+            dualA.y * ( 1 - t ) + dualB.y * t,
+            dualA.z * ( 1 - t ) + dualB.z * t,
+            dualA.w * ( 1 - t ) + dualB.w * t
+        );
+    }
 
     // Normalize result
     const norm = Math.sqrt( primal.x**2 + primal.y**2 + primal.z**2 + primal.w**2 );
@@ -2813,20 +2953,24 @@ function updateTabElements( mode, encodedA, encodedB, encodedMix, resultMatrix, 
     const tabB    = document.getElementById( `${mode}B` );
     const tabMix  = document.getElementById( `${mode}Mix` );
     const tabSetM = document.getElementById( `${mode}SetM` );
+    const tabMod  = document.getElementById( `interpTitle` );
 
     if ( tabA )   tabA.innerHTML   = buildSummaryHTML( 'Start', encodedA, mode );
     if ( tabB )   tabB.innerHTML   = buildSummaryHTML( 'End', encodedB, mode );
     if ( tabMix ) tabMix.innerHTML = buildSummaryHTML( `Mix (t=${t.toFixed(2)})`, encodedMix, mode );
+    if ( tabMod ) tabMod.innerHTML = buildSummaryHTML( `<b>Intepolation:</b> (t=${t.toFixed(2)})` );
     if ( tabSetM ) tabSetM.innerHTML = buildMatrixHTML( resultMatrix );
 }
 
 // Builds the HTML for the result matrix
 function buildMatrixHTML( matrix ) {
-    return `<b>Set Matrix:</b><br>${formatMatrix( matrix )}`;
+    return `${formatMatrix( matrix )}`;
+    // return `<b>Set Matrix:</b><br>${formatMatrix( matrix )}`;
 }
 // Builds the HTML summary for encoded data based on mode
 function buildSummaryHTML( label, encoded, mode ) {
-    let html = `<b>${label}:</b><br>`;
+    let html = ``;
+    // let html = `<b>${label}:</b><br>`;
     
     switch ( mode ) {
         case 'matrix':
@@ -2866,14 +3010,17 @@ function formatTranslation( encoded ) {
     const tx = cut( encoded.translation_x );
     const ty = cut( encoded.translation_y );
     const tz = cut( encoded.translation_z );
-    return `pos = (${tx}, ${ty}, ${tz})<br>`;
+    return `transl = (${tx}, ${ty}, ${tz})<br>`;
 }
 
 function formatEulerRotation( encoded ) {
     const degX = THREE.MathUtils.radToDeg( encoded.rotation_x );
     const degY = THREE.MathUtils.radToDeg( encoded.rotation_y );
     const degZ = THREE.MathUtils.radToDeg( encoded.rotation_z );
-    return `rot = (${cut(degX)}°, ${cut(degY)}°, ${cut(degZ)}°)<br>`;
+    if ( eulerRotationOrder === 'ZXY' ) {
+        return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>x: roll   y: pitch   z: yaw<br>`;
+    }
+    return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>`;
 }
 
 function formatAxisAngle( encoded ) {
@@ -2882,7 +3029,7 @@ function formatAxisAngle( encoded ) {
     const az = cut( encoded.axis_z );
     const deg = THREE.MathUtils.radToDeg( encoded.angle );
     let html = `axis = (${ax}, ${ay}, ${az})<br>`;
-    html += `angle = ${cut(deg)}°<br>`;
+    html += `angle = ${cut(deg, 1)}°<br>`;
     return html;
 }
 
@@ -2891,7 +3038,7 @@ function formatQuaternion( encoded ) {
     const qy = cut( encoded.quat_y );
     const qz = cut( encoded.quat_z );
     const qw = cut( encoded.quat_w );
-    return `quat = (${qx}, ${qy}, ${qz}, ${qw})<br>`;
+    return `quat = ${qx}i + ${qy}j + ${qz}k + ${qw}<br>`;
 }
 
 function formatDualQuaternion( encoded ) {
@@ -2903,14 +3050,15 @@ function formatDualQuaternion( encoded ) {
     const dy = cut( encoded.dual_y );
     const dz = cut( encoded.dual_z );
     const dw = cut( encoded.dual_w );
-    let html = `real = (${rx}, ${ry}, ${rz}, ${rw})<br>`;
-    html += `dual = (${dx}, ${dy}, ${dz}, ${dw})<br>`;
+    let html = `real = ${rx}i + ${ry}j + ${rz}k + ${rw}<br>`;
+    html += `dual = ${dx}i + ${dy}j + ${dz}k + ${dw}<br>`;
     return html;
 }
 
+const crossProductUnicode = '\u{2A2F}';
 function formatScale( encoded ) {
     const s = cut( encoded.scale );
-    return `scale = ${s}<br>`;
+    return `scale = ${crossProductUnicode}${s}<br>`;
 }
 
 // Format encoded matrix (object with m0-m15)
@@ -2931,7 +3079,7 @@ function formatEncodedMatrix( encoded ) {
         for ( let c = 0; c < 4; c++ ) {
             row.push( e[ c * 4 + r ] ); // column-major → row-major
         }
-        html += `[${row.join(' ')}]<br>`;
+        html += `[${row.join(' ')}  ]<br>`;
     }
     
     return html;
@@ -2951,7 +3099,7 @@ function formatMatrix( matrix ) {
         for ( let c = 0; c < 4; c++ ) {
             row.push( e[ c * 4 + r ] ); // column-major → row-major
         }
-        html += `[${row.join(' ')}]<br>`;
+        html += `[${row.join(' ')}  ]<br>`;
     }
     
     return html;
@@ -2959,7 +3107,7 @@ function formatMatrix( matrix ) {
 
 // ========== UTILITY FUNCTIONS ==========
 
-function cut( n, decimals = 3 ) {
+function cut( n, decimals = 2 ) {
     if ( isNaN( n ) || n === null ) return "0";
     const str = n.toFixed( decimals );
     // Remove trailing zeros and unnecessary decimal point
@@ -3111,6 +3259,26 @@ function clampScale( object ) {
     object.scale.x = Math.max( minScale, object.scale.x );
     object.scale.y = Math.max( minScale, object.scale.y );
     object.scale.z = Math.max( minScale, object.scale.z );
+
+    object.updateMatrix();
+}
+function enforceIsotropicScale( control, object ) {
+    const s = object.scale;
+    let v;
+
+    switch ( control.axis ) {
+        case 'XY':
+        case 'XZ': 
+        case 'X': v = s.x; break;
+        case 'YZ':
+        case 'Y': v = s.y; break;
+        case 'Z': v = s.z; break;
+        default: return;
+    }
+
+    object.scale.x = v;
+    object.scale.y = v;
+    object.scale.z = v;
 
     object.updateMatrix();
 }
