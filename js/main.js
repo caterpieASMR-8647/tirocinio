@@ -1374,6 +1374,28 @@ const transformPresets = {
             endMesh.matrixWorldNeedsUpdate = true;
 
             smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
+        },
+        oppositeAxes: () => {
+            resetMesh( startMesh );
+            resetMesh( endMesh );
+
+            startMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 0, 1, 0 ),
+                THREE.MathUtils.degToRad( 10 )
+            );
+            endMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 0, -1, 0 ),
+                THREE.MathUtils.degToRad( 10 )
+            );
+            startMesh.position.set( 0, -1, 0 );
+            endMesh.position.set( 0, 1, 0 );
+
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+            startMesh.matrixWorldNeedsUpdate = true;
+            endMesh.matrixWorldNeedsUpdate = true;
+
+            smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
         }
     },
     quat: {
@@ -2433,20 +2455,17 @@ let axisAngleTRSOrder = 'SRT';
 axisAngleTransformOrder.addEventListener( 'change', ( e ) => {
     axisAngleTRSOrder = axisAngleTransformOrder.value;
 });
-const spAxisAngleCheckbox = document.getElementById( 'axisangleSP' );
-const spAxisAngleTypeDiv  = document.getElementById( 'axisangleSPType' );
-let axisangleSPMode = 'none';
-spAxisAngleCheckbox.addEventListener( 'change', (e) => {
+const axisangleSPAxisCheckbox = document.getElementById( 'axisangleSPAxis' );
+const axisangleSPAngleCheckbox  = document.getElementById( 'axisangleSPAngle' );
+let axisangleSPAxis = false;
+let axisangleSPAngle = false;
+axisangleSPAxisCheckbox.addEventListener( 'change', (e) => {
     e.target.blur();
-    spAxisAngleTypeDiv.classList.toggle( 'hidden', ! spAxisAngleCheckbox.checked );
-    if ( spAxisAngleTypeDiv.classList.contains( 'hidden' ) ) axisangleSPMode = 'none';
+    axisangleSPAxis = axisangleSPAxisCheckbox.checked;
 });
-document.querySelectorAll('input[name="axisangleSPType"]').forEach( ( elem ) => {
-    if ( spAxisAngleTypeDiv.classList.contains( 'hidden' ) ) axisangleSPMode = 'none';
-
-    elem.addEventListener( 'change', ( event ) => {
-        axisangleSPMode = event.target.value;
-    });
+axisangleSPAngleCheckbox.addEventListener( 'change', (e) => {
+    e.target.blur();
+    axisangleSPAngle = axisangleSPAngleCheckbox.checked;
 });
 let axisangleScaleMode = 'arithmetic';
 document.querySelectorAll('input[name="axisangleScale"]').forEach( ( elem ) => {
@@ -2485,90 +2504,75 @@ function mixAxisAngleTransform( a, b, t ) {
     const axisA = new THREE.Vector3( a.axis_x, a.axis_y, a.axis_z );
     const axisB = new THREE.Vector3( b.axis_x, b.axis_y, b.axis_z );
 
-    // ---------- NO SHORTEST PATH ----------
-    if ( axisangleSPMode === 'none' ) {
-        const axis = new THREE.Vector3().lerpVectors( axisA, axisB, t ).normalize();
-        const angle = ( 1 - t ) * a.angle + t * b.angle;
+    let angleA = a.angle;
+    let angleB = b.angle;
 
-        return {
-            translation_x: tx,
-            translation_y: ty,
-            translation_z: tz,
-            axis_x: axis.x,
-            axis_y: axis.y,
-            axis_z: axis.z,
-            angle: angle,
-            scale: scale
-        };
-    }
-
-    // ---------- PER ANGLE ----------
-    if ( axisangleSPMode === 'perAngle' ) {
-        const axis = new THREE.Vector3().lerpVectors( axisA, axisB, t ).normalize();
-
-        const a0 = normalizeAngle0To2PI( a.angle );
-        const b0 = normalizeAngle0To2PI( b.angle );
-
-        const delta = shortestAngleDelta( a0, b0 );
-        const angle = a0 + delta * t;
-
-        return {
-            translation_x: tx,
-            translation_y: ty,
-            translation_z: tz,
-            axis_x: axis.x,
-            axis_y: axis.y,
-            axis_z: axis.z,
-            angle: angle,
-            scale: scale
-        };
-    }
-
-    // ---------- GLOBAL ----------
-    if ( axisangleSPMode === 'global' ) {
-
-        const qa = new THREE.Quaternion().setFromAxisAngle( axisA, a.angle ).normalize();
-        const qb = new THREE.Quaternion().setFromAxisAngle( axisB, b.angle ).normalize();
-
-        // forces global shortest path
-        if ( qa.dot( qb ) < 0 ) {
-            qb.x = -qb.x;
-            qb.y = -qb.y;
-            qb.z = -qb.z;
-            qb.w = -qb.w;
+    // ========== SHORTEST PATH per Axis ==========
+    if ( axisangleSPAxis ) {
+        // Se gli assi puntano in direzioni opposte, inverti uno dei due
+        if ( axisA.dot( axisB ) < 0 ) {
+            // Inverti axisB e aggiusta l'angolo
+            axisB.negate();
+            angleB = - angleB;
         }
+    }
 
-        // N-Lerp or S-Lerp
-        const q =
-            axisangleInterpMode === 'slerp'
-                ? new THREE.Quaternion().slerpQuaternions( qa, qb, t )
-                : new THREE.Quaternion(
-                    qa.x * ( 1 - t ) + qb.x * t,
-                    qa.y * ( 1 - t ) + qb.y * t,
-                    qa.z * ( 1 - t ) + qb.z * t,
-                    qa.w * ( 1 - t ) + qb.w * t
-                ).normalize();
-
-        // Re-convert to axis-angle
-        let angle = 2 * Math.acos( Math.min( 1, Math.abs( q.w ) ) );
-        const s = Math.sqrt( 1 - q.w * q.w );
+    // ========== SHORTEST PATH per Angle ==========
+    if ( axisangleSPAngle ) {
+        const a0 = normalizeAngle0To2PI( angleA );
+        const b0 = normalizeAngle0To2PI( angleB );
+        let delta = shortestAngleDelta( a0, b0 );
         
-        let axis = new THREE.Vector3( 0, 1, 0 );
-        if ( s > 1e-6 ) {
-            axis.set( q.x / s, q.y / s, q.z / s );
-        }
-
-        return {
-            translation_x: tx,
-            translation_y: ty,
-            translation_z: tz,
-            axis_x: axis.x,
-            axis_y: axis.y,
-            axis_z: axis.z,
-            angle: angle,
-            scale: scale
-        };
+        // Ricalcola angleA e angleB per usare lo shortest path
+        if ( delta > Math.PI ) delta -= Math.PI * 2;
+        else if ( delta < -Math.PI ) delta += Math.PI * 2;
+        
+        angleB = angleA + delta;
     }
+
+    // ========== INETERPOLATION ==========
+
+    let axis = new THREE.Vector3();
+
+    if ( axisangleInterpMode == 'nlerp' ) axis.copy( axisA ).lerp( axisB, t ).normalize();
+    else {
+        let dot = Math.max( -1, Math.min( 1, axisA.dot( axisB ) ) );
+        let theta = Math.acos( dot ); // angle between the axes
+        
+        // Math breaks with division by sin( 180 ) = 0, so just in that case I use lerp
+        if ( dot > 0.9999 || dot < -0.9999 ) {
+            axis.copy( axisA ).lerp( axisB, t ).normalize();
+        } else {
+            // Dodges divide by zero
+            if ( Math.abs( theta ) < 0.001 ) {
+                axis.copy( axisA ).lerp( axisB, t ).normalize();
+            } else {
+                let sinTheta = Math.sin( theta );
+                let s0 = Math.sin( ( 1 - t ) * theta ) / sinTheta;
+                let s1 = Math.sin( t * theta ) / sinTheta;
+                
+                
+                axis.x = ( axisA.x * s0 ) + ( axisB.x * s1 );
+                axis.y = ( axisA.y * s0 ) + ( axisB.y * s1 );
+                axis.z = ( axisA.z * s0 ) + ( axisB.z * s1 );
+                
+                axis.normalize(); 
+            }
+        }
+    }
+
+    let angle = angleA * ( 1 - t ) + angleB * t
+
+    return {
+        translation_x: tx,
+        translation_y: ty,
+        translation_z: tz,
+        axis_x: axis.x,
+        axis_y: axis.y,
+        axis_z: axis.z,
+        angle: angle,
+        scale: scale
+    };
 }
 
 // ##### QUATERNIONS ##### //
@@ -2829,10 +2833,12 @@ function mixDualQuaternionTransform( a, b, t ) {
             primalB.y = -primalB.y; 
             primalB.z = -primalB.z; 
             primalB.w = -primalB.w;
+            primalB.normalize();
             dualB.x = -dualB.x; 
             dualB.y = -dualB.y; 
             dualB.z = -dualB.z; 
             dualB.w = -dualB.w;
+            dualB.normalize();
         }
     }
 

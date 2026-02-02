@@ -133,6 +133,7 @@
                                                 </div>
                                                 <div class="presetSetup hidden" id="axisangleSetup">
                                                       <button data-preset="axisangle.axisAmbiguity">Axis Ambiguity</button>
+                                                      <button data-preset="axisangle.oppositeAxes">Opposite Axes</button>
                                                 </div>
                                                 <div class="presetSetup hidden" id="quatSetup">
                                                       <button data-preset="quat.sp">Shortest Path</button>
@@ -325,19 +326,15 @@
                                                       <div class="modTitle" id="interpTitle">
                                                             <b>Interpolation:</b><br>
                                                       </div>
-                                                      <div class="modEntry hidden noTabHide" id="axisangleSPType">
-                                                            <input type="radio" name="axisangleSPType" value="perAngle" checked> Per Angle
-                                                            <input type="radio" name="axisangleSPType" value="global"> Global
-                                                      </div>
                                                       <div class="modEntry">
                                                             <b>Axis:</b>
                                                             <input type="radio" name="axisangleInterp" value="nlerp" checked> N-Lerp
                                                             <input type="radio" name="axisangleInterp" value="slerp"> S-Lerp
-                                                            <input type="checkbox" id="axisangleSP" value>Shortest Path
+                                                            <input type="checkbox" id="axisangleSPAxis" value>Shortest Path (axis)
                                                       </div>
                                                       <div class="modEntry">
                                                             <b>Angle:</b>
-                                                            <input type="checkbox" id="axisangleSPAngle" value>Shortest Path
+                                                            <input type="checkbox" id="axisangleSPAngle" value>Shortest Path (angle)
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <b>Scale:</b>
