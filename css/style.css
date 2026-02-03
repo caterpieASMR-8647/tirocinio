@@ -294,8 +294,8 @@ html, body {
 /* Right panel container */
 #sidePanel {
   position: relative;
-  flex: 0 0 600px;
-  width: 600px;
+  flex: 0 0 620px;
+  width: 620px;
   background: rgba(15, 15, 15, 0.92);
   color: white;
   padding: 10px;

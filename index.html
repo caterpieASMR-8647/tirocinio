@@ -3,7 +3,7 @@
 
       <head>
             <meta charset="utf-8">
-            <title>My first three.js app</title>
+            <title>3D Transformations Representations</title>
             <link rel="stylesheet" href="css/style.css"/>
             <script type="importmap">
             {
@@ -208,7 +208,7 @@
                                           </div>
                                           <div class="tabMid">
                                                 <div class="tabMod" id="matrixMod">
-                                                      <div class="modTitle">
+                                                      <div class="modTitle" id="matrixInterpTitle">
                                                             <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="lastModEntry">
@@ -244,8 +244,8 @@
                                                       </div>
                                                       <div class="modEntry">
                                                             <b>Rotations Mode:</b>
-                                                            <input type="radio" name="eulerRot" value="parallel" checked> Parallel Interpolation
-                                                            <input type="radio" name="eulerRot" value="series"> Series Rotation
+                                                            <input type="radio" name="eulerRot" value="parallel" checked> Parallel
+                                                            <input type="radio" name="eulerRot" value="series"> Series
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <div class="inline">
@@ -272,7 +272,7 @@
                                           </div>
                                           <div class="tabMid">
                                                 <div class="tabMod" id="eulerMod">
-                                                      <div class="modTitle">
+                                                      <div class="modTitle" id="eulerInterpTitle">
                                                             <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="modEntry">
@@ -323,7 +323,7 @@
                                           </div>
                                           <div class="tabMid">
                                                 <div class="tabMod" id="axisangleMod">
-                                                      <div class="modTitle" id="interpTitle">
+                                                      <div class="modTitle" id="axisangleInterpTitle">
                                                             <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="modEntry">
@@ -381,14 +381,14 @@
                                           </div>
                                           <div class="tabMid">
                                                 <div class="tabMod" id="quatMod">
-                                                      <div class="modTitle">
+                                                      <div class="modTitle" id="quatInterpTitle">
                                                             <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="modEntry">
                                                             <input type="checkbox" id="quatSP" checked>Shortest Path
                                                       </div>
                                                       <div class="modEntry">
-                                                            <b>Type of Interpolation:</b>
+                                                            <b>Type:</b>
                                                             <input type="radio" name="quatInterp" value="nlerp" checked> N-Lerp
                                                             <input type="radio" name="quatInterp" value="slerp"> S-Lerp
                                                             <input type="radio" name="quatInterp" value="lerp"> Lerp
@@ -434,7 +434,7 @@
                                           </div>
                                           <div class="tabMid">
                                                 <div class="tabMod" id="dualquatMod">
-                                                      <div class="modTitle">
+                                                      <div class="modTitle" id="dualquatInterpTitle">
                                                             <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="modEntry">

@@ -2959,13 +2959,16 @@ function updateTabElements( mode, encodedA, encodedB, encodedMix, resultMatrix, 
     const tabB    = document.getElementById( `${mode}B` );
     const tabMix  = document.getElementById( `${mode}Mix` );
     const tabSetM = document.getElementById( `${mode}SetM` );
-    const tabMod  = document.getElementById( `interpTitle` );
+    const tabInterpTitle  = document.getElementById( `${mode}InterpTitle` );
 
     if ( tabA )   tabA.innerHTML   = buildSummaryHTML( 'Start', encodedA, mode );
     if ( tabB )   tabB.innerHTML   = buildSummaryHTML( 'End', encodedB, mode );
     if ( tabMix ) tabMix.innerHTML = buildSummaryHTML( `Mix (t=${t.toFixed(2)})`, encodedMix, mode );
-    if ( tabMod ) tabMod.innerHTML = buildSummaryHTML( `<b>Intepolation:</b> (t=${t.toFixed(2)})` );
     if ( tabSetM ) tabSetM.innerHTML = buildMatrixHTML( resultMatrix );
+
+    if ( tabInterpTitle ) {
+        tabInterpTitle.innerHTML = `<b>Interpolation (t=${t.toFixed(2)}):</b><br>`;
+    }
 }
 
 // Builds the HTML for the result matrix
@@ -3040,25 +3043,46 @@ function formatAxisAngle( encoded ) {
 }
 
 function formatQuaternion( encoded ) {
-    const qx = cut( encoded.quat_x );
-    const qy = cut( encoded.quat_y );
-    const qz = cut( encoded.quat_z );
-    const qw = cut( encoded.quat_w );
-    return `quat = ${qx}i + ${qy}j + ${qz}k + ${qw}<br>`;
+    const qx = cut( encoded.quat_x, 2, true );
+    const qy = cut( encoded.quat_y, 2, true );
+    const qz = cut( encoded.quat_z, 2, true );
+    const qw = cut( encoded.quat_w, 2, true );
+    // return `quat = ${qx}i + ${qy}j + ${qz}k + ${qw}<br>`;
+    // let str = encoded.quat_x >= 0 ? `quat =   ${qx}i` : `quat = - ${cut(Math.abs(encoded.quat_y))}i`
+    let str = `quat = ${qx}i`;
+    str += encoded.quat_y >= 0 ? ` + ${qy}j` : ` - ${cut(Math.abs(encoded.quat_y))}j`;
+    str += encoded.quat_z >= 0 ? ` + ${qz}k` : ` - ${cut(Math.abs(encoded.quat_z))}k`;
+    str += encoded.quat_w >= 0 ? ` + ${qw}` : ` - ${cut(Math.abs(encoded.quat_w))}`;
+    
+    return str + '<br>';
 }
 
 function formatDualQuaternion( encoded ) {
-    const rx = cut( encoded.real_x );
-    const ry = cut( encoded.real_y );
-    const rz = cut( encoded.real_z );
-    const rw = cut( encoded.real_w );
-    const dx = cut( encoded.dual_x );
-    const dy = cut( encoded.dual_y );
-    const dz = cut( encoded.dual_z );
-    const dw = cut( encoded.dual_w );
-    let html = `real = ${rx}i + ${ry}j + ${rz}k + ${rw}<br>`;
-    html += `dual = ${dx}i + ${dy}j + ${dz}k + ${dw}<br>`;
-    return html;
+    const rx = cut( encoded.real_x, 2, true );
+    const ry = cut( encoded.real_y, 2, true );
+    const rz = cut( encoded.real_z, 2, true );
+    const rw = cut( encoded.real_w, 2, true );
+    const dx = cut( encoded.dual_x, 2, true );
+    const dy = cut( encoded.dual_y, 2, true );
+    const dz = cut( encoded.dual_z, 2, true );
+    const dw = cut( encoded.dual_w, 2, true );
+    // let html = `real = ${rx}i + ${ry}j + ${rz}k + ${rw}<br>`;
+    // html += `dual = ${dx}i + ${dy}j + ${dz}k + ${dw}<br>`;
+    // return html;
+
+    // Real quaternion
+    let realStr = `real = ${rx}i`;
+    realStr += encoded.real_y >= 0 ? ` + ${ry}j` : ` - ${cut(Math.abs(encoded.real_y))}j`;
+    realStr += encoded.real_z >= 0 ? ` + ${rz}k` : ` - ${cut(Math.abs(encoded.real_z))}k`;
+    realStr += encoded.real_w >= 0 ? ` + ${rw}` : ` - ${cut(Math.abs(encoded.real_w))}`;
+    
+    // Dual quaternion
+    let dualStr = `dual = ${dx}i`;
+    dualStr += encoded.dual_y >= 0 ? ` + ${dy}j` : ` - ${cut(Math.abs(encoded.dual_y))}j`;
+    dualStr += encoded.dual_z >= 0 ? ` + ${dz}k` : ` - ${cut(Math.abs(encoded.dual_z))}k`;
+    dualStr += encoded.dual_w >= 0 ? ` + ${dw}` : ` - ${cut(Math.abs(encoded.dual_w))}`;
+    
+    return realStr + '<br>' + dualStr + '<br>';
 }
 
 const crossProductUnicode = '\u{2A2F}';
@@ -3113,9 +3137,12 @@ function formatMatrix( matrix ) {
 
 // ========== UTILITY FUNCTIONS ==========
 
-function cut( n, decimals = 2 ) {
+function cut( n, decimals = 2, keepTrailingZeroes = false ) {
     if ( isNaN( n ) || n === null ) return "0";
     const str = n.toFixed( decimals );
+
+    if ( keepTrailingZeroes ) return str;
+
     // Remove trailing zeros and unnecessary decimal point
     return str.replace( /(\.\d*?[1-9])0+$/, '$1' ).replace( /\.$/, '' );
 }
