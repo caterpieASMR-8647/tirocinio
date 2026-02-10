@@ -30,9 +30,9 @@ const canvas = document.getElementById( "render3d" );
 canvas.addEventListener( "contextmenu", ( e ) => {
     e.preventDefault();
 } );
-const renderer = new THREE.WebGLRenderer( { canvas: canvas , antialias : true, logarithmicDepthBuffer: true } ); 
+const renderer = new THREE.WebGLRenderer( { canvas: canvas , antialias : true , logarithmicDepthBuffer: true } ); 
 document.getElementById( "canvasContainer" ).appendChild( renderer.domElement );
-// renderer.physicallyCorrectLights = true;
+// renderer.setClearColor( 0xffffff, 1 ); 
 
 // ############################################ Scene ############################################ //
 
@@ -75,6 +75,8 @@ scene.add( lightB );
 
 const ambient = new THREE.AmbientLight( 0x404040, 5 );
 scene.add( ambient );
+
+scene.background = new THREE.Color( 0xffffff );
 
 // ########################################### Cameras ########################################### //
 let aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
@@ -1310,7 +1312,7 @@ const transformPresets = {
             resetMesh( endMesh );
 
             startMesh.rotation.set( 0, Math.PI / 2, 0 );
-            endMesh.rotation.set( Math.PI / 2, 0, 0 );
+            endMesh.rotation.set( 0, - Math.PI / 2, 0 );
             startMesh.position.set(  -1, 0, 0  );
             endMesh.position.set(  1, 0, 0 );
 
@@ -2833,12 +2835,10 @@ function mixDualQuaternionTransform( a, b, t ) {
             primalB.y = -primalB.y; 
             primalB.z = -primalB.z; 
             primalB.w = -primalB.w;
-            primalB.normalize();
             dualB.x = -dualB.x; 
-            dualB.y = -dualB.y; 
+            dualB.y = -dualB.y;
             dualB.z = -dualB.z; 
             dualB.w = -dualB.w;
-            dualB.normalize();
         }
     }
 
