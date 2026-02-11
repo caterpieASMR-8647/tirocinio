@@ -32,7 +32,6 @@ canvas.addEventListener( "contextmenu", ( e ) => {
 } );
 const renderer = new THREE.WebGLRenderer( { canvas: canvas , antialias : true , logarithmicDepthBuffer: true } ); 
 document.getElementById( "canvasContainer" ).appendChild( renderer.domElement );
-// renderer.setClearColor( 0xffffff, 1 ); 
 
 // ############################################ Scene ############################################ //
 
@@ -76,7 +75,8 @@ scene.add( lightB );
 const ambient = new THREE.AmbientLight( 0x404040, 5 );
 scene.add( ambient );
 
-scene.background = new THREE.Color( 0xffffff );
+// white scene background
+// scene.background = new THREE.Color( 0xffffff );
 
 // ########################################### Cameras ########################################### //
 let aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
@@ -1164,6 +1164,7 @@ progressBar.addEventListener('input', (e) => {
     if ( isPlaying ) playAnim();
 
     applyPlayTransparency();
+    console.log("calls eventlistener");
 
     if ( scrubTransparencyTimeout ) clearTimeout( scrubTransparencyTimeout );
     
@@ -1398,6 +1399,26 @@ const transformPresets = {
             endMesh.matrixWorldNeedsUpdate = true;
 
             smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
+        },
+        nonGeodesic: () => {
+            resetMesh( startMesh );
+            resetMesh( endMesh );
+
+            startMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 1, 0, 0 ),
+                THREE.MathUtils.degToRad( 90 )
+            );
+            endMesh.quaternion.setFromAxisAngle(
+                new THREE.Vector3( 0, 1, 0 ),
+                THREE.MathUtils.degToRad( 90 )
+            );
+            startMesh.position.set( 0, -1, 0 );
+            endMesh.position.set( 0, 1, 0 );
+
+            startMesh.updateMatrix();
+            endMesh.updateMatrix();
+            startMesh.matrixWorldNeedsUpdate = true;
+            endMesh.matrixWorldNeedsUpdate = true;
         }
     },
     quat: {
@@ -1707,6 +1728,10 @@ function toggleTransparencySmooth( duration = 500 ) {
                             : transparentDepthWrite;
                         mat.needsUpdate = true;
                         transparencyAnimating = false;
+                        // if in stillshot mode, makes animationmesh invisible
+                        if ( stillshotMeshes.length > 0 ) {
+                            animationMesh.children[0].children[0].material.visible = false;
+                        }
                     }
                 }
 
@@ -1768,7 +1793,12 @@ function applyPlayTransparency() {
     setMeshTransparency( myMesh1, true );
     setMeshTransparency( myMesh2, true );
     setMeshTransparency( animationMesh, false );
-    stillshotMeshes.forEach( m => setMeshTransparency( m, true ) );
+    animationMesh.children[0].children[0].material.visible = true;
+    
+    stillshotMeshes.forEach( m => {
+        setMeshTransparency( m, true );
+    });
+    if ( showGizmo ) toggleGizmo();
 }
 function applyPauseTransparency() {
     setMeshTransparency( myMesh1, false );
