@@ -58,11 +58,15 @@ behindGrid.rotation.x = Math.PI * 0.5;
 behindGrid.position.z += 5;
 scene.add( bottomGrid, topGrid, frontGrid, leftGrid, rightGrid, behindGrid );
 
-// const light = new THREE.PointLight( 0xffffff, 1000000000 );
-// light.position.set(0.8, 1.4, 1.0);
-// scene.add( light );
-// const ambientLight = new THREE.AmbientLight();
-// scene.add( ambientLight );
+let gridOn = true;
+
+// const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+// const points = [];
+// points.push( new THREE.Vector3( 1, -1, 0 ) );
+// points.push( new THREE.Vector3( 1, 1, 0 ) );
+// const geometry = new THREE.BufferGeometry().setFromPoints( points );
+// const line = new THREE.Line( geometry, material );
+// scene.add( line );
 
 const lightA = new THREE.DirectionalLight( 0xffffff, 1 );
 lightA.position.set( 1, 1, 1 );
@@ -77,6 +81,7 @@ scene.add( ambient );
 
 // white scene background
 // scene.background = new THREE.Color( 0xffffff );
+let darkMode = true;
 
 // ########################################### Cameras ########################################### //
 let aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
@@ -3247,6 +3252,32 @@ window.addEventListener( 'keydown', function(event) {
             event.preventDefault();
             if ( progress == 0 ) animDirection = 1;
             playAnim();
+            break;
+
+        case 'l':
+            if ( darkMode ) {
+                scene.background = new THREE.Color( 0xffffff );
+                darkMode = false;
+            }
+            else {
+                scene.background = new THREE.Color( 0x000000 );
+                darkMode = true;
+            }
+            break;
+
+        case 'g':
+            if ( gridOn ) {
+                scene.remove( bottomGrid, topGrid, frontGrid, leftGrid, rightGrid, behindGrid );
+                gridOn = false;
+            }
+            else {
+                scene.add( bottomGrid, topGrid, frontGrid, leftGrid, rightGrid, behindGrid );
+                gridOn = true;
+            }
+            break;
+
+        case 'y':
+            control2.showX = control2.showZ = !control2.showX;
             break;
 
         // Cancel Current Transformation
