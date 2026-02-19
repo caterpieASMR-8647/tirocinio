@@ -1305,10 +1305,18 @@ resetButtons.forEach( ( btn ) => {
 
 });
 
-// Toggles Legend
+// Shows About
 legendToggle.addEventListener( 'click', (e) => {
     e.target.blur();
-    legendContent.style.display = legendContent.style.display == 'block' ? 'none' : 'block';
+    legendContent.classList.remove( "hidden" );
+    // legendContent.style.display = legendContent.style.display == 'block' ? 'none' : 'block';
+});
+
+const legendClose = document.getElementById('legendClose');
+
+legendClose.addEventListener('click', (e) => {
+    e.target.blur();
+    legendContent.classList.add( "hidden" );
 });
 
 const transformPresets = {
@@ -1459,11 +1467,11 @@ const transformPresets = {
             
             startMesh.quaternion.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
-                0
+                90
             );
             endMesh.quaternion.setFromAxisAngle(
                 new THREE.Vector3( 0, 1, 0 ),
-                Math.PI
+                225
             );
             startMesh.position.set( -1, 0, 0 );
             endMesh.position.set(  1, 0, 0 );

@@ -473,19 +473,31 @@
                         <!-- LEGEND SECTION -->
                         <div class="panelSection" style="padding: 0px; margin: 0px; border: 0px;">
                               <div class="panelTitle toggleable">
-                                    <span>Legend</span>
-                                    <button id="legendToggle">Show / Hide</button>
-                              </div>
-
-                              <div id="legendContent" hidden>
-                                    <div class="subSection">
-                                          <div style="padding: 5px;">Legend content here...</div>
-                                    </div>
+                                    <span>About</span>
+                                    <button id="legendToggle">Show</button>
                               </div>
                         </div>
-                  </div>
 
+                  </div>    
             </div>
+
+            <!-- Modal -->
+            <div id="legendContent" class="modal-overlay hidden">
+            <div class="modal-box">
+                  <button class="modal-close-btn" id="legendClose">&times;</button>
+                  <h2>About</h2>
+                  <p><strong>RigidMixer</strong></p>
+                  <p>RigidMixer is an interactive tool to demonstrate the differences in interpolation of rigid transformations and similarities.</p>
+                  <br>
+                  <p><strong>Authors:</strong></p>
+                  <p>Paolo Bianchessi</p>
+                  <p>Marco Tarini</p>
+                  <br>
+                  <p><strong>Institution:</strong> Università degli Studi di Milano</p>
+                  <p><strong>Year:</strong> 2026</p>
+            </div>
+            </div>
+            
 
             <script type="module" src="js/main.js"></script>
       </body>
