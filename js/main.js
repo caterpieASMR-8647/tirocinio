@@ -60,14 +60,6 @@ scene.add( bottomGrid, topGrid, frontGrid, leftGrid, rightGrid, behindGrid );
 
 let gridOn = true;
 
-// const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
-// const points = [];
-// points.push( new THREE.Vector3( 1, -1, 0 ) );
-// points.push( new THREE.Vector3( 1, 1, 0 ) );
-// const geometry = new THREE.BufferGeometry().setFromPoints( points );
-// const line = new THREE.Line( geometry, material );
-// scene.add( line );
-
 const lightA = new THREE.DirectionalLight( 0xffffff, 1 );
 lightA.position.set( 1, 1, 1 );
 scene.add( lightA );
@@ -3265,10 +3257,19 @@ window.addEventListener( 'keydown', function(event) {
         case 'l':
             if ( darkMode ) {
                 scene.background = new THREE.Color( 0xffffff );
+                outlinePersp.visibleEdgeColor.set( new THREE.Color( 0xffffff ) );
+                outlineOrtho.visibleEdgeColor.set( new THREE.Color( 0xffffff ) );
+                outlinePersp.overlayMaterial.premultipliedAlpha = true;
+                outlinePersp.overlayMaterial.blending = THREE.SubtractiveBlending;
+                console.log(outlinePersp.visibleEdgeColor, outlineOrtho.visibleEdgeColor);
                 darkMode = false;
             }
             else {
                 scene.background = new THREE.Color( 0x000000 );
+                outlinePersp.visibleEdgeColor.set( new THREE.Color( 0xffffff ) );
+                outlineOrtho.visibleEdgeColor.set( new THREE.Color( 0xffffff ) );
+                outlinePersp.overlayMaterial.premultipliedAlpha = false;
+                outlinePersp.overlayMaterial.blending = THREE.NormalBlending;
                 darkMode = true;
             }
             break;
@@ -3343,7 +3344,7 @@ renderer.domElement.addEventListener( 'mousedown', (event) => {
 
         case 2: // Right mouse button → rotate
             activeControl.setMode( 'rotate' );
-            currentCamera.isOrthographicCamera ? activeControl.axis = 'Y' : activeControl.axis = 'XYZE';
+            // currentCamera.isOrthographicCamera ? activeControl.axis = 'Y' : activeControl.axis = 'XYZE';
             event.preventDefault(); // prevents contextual menu
             break;
     }
