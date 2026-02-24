@@ -3344,7 +3344,7 @@ renderer.domElement.addEventListener( 'mousedown', (event) => {
 
         case 2: // Right mouse button → rotate
             activeControl.setMode( 'rotate' );
-            // currentCamera.isOrthographicCamera ? activeControl.axis = 'Y' : activeControl.axis = 'XYZE';
+            currentCamera.isOrthographicCamera ? activeControl.axis = 'Y' : activeControl.axis = 'XYZE';
             event.preventDefault(); // prevents contextual menu
             break;
     }
