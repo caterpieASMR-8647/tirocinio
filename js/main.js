@@ -113,7 +113,6 @@ orbit.addEventListener( 'change', render );
 
 let control1 = new TransformControls( currentCamera, renderer.domElement );
 control1.showX = control1.showY = control1.showZ = false;
-control1._gizmo.helper.visible = false;
 control1.addEventListener( 'change', render );
 control1.addEventListener( 'dragging-changed', function (event) {
     orbit.enabled = ! event.value;
@@ -126,6 +125,7 @@ control1.addEventListener( 'objectChange', () => {
 
 let control2 = new TransformControls( currentCamera, renderer.domElement );
 control2.showX = control2.showY = control2.showZ = false;
+// control2.showHelper = false;
 control2.addEventListener( 'change', render );
 control2.addEventListener( 'dragging-changed', function (event) {
     orbit.enabled = ! event.value;
@@ -223,35 +223,43 @@ modelSelector.addEventListener( 'change', (e) => {
 
     [ startMesh, endMesh, animationMesh, ...stillshotMeshes ].forEach( mesh => {
         disposeMesh( mesh );
-        // scene.remove( mesh );
-        // mesh.dispose();
     });
+
+    myMesh1 = new THREE.Group();
+    myMesh2 = new THREE.Group();
 
     createInitialMeshes();
 
-    startMesh.position = pos1.copy();
-    startMesh.quaternion = quat1.copy();
-    startMesh.sccale = scale1.copy();
-    endMesh.position = pos2.copy();
-    endMesh.quaternion = quat2.copy();
-    endMesh.scale = scale2.copy();
-
-    if ( isStillshotActive ) generateStillshot();
-
-    if ( isPlaying ) applyPlayTransparency();
-
-    // replaceCurrentMeshes();
+    setTimeout(() => {
+        startMesh.position.copy( pos1 );
+        startMesh.quaternion.copy( quat1 );
+        startMesh.scale.copy( scale1 );
+        endMesh.position.copy( pos2 );
+        endMesh.quaternion.copy( quat2 );
+        endMesh.scale.copy( scale2 );
+    
+        if ( isStillshotActive ) generateStillshot( Number( stillshotSlider.value ) );
+        if ( isPlaying ) applyPlayTransparency();
+    }, 300 );
 });
+
 function disposeMesh( root ) {
 
     if ( !root ) return;
 
+    if ( root === myMesh1 || root === startMesh ) {
+        control1.detach();
+    }
+    if ( root === myMesh2 || root === endMesh ) {
+        control2.detach();
+    }
+
+    interactionManager.remove( root );
+    scene.remove( root );
     
     // Traverse hierarchy
-    root.traverse( ( obj ) => {
-        
-        if ( obj.isMesh ) {
-            
+    root.traverse( ( obj ) => {       
+        if ( obj.isMesh ) {            
             // Geometry
             if ( obj.geometry ) {
                 obj.geometry.dispose();
@@ -264,7 +272,6 @@ function disposeMesh( root ) {
                 : [ obj.material ];
                 
                 materials.forEach( material => {
-                    
                     if ( !material ) return;
                     
                     // Dispose textures
@@ -286,98 +293,10 @@ function disposeMesh( root ) {
         root.parent.remove( root );
     }
 
-}
-
-function createNewMeshes() {
-    //Loader for FBX Meshes + adds Events for mouse hover
-    const loader = new FBXLoader();
-    const modelPath = `${meshesPath}${modelName}`;
-
-    loader.load( modelPath,
-        ( mesh ) => {
-            // mesh.traverse(function (child) {
-            //     if (child.isMesh) {
-            //         (child).material = material;
-            //         if (child.material) {
-            //             child.material.transparent = false;
-            //         }
-            //     }
-            // })
-            
-            mesh.scale.set( .001, .001, .001 );
-            const box = new THREE.Box3().setFromObject( mesh );
-            const center = new THREE.Vector3();
-            box.getCenter( center );
-            
-            // Translates Mesh so that its Mass Center is in the Center of the Group
-            mesh.position.sub( center );
-
-            mesh.scale.set( .001, .001, .001 );
-            myMesh1.add( mesh );
-            
-            myMesh1.position.set( -1 , 0, 0 );
-
-            myMesh2 = myMesh1.clone();
-
-            myMesh2.position.set( 1 , 0, 0 );
-
-            if ( myMesh1 && myMesh2 ) createNewAnimationMesh(  );
-
-            function createNewAnimationMesh() {
-                // Create a deep clone of the starting mesh
-                animationMesh = startMesh.clone();
-
-                // Clean and prepare all mesh materials and data
-                animationMesh.traverse( ( child ) => {
-                    if ( child.isMesh ) {
-                        // Remove user data to prevent unwanted inheritance
-                        child.userData = {};
-
-                        // Safely clone the material
-                        if ( child.material && typeof child.material.clone === "function" ) {
-                            child.material = child.material.clone();
-                            child.material.transparent = false;
-                            child.material.opacity = 1.0;
-                            // child.material.depthWrite = true;
-                        }
-                    }
-                });
-
-                animationMesh.position.copy( myMesh1.position );
-
-                // Remove possible event listeners from the clone
-                animationMesh.children.forEach( ( child ) => {
-                    if ( child.removeEventListener ) {
-                        child.removeEventListener( "mouseover", () => {} );
-                        child.removeEventListener( "mouseout", () => {} );
-                        child.removeEventListener( "mousedown", () => {} );
-                        child.removeEventListener( "mouseup", () => {} );
-                    }
-                });
-
-                setMeshTransparency( animationMesh, true );
-                scene.add( animationMesh );
-
-                updateTransformation();
-
-                if ( myMesh1 && myMesh2 && animationMesh ) {
-                    cloneMaterials( startMesh );
-                    cloneMaterials( endMesh );
-                    cloneMaterials( animationMesh );
-                }
-
-                console.log( "Animation mesh created:", animationMesh );
-            }
-
-            render();
-        },
-        (xhr) => {
-            console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
-        },
-        (error) => {
-            console.log(error);
-        }
-    )
+    // cleans children
+    while ( root.children.length > 0 ) {
+        root.remove( root.children[0] );
+    }
 }
 
 // Upadtes the Mesh
@@ -386,93 +305,8 @@ function commitMatrix( mesh ) {
     mesh.matrixWorld.copy( mesh.matrix );
 }
 
-// ======================== Functions to Set or Apply Translation/Rotation/Scale ======================== //
-function setPosition( mesh, x, y, z ) {
-    const m = mesh.matrix;
-
-    m.elements[12] = x;
-    m.elements[13] = y;
-    m.elements[14] = z;
-
-    commitMatrix( mesh );
-}
-function setScale( mesh, s ) {
-    const m = mesh.matrix;
-    const e = m.elements;
-
-    // extracs axes
-    const xAxis = new THREE.Vector3( e[0], e[1], e[2] ).normalize();
-    const yAxis = new THREE.Vector3( e[4], e[5], e[6] ).normalize();
-    const zAxis = new THREE.Vector3( e[8], e[9], e[10] ).normalize();
-
-    xAxis.multiplyScalar( s );
-    yAxis.multiplyScalar( s );
-    zAxis.multiplyScalar( s );
-
-    e[0] = xAxis.x; e[1] = xAxis.y; e[2] = xAxis.z;
-    e[4] = yAxis.x; e[5] = yAxis.y; e[6] = yAxis.z;
-    e[8] = zAxis.x; e[9] = zAxis.y; e[10] = zAxis.z;
-
-    commitMatrix( mesh );
-}
-function setRotationEuler( mesh, euler ) {
-    const m = mesh.matrix;
-
-    // saves translation
-    const tx = m.elements[12];
-    const ty = m.elements[13];
-    const tz = m.elements[14];
-
-    const r = new THREE.Matrix4();
-    r.makeRotationFromEuler( euler );
-
-    m.copy( r );
-
-    m.elements[12] = tx;
-    m.elements[13] = ty;
-    m.elements[14] = tz;
-
-    commitMatrix( mesh );
-}
-function setRotationQuat( mesh, quat ) {
-    const m = mesh.matrix;
-
-    const tx = m.elements[12];
-    const ty = m.elements[13];
-    const tz = m.elements[14];
-
-    const r = new THREE.Matrix4();
-    r.makeRotationFromQuaternion( quat );
-
-    m.copy( r );
-
-    m.elements[12] = tx;
-    m.elements[13] = ty;
-    m.elements[14] = tz;
-
-    commitMatrix( mesh );
-}
-function applyTranslation( mesh, dx, dy, dz ) {
-    const t = new THREE.Matrix4();
-    t.makeTranslation( dx, dy, dz );
-
-    mesh.matrix.multiply( t );
-    commitMatrix( mesh );
-}
-function applyScale( mesh, s ) {
-    const matrixScale = new THREE.Matrix4();
-    matrixScale.makeScale( s, s, s );
-
-    mesh.matrix.multiply( matrixScale );
-    commitMatrix( mesh );
-}
-function applyRotationQuat( mesh, quat ) {
-    const r = new THREE.Matrix4();
-    r.makeRotationFromQuaternion( quat );
-
-    mesh.matrix.multiply( r );
-    commitMatrix( mesh );
-}
+let isDragging1, isDragging2 = false;
+const targetRadius = 0.6;
 
 // Creates 2 Meshes with proper TransformControls, Origin and EventListeners
 function createInitialMeshes(  ) {
@@ -486,8 +320,19 @@ function createInitialMeshes(  ) {
             mesh.scale.set( .001, .001, .001 );
             const box = new THREE.Box3().setFromObject( mesh );
             const center = new THREE.Vector3();
+
+            // find bounding box radius to set uniform mesh size
+            const size = new THREE.Vector3();
+            box.getSize( size );
+            const radius = size.length() / 2;
+            const scaleFactor = targetRadius / radius;
+
+            mesh.scale.multiplyScalar( scaleFactor );
+
+            // recomputes bounding box after scaling
+            box.setFromObject( mesh );
             box.getCenter( center );
-            
+
             // Translates Mesh so that its Mass Center is in the Center of the Group
             mesh.position.sub( center );
 
@@ -496,29 +341,36 @@ function createInitialMeshes(  ) {
             myMesh1.add( mesh );
             
             myMesh1.position.set( -1 , 0, 0 );
-        
+       
             myMesh1.addEventListener('mouseover', (event) => {
                 if ( isPlaying ) return;
+
+                hovering = 1;
+
+                if ( isDragging2 ) return;
 
                 let selectedObjects = [];
                 selectedObjects[0] = event.target;
                 outlinePersp.selectedObjects = selectedObjects;
                 outlineOrtho.selectedObjects = selectedObjects;
                 document.body.style.cursor = 'pointer';
-                hovering = 1;
             });
             myMesh1.addEventListener('mouseout', (event) => {
                 if ( isPlaying ) return;
 
+                hovering = 0;
+
+                if ( isDragging1 || isDragging2 ) return; 
+
                 outlinePersp.selectedObjects = [];
                 outlineOrtho.selectedObjects = [];
                 document.body.style.cursor = 'default';
-                hovering = 0;
             }); 
             myMesh1.addEventListener('mousedown', (event) => {
                 if ( isPlaying ) return;
 
                 if ( hovering && control1.enabled ) {
+                    isDragging1 = true;
                     control1.pointerDown( control1._getPointer( event ) );
                     control1.pointerMove( control1._getPointer( event ) );
                 }
@@ -527,6 +379,30 @@ function createInitialMeshes(  ) {
                 if ( isPlaying ) return;
                 
                 control1.pointerUp( control1._getPointer( event ) );
+
+                isDragging1 = false;
+
+                // updates outline based on what is hovered now
+                if ( hovering === 1 ) {
+                    // hovering myMesh1
+                    let selectedObjects = [];
+                    selectedObjects[0] = myMesh1;
+                    outlinePersp.selectedObjects = selectedObjects;
+                    outlineOrtho.selectedObjects = selectedObjects;
+                    document.body.style.cursor = 'pointer';
+                } else if ( hovering === 2 ) {
+                    // hovering myMesh2
+                    let selectedObjects = [];
+                    selectedObjects[0] = myMesh2;
+                    outlinePersp.selectedObjects = selectedObjects;
+                    outlineOrtho.selectedObjects = selectedObjects;
+                    document.body.style.cursor = 'pointer';
+                } else {
+                    // no hovering
+                    outlinePersp.selectedObjects = [];
+                    outlineOrtho.selectedObjects = [];
+                    document.body.style.cursor = 'default';
+                }
 
                 myMesh1.matrixWorldNeedsUpdate = true;
 
@@ -545,31 +421,62 @@ function createInitialMeshes(  ) {
             myMesh2.addEventListener('mouseover', (event) => {
                 if ( isPlaying ) return;
 
+                hovering = 2;
+
+                if ( isDragging1 ) return;
+
                 let selectedObjects = [];
                 selectedObjects[0] = event.target;
                 outlinePersp.selectedObjects = selectedObjects;
                 outlineOrtho.selectedObjects = selectedObjects;
                 document.body.style.cursor = 'pointer';
-                hovering = 2;
             });
             myMesh2.addEventListener('mouseout', (event) => {
                 if ( isPlaying ) return;
 
+                hovering = 0;
+
+                if ( isDragging1 || isDragging2 ) return;
+
                 outlinePersp.selectedObjects = [];
                 outlineOrtho.selectedObjects = [];
                 document.body.style.cursor = 'default';
-                hovering = 0;
             }); 
             myMesh2.addEventListener('mousedown', (event) => {
                 if ( isPlaying ) return;
 
                 if ( hovering && control2.enabled ) {
+                    isDragging2 = true;
                     control2.pointerDown( control2._getPointer( event ) );
                     control2.pointerMove( control2._getPointer( event ) );
                 }
             });
             myMesh2.addEventListener('mouseup', (event) => {
                 if ( isPlaying ) return;
+
+                isDragging2 = false;
+
+                // updates outline based on what is hovered now
+                if ( hovering === 1 ) {
+                    // hovering myMesh1
+                    let selectedObjects = [];
+                    selectedObjects[0] = myMesh1;
+                    outlinePersp.selectedObjects = selectedObjects;
+                    outlineOrtho.selectedObjects = selectedObjects;
+                    document.body.style.cursor = 'pointer';
+                } else if ( hovering === 2 ) {
+                    // hovering myMesh2
+                    let selectedObjects = [];
+                    selectedObjects[0] = myMesh2;
+                    outlinePersp.selectedObjects = selectedObjects;
+                    outlineOrtho.selectedObjects = selectedObjects;
+                    document.body.style.cursor = 'pointer';
+                } else {
+                    // no hovering
+                    outlinePersp.selectedObjects = [];
+                    outlineOrtho.selectedObjects = [];
+                    document.body.style.cursor = 'default';
+                }
 
                 control2.pointerUp( control2._getPointer( event ) );
 
@@ -621,10 +528,24 @@ function createInitialMeshes(  ) {
         }
     )
     // After Adding Mesh to TransformControls, adds TransformControl to Scene (Gizmo)
-    scene.add( control1.getHelper() );
-    scene.add( control2.getHelper() );
-    // scene.add( control1 );
-    // scene.add( control2 );
+    const helper1 = control1.getHelper();
+    const helper2 = control2.getHelper();
+
+    scene.add( helper1 );
+    scene.add( helper2 );
+
+    // hides helper
+    helper1.traverse(( child ) => {
+        if ( child.isTransformControlsPlane ) {
+            child.visible = false;
+        }
+    });
+
+    helper2.traverse(( child ) => {
+        if ( child.isTransformControlsPlane ) {
+            child.visible = false;
+        }
+    });
 }
 
 function createAnimationMesh() {
@@ -681,7 +602,6 @@ function createAnimationMesh() {
     setMeshTransparency( animationMesh, true );
     scene.add( animationMesh );
 
-    // startMesh.children[0].children[0].material.depthTest
     updateTransformation();
 
     if ( myMesh1 && myMesh2 && animationMesh ) {
@@ -689,10 +609,6 @@ function createAnimationMesh() {
         cloneMaterials( endMesh );
         cloneMaterials( animationMesh );
     }
-
-    // update( startMesh );
-    // update( endMesh );
-    // update( animationMesh );
 
     console.log( "Animation mesh created:", animationMesh );
 }
@@ -898,6 +814,8 @@ const frontViewButton = document.getElementById( 'frontView' );
 const rightViewButton = document.getElementById( 'rightView' );
 const leftViewButton = document.getElementById( 'leftView' );
 const topViewButton = document.getElementById( 'topView' );
+const botViewButton = document.getElementById( 'botView' );
+const behindViewButton = document.getElementById( 'behindView' );
 const cameraViews = [
     {
         vector: new THREE.Vector3( 0, 0, 2 ),
@@ -913,6 +831,14 @@ const cameraViews = [
     },
     {
         vector: new THREE.Vector3( 0, 2, 0 ),
+        button: topViewButton
+    },
+    {
+        vector: new THREE.Vector3( 0, -2, 0 ),
+        button: topViewButton
+    },
+    {
+        vector: new THREE.Vector3( 0, 0, -2 ),
         button: topViewButton
     }
 ];
@@ -1021,6 +947,9 @@ function toggleGizmo(  ) {
     // control.enabled = ! control.enabled;
     showGizmo = ! showGizmo;
     gizmoButton.classList.toggle( 'active' );
+    [ gizmoTranslate, gizmoRotate, gizmoScale ].forEach( button => {
+        button.classList.toggle( "hidden" );
+    });
 
     control1.showX = control1.showY = control1.showZ = ! control1.showX;
     control2.showX = control2.showY = control2.showZ = ! control2.showX;
@@ -1167,7 +1096,6 @@ progressBar.addEventListener('input', (e) => {
     
     scrubTransparencyTimeout = setTimeout( () => {
         scrubTransparencyTimeout = null;
-        // applyPauseTransparency();
         toggleTransparencySmooth();
     }, 3000 );
     // Smoothtransparency ( just to find code )
@@ -1182,13 +1110,13 @@ perspectiveButton.addEventListener('click', (e) => {
             perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '3D' : '2D';
             changeCamera();
         }, smoothCameraDuration * 1010 );
-        [ frontViewButton, leftViewButton, rightViewButton ].forEach( button => {
+        [ frontViewButton, leftViewButton, rightViewButton, botViewButton, behindViewButton ].forEach( button => {
             button.classList.toggle( 'hidden' );
         });
         return;
     }
     perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '3D' : '2D';
-    [ frontViewButton, leftViewButton, rightViewButton ].forEach( button => {
+    [ frontViewButton, leftViewButton, rightViewButton, botViewButton, behindViewButton ].forEach( button => {
         button.classList.toggle( 'hidden' );
     });
     changeCamera();
@@ -1550,13 +1478,12 @@ stillshotSlider.addEventListener( "input", () => {
     if ( stillshotMeshes.length == 0 ) return;
     animationMesh.children[0].children[0].material.visible = true;
     generateStillshot( Number( stillshotSlider.value ) );
-    animationMesh.children[0].children[0].material.visible = false;
 });
 stillshotBtn.addEventListener( "click", () => {
     if ( stillshotMeshes.length == 0 ) generateStillshot( Number( stillshotSlider.value ) );
     else clearStillshot();
+
     if ( isPlaying ) applyPlayTransparency();
-    else animationMesh.children[0].children[0].material.visible = ! animationMesh.children[0].children[0].material.visible;
     stillshotBtn.classList.toggle( 'active' );
 });
 
@@ -1579,6 +1506,8 @@ function clearStillshot() {
 
     setMeshColor( startMesh, baseMeshColor );
     setMeshColor( endMesh, baseMeshColor );
+
+    animationMesh.children[0].children[0].material.visible = true;
 }
 
 function setMeshColor( meshGroup, color ) {
@@ -1649,12 +1578,14 @@ function generateStillshot( count ) {
 
         applyGradientColor( clone, t );
 
-        clone.children[0].children[0].material.transparent = ! clone.children[0].children[0].material.transparent;
+        clone.children[0].children[0].material.transparent = startMesh.children[0].children[0].material.transparent;
         
         clone.visible = true;
         scene.add( clone );
         stillshotMeshes.push( clone );
     }
+
+    animationMesh.children[0].children[0].material.visible = false;
 
     console.log( stillshotMeshes );
 }
@@ -1804,12 +1735,6 @@ function applyPlayTransparency() {
         setMeshTransparency( m, true );
     });
     if ( showGizmo ) toggleGizmo();
-}
-function applyPauseTransparency() {
-    setMeshTransparency( myMesh1, false );
-    setMeshTransparency( myMesh2, false );
-    setMeshTransparency( animationMesh, true );
-    stillshotMeshes.forEach( m => setMeshTransparency( m, false ) );
 }
 
 // Mode tab switching
@@ -2340,9 +2265,106 @@ function mixScale( scaleA, scaleB, t, mode ) {
 
 // ##### MATRIX ##### //
 
+let matrixNormMode = 'none'; // 'none', 'columns', 'rows'
+document.querySelectorAll( 'input[name="matrixNorm"]' ).forEach(( elem ) => {
+    elem.addEventListener( 'change', ( e ) => {
+        e.target.blur();
+        matrixNormMode = e.target.value;
+    });
+});
+let matrixPolarDecomp = false;
+const svdCheckbox = document.getElementById( 'matrixPolarDecomp' );
+svdCheckbox.addEventListener( 'change', ( e ) => {
+    e.target.blur();
+    matrixPolarDecomp = e.target.checked;
+});
+
+function normalizeMatrixColumns( matrix ) {
+    // column 0 (m0, m1, m2)
+    let len0 = Math.sqrt( matrix.m0 * matrix.m0 + matrix.m1 * matrix.m1 + matrix.m2 * matrix.m2 );
+    if ( len0 > 1e-10 ) {
+        matrix.m0 /= len0;
+        matrix.m1 /= len0;
+        matrix.m2 /= len0;
+    }
+    // column 1 (m4, m5, m6)
+    let len1 = Math.sqrt( matrix.m4 * matrix.m4 + matrix.m5 * matrix.m5 + matrix.m6 * matrix.m6 );
+    if ( len1 > 1e-10 ) {
+        matrix.m4 /= len1;
+        matrix.m5 /= len1;
+        matrix.m6 /= len1;
+    }
+    // column 2 (m8, m9, m10)
+    let len2 = Math.sqrt( matrix.m8 * matrix.m8 + matrix.m9 * matrix.m9 + matrix.m10 * matrix.m10 );
+    if ( len2 > 1e-10 ) {
+        matrix.m8 /= len2;
+        matrix.m9 /= len2;
+        matrix.m10 /= len2;
+    }
+    // column 3 (translation) no normalization
+}
+function normalizeMatrixRows( matrix ) {
+    // row 0 (m0, m4, m8)
+    let len0 = Math.sqrt( matrix.m0 * matrix.m0 + matrix.m4 * matrix.m4 + matrix.m8 * matrix.m8 );
+    if ( len0 > 1e-10 ) {
+        matrix.m0 /= len0;
+        matrix.m4 /= len0;
+        matrix.m8 /= len0;
+    }
+    // row 1 (m1, m5, m9)
+    let len1 = Math.sqrt( matrix.m1 * matrix.m1 + matrix.m5 * matrix.m5 + matrix.m9 * matrix.m9 );
+    if ( len1 > 1e-10 ) {
+        matrix.m1 /= len1;
+        matrix.m5 /= len1;
+        matrix.m9 /= len1;
+    }
+    // row 2 (m2, m6, m10)
+    let len2 = Math.sqrt( matrix.m2 * matrix.m2 + matrix.m6 * matrix.m6 + matrix.m10 * matrix.m10);
+    if ( len2 > 1e-10 ) {
+        matrix.m2 /= len2;
+        matrix.m6 /= len2;
+        matrix.m10 /= len2;
+    }
+    // row 3 (translation) no normalization
+}
+// polar decomposition extracts the pure rotation from the 3x3 R+S matrix
+function polarDecomposition(matrix) {
+    // Estrai la matrice 3×3 (ignora traslazione)
+    const M = [
+        [matrix.m0, matrix.m4, matrix.m8],
+        [matrix.m1, matrix.m5, matrix.m9],
+        [matrix.m2, matrix.m6, matrix.m10]
+    ];
+
+    // Calcola M^T × M
+    const MTM = multiplyMatrix3x3Transpose(M, M);
+
+    // Trova autovalori e autovettori di M^T × M (eigendecomposition)
+    const eigen = eigenDecomposition3x3(MTM);
+
+    // Calcola Σ^(-1/2) dalla radice quadrata degli autovalori
+    const sqrtInvEigenvalues = [
+        1.0 / Math.sqrt(eigen.values[0]),
+        1.0 / Math.sqrt(eigen.values[1]),
+        1.0 / Math.sqrt(eigen.values[2])
+    ];
+
+    // Costruisci V × Σ^(-1/2) × V^T
+    const V = eigen.vectors;
+    const VSinvVT = constructRotationFromEigen(V, sqrtInvEigenvalues);
+
+    // R = M × (M^T × M)^(-1/2)
+    const R = multiplyMatrix3x3(M, VSinvVT);
+
+    // Scrivi R nella matrice risultato (mantieni traslazione)
+    matrix.m0 = R[0][0]; matrix.m4 = R[0][1]; matrix.m8 = R[0][2];
+    matrix.m1 = R[1][0]; matrix.m5 = R[1][1]; matrix.m9 = R[1][2];
+    matrix.m2 = R[2][0]; matrix.m6 = R[2][1]; matrix.m10 = R[2][2];
+}
+
 // Interpolates linearly between two matrices
 function mixMatrixTransform( encodedA, encodedB, t ) {
-    return {
+    const result = {
         m0:  encodedA.m0  * ( 1 - t ) + encodedB.m0  * t,
         m1:  encodedA.m1  * ( 1 - t ) + encodedB.m1  * t,
         m2:  encodedA.m2  * ( 1 - t ) + encodedB.m2  * t,
@@ -2360,6 +2382,17 @@ function mixMatrixTransform( encodedA, encodedB, t ) {
         m14: encodedA.m14 * ( 1 - t ) + encodedB.m14 * t,
         m15: encodedA.m15 * ( 1 - t ) + encodedB.m15 * t
     }
+
+    // normalization
+    if ( matrixNormMode === 'columns' ) normalizeMatrixColumns( result ) ;
+    else if ( matrixNormMode === 'rows' ) normalizeMatrixRows( result );
+
+    // polar decomposition via SVD
+    // if ( matrixPolarDecomp ) {
+    //     polarDecomposition( result );
+    // }
+
+    return result;
 }
 
 // ##### EULER ANGLES ##### //
@@ -2385,12 +2418,6 @@ let eulerScaleMode = 'arithmetic';
 document.querySelectorAll('input[name="eulerScale"]').forEach( ( elem ) => {
     elem.addEventListener( 'change', ( event ) => {
         eulerScaleMode = event.target.value;
-    });
-});
-let eulerRotMode = 'parallel';
-document.querySelectorAll('input[name="eulerRot"]').forEach( ( elem ) => {
-    elem.addEventListener( 'change', ( event ) => {
-        eulerRotMode = event.target.value;
     });
 });
 // Interpolates between two Euler-based transforms
@@ -2421,68 +2448,20 @@ function mixEulerTransform( a, b, t ) {
 
     const scale = mixScale( a.scale, b.scale, t, eulerScaleMode );
 
-    if ( eulerRotMode === "parallel" ) {
-        // Interpolates Euler angles directly (not ideal for all cases)
-        const rx = lerpEuler( a.rotation_x, b.rotation_x, t );
-        const ry = lerpEuler( a.rotation_y, b.rotation_y, t );
-        const rz = lerpEuler( a.rotation_z, b.rotation_z, t );
+    // Interpolates Euler angles directly (not ideal for all cases)
+    const rx = lerpEuler( a.rotation_x, b.rotation_x, t );
+    const ry = lerpEuler( a.rotation_y, b.rotation_y, t );
+    const rz = lerpEuler( a.rotation_z, b.rotation_z, t );
 
-        return { 
-            translation_x : tx, 
-            translation_y : ty, 
-            translation_z : tz,
-            rotation_x: rx,
-            rotation_y: ry,
-            rotation_z: rz,
-            scale: scale
-        };
-    }
-    // DA SISTEMARE
-    else {
-        let rx = a.rotation.x;
-        let ry = a.rotation.y;
-        let rz = a.rotation.z;
-
-        if ( t < 1/3 ) {
-            // phase 1: ONLY X rotates
-            const k = t * 3;
-            if (order[0] === 'X') rx = lerpEuler(a.rotation.x, b.rotation.x, k);
-            if (order[0] === 'Y') ry = lerpEuler(a.rotation.y, b.rotation.y, k);
-            if (order[0] === 'Z') rz = lerpEuler(a.rotation.z, b.rotation.z, k);
-        }
-        else if ( t < 2/3 ) {
-            // phase 1: X completed
-            if (order[0] === 'X') rx = b.rotation.x;
-            if (order[0] === 'Y') ry = b.rotation.y;
-            if (order[0] === 'Z') rz = b.rotation.z;
-            // phase 2: ONLY Y rotates
-            const k = ( t - 1/3 ) * 3;
-            if (order[1] === 'X') rx = lerpEuler(a.rotation.x, b.rotation.x, k);
-            if (order[1] === 'Y') ry = lerpEuler(a.rotation.y, b.rotation.y, k);
-            if (order[1] === 'Z') rz = lerpEuler(a.rotation.z, b.rotation.z, k);
-        }
-        else {
-            // phase 1: X completed
-            if (order[0] === 'X') rx = b.rotation.x;
-            if (order[0] === 'Y') ry = b.rotation.y;
-            if (order[0] === 'Z') rz = b.rotation.z;
-            // phase 2: Y completed
-            if (order[1] === 'X') rx = b.rotation.x;
-            if (order[1] === 'Y') ry = b.rotation.y;
-            if (order[1] === 'Z') rz = b.rotation.z;
-
-            // phase 3: ONLY Z rotates
-            const k = ( t - 2/3 ) * 3;
-            if (order[2] === 'X') rx = lerpEuler(a.rotation.x, b.rotation.x, k);
-            if (order[2] === 'Y') ry = lerpEuler(a.rotation.y, b.rotation.y, k);
-            if (order[2] === 'Z') rz = lerpEuler(a.rotation.z, b.rotation.z, k);
-        }
-
-        // Compose the final Euler
-        const rot = new THREE.Euler( rx, ry, rz, eulerRotationOrder );
-
-        return { position: pos, rotation: rot, scale: scale };
-    }
+    return { 
+        translation_x : tx, 
+        translation_y : ty, 
+        translation_z : tz,
+        rotation_x: rx,
+        rotation_y: ry,
+        rotation_z: rz,
+        scale: scale
+    };
 }
 
 // ##### AXIS-ANGLE ##### //
@@ -3312,6 +3291,7 @@ window.addEventListener( 'keyup', function(event){
 
 // Drag Movement
 let isDragging = false;
+
 let currentButton = null;
 let activeControl = null;
 

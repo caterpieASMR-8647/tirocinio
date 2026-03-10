@@ -79,16 +79,18 @@
                               <div class="panelTitle">Camera</div>
 
                               <div class="row">
-                                    <div class="subSection" style="width: 50%;">
+                                    <div class="subSection" style="width: 60%;">
                                           <div class="subTitle">Preset Views</div>
                                           <div class="buttonRow">
                                                 <button class="active" id="frontView">Front</button>
                                                 <button id="leftView">Left</button>
                                                 <button id="rightView">Right</button>
                                                 <button id="topView">Top</button>
+                                                <button id="botView">Bottom</button>
+                                                <button id="behindView">Behind</button>
                                           </div>
                                     </div>
-                                    <div class="subSection" style="width: 50%;">
+                                    <div class="subSection" style="width: 40%;">
                                           <div class="subTitle">View</div>
                                           <div class="buttonRow">
                                                 <button id="perspectiveChange">2D</button>
@@ -165,10 +167,10 @@
                                     <div class="subSection" style="width: 50%;">
                                           <div class="subTitle">UI</div>
                                           <div class="buttonRow">
-                                                <button id="gizmoToggle">Gizmos</button>
-                                                <button id="gizmoTransl">T</button>
-                                                <button id="gizmoRot">R</button>
-                                                <button id="gizmoScale">S</button>
+                                                <button id="gizmoToggle">UI</button>
+                                                <button id="gizmoTransl" class="hidden">T</button>
+                                                <button id="gizmoRot" class="hidden">R</button>
+                                                <button id="gizmoScale" class="hidden">S</button>
                                           </div>
                                     </div>
                               </div>
@@ -212,8 +214,15 @@
                                                       <div class="modTitle" id="matrixInterpTitle">
                                                             <b>Interpolation:</b><br>
                                                       </div>
+                                                      <div class="modEntry">
+                                                            <b>Matrix Normalization:</b>
+                                                            <input type="radio" name="matrixNorm" value="none" checked> None
+                                                            <input type="radio" name="matrixNorm" value="columns"> Columns
+                                                            <input type="radio" name="matrixNorm" value="rows"> Rows
+                                                      </div>
                                                       <div class="lastModEntry">
-                                                            No Options Avaliable<br>
+                                                            <b>Matrix Normalization:</b>
+                                                            <input type="checkbox" id="matrixPolarDecomp"> SVD
                                                       </div>
                                                 </div>
                                           </div>
@@ -242,11 +251,6 @@
                                                                         <option value="TRS">Scale → Rotate → Translate</option>
                                                                   </select>
                                                             </div>
-                                                      </div>
-                                                      <div class="modEntry">
-                                                            <b>Rotations Mode:</b>
-                                                            <input type="radio" name="eulerRot" value="parallel" checked> Parallel
-                                                            <input type="radio" name="eulerRot" value="series"> Series
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <div class="inline">
