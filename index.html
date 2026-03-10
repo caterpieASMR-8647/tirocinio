@@ -47,7 +47,7 @@
                                                 <div id="phaseMarkers"></div>
                                           </div>
                                           <button id="reverseButton" hidden>Reverse</button>
-                                          <button id="boomerangButton">Boomerang</button>
+                                          <button id="boomerangButton" class="active">Boomerang</button>
                                     </div>
 
                                     <div class="inline" style="margin: 5px 0 5px;"></div>
@@ -215,13 +215,15 @@
                                                             <b>Interpolation:</b><br>
                                                       </div>
                                                       <div class="modEntry">
-                                                            <b>Matrix Normalization:</b>
+                                                            <b>Re-Normalization:</b>
                                                             <input type="radio" name="matrixNorm" value="none" checked> None
-                                                            <input type="radio" name="matrixNorm" value="columns"> Columns
-                                                            <input type="radio" name="matrixNorm" value="rows"> Rows
+                                                            <input type="radio" name="matrixNorm" value="columns"> Per Column
+                                                            <input type="radio" name="matrixNorm" value="rows"> Per Row
+                                                            <input type="radio" name="matrixNorm" value="svd"> Orthonormalize (SVD) 
+                                                            <input type="radio" name="matrixNorm" value="svd"> Orthonormalize (Godot Style)
                                                       </div>
                                                       <div class="lastModEntry">
-                                                            <b>Matrix Normalization:</b>
+                                                            <b>Ortho-Normalization:</b>
                                                             <input type="checkbox" id="matrixPolarDecomp"> SVD
                                                       </div>
                                                 </div>
@@ -452,7 +454,7 @@
                                                       </div>
                                                       <div class="modEntry" id="dualquatNormType" checked>
                                                             <input type="checkbox" id="dualquatNormPrimal" checked> Normalize Primal
-                                                            <input type="checkbox" id="dualquatNormDual" checked> Normalize Dual
+                                                            <!-- <input type="checkbox" id="dualquatNormDual" checked> Normalize Dual -->
                                                       </div>
                                                       <div class="modEntry">
                                                             <input type="checkbox" id="dualquatReHortDual" checked>Re-Hortogonalize Dual

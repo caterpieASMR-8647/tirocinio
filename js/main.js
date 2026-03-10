@@ -1009,7 +1009,7 @@ reverseButton.addEventListener('click', (e) => {
     animDirection = -1;
     playAnim();
 });
-let boomerang = false
+let boomerang = true
 boomerangButton.addEventListener('click', (e) => {
     e.target.blur();
     boomerang = ! boomerang;
@@ -2748,12 +2748,12 @@ dualquatNormPrimalCheckbox.addEventListener( 'change', (e) => {
     e.target.blur();
     dualquatNormPrimal = dualquatNormPrimalCheckbox.checked;
 });
-const dualquatNormDualCheckbox  = document.getElementById( 'dualquatNormDual' );
-let dualquatNormDual = true;
-dualquatNormDualCheckbox.addEventListener( 'change', (e) => {
-    e.target.blur();
-    dualquatNormDual = dualquatNormDualCheckbox.checked;
-});
+// const dualquatNormDualCheckbox  = document.getElementById( 'dualquatNormDual' );
+// let dualquatNormDual = true;
+// dualquatNormDualCheckbox.addEventListener( 'change', (e) => {
+//     e.target.blur();
+//     dualquatNormDual = dualquatNormDualCheckbox.checked;
+// });
 const dualquatReHortDualCheckbox = document.getElementById( 'dualquatReHortDual' );
 let dualquatReHortDual = true;
 dualquatReHortDualCheckbox.addEventListener( 'change', (e) => {
@@ -2888,12 +2888,13 @@ function mixDualQuaternionTransform( a, b, t ) {
         primal.z /= norm;
         primal.w /= norm;
     }
-    if ( dualquatNormDual ) {
-        dual.x /= norm;
-        dual.y /= norm;
-        dual.z /= norm;
-        dual.w /= norm;
-    }
+    // dual is never normalized
+    // if ( dualquatNormDual ) {
+    //     dual.x /= norm;
+    //     dual.y /= norm;
+    //     dual.z /= norm;
+    //     dual.w /= norm;
+    // }
 
     // Re-Hortogonalize dual
     if ( dualquatReHortDual ) {
