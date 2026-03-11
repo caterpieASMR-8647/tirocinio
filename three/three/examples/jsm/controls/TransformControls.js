@@ -212,7 +212,7 @@ class TransformControls extends Controls {
 		 * @type {number}
 		 * @default 1
 		 */
-		defineProperty( 'size', 1 );
+		defineProperty( 'size', 0 );
 
 		/**
 		 * Whether dragging is currently performed or not.
@@ -1531,7 +1531,8 @@ class TransformControlsGizmo extends Object3D {
 		this.gizmo[ 'rotate' ].visible = this.mode === 'rotate';
 		this.gizmo[ 'scale' ].visible = this.mode === 'scale';
 
-		this.helper[ 'translate' ].visible = this.mode === 'translate';
+		// this.helper[ 'translate' ].visible = this.mode === 'translate';
+		this.helper[ 'translate' ].visible = false;
 		this.helper[ 'rotate' ].visible = this.mode === 'rotate';
 		this.helper[ 'scale' ].visible = this.mode === 'scale';
 
