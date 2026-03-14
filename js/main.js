@@ -335,6 +335,12 @@ function createInitialMeshes(  ) {
             // Translates Mesh so that its Mass Center is in the Center of the Group
             mesh.position.sub( center );
 
+            if ( ! mesh.children[0].material ) {
+                mesh.children[0].material = new THREE.MeshPhongMaterial();
+            }
+
+            console.log(mesh.children[0].material);
+
             mesh.children[0].material.depthWrite = true;
 
             myMesh1.add( mesh );
@@ -1108,7 +1114,6 @@ progressBar.addEventListener('input', (e) => {
     if ( isPlaying ) playAnim();
 
     applyPlayTransparency();
-    console.log("calls eventlistener");
 
     if ( scrubTransparencyTimeout ) clearTimeout( scrubTransparencyTimeout );
     
