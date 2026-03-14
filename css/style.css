@@ -640,8 +640,12 @@ html, body {
 }
 .lastModEntry {
   display: flex;
+  flex-wrap: wrap;
   gap: 5px;
   padding-bottom: 5px;
+}
+.lastModEntry label {
+  white-space: nowrap;
 }
 
 .transformInput {

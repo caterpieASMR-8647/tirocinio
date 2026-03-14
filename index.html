@@ -165,12 +165,11 @@
                                     </div>
 
                                     <div class="subSection" style="width: 50%;">
-                                          <div class="subTitle">UI</div>
+                                          <div class="subTitle">UI (Gizmo)</div>
                                           <div class="buttonRow">
-                                                <button id="gizmoToggle">UI</button>
-                                                <button id="gizmoTransl" class="hidden">T</button>
-                                                <button id="gizmoRot" class="hidden">R</button>
-                                                <button id="gizmoScale" class="hidden">S</button>
+                                                <button id="gizmoTransl">T</button>
+                                                <button id="gizmoRot">R</button>
+                                                <button id="gizmoScale">S</button>
                                           </div>
                                     </div>
                               </div>
@@ -214,17 +213,13 @@
                                                       <div class="modTitle" id="matrixInterpTitle">
                                                             <b>Interpolation:</b><br>
                                                       </div>
-                                                      <div class="modEntry">
+                                                      <div class="lastModEntry">
                                                             <b>Re-Normalization:</b>
                                                             <input type="radio" name="matrixNorm" value="none" checked> None
                                                             <input type="radio" name="matrixNorm" value="columns"> Per Column
                                                             <input type="radio" name="matrixNorm" value="rows"> Per Row
-                                                            <input type="radio" name="matrixNorm" value="svd"> Orthonormalize (SVD) 
-                                                            <input type="radio" name="matrixNorm" value="svd"> Orthonormalize (Godot Style)
-                                                      </div>
-                                                      <div class="lastModEntry">
-                                                            <b>Ortho-Normalization:</b>
-                                                            <input type="checkbox" id="matrixPolarDecomp"> SVD
+                                                            <label><input type="radio" name="matrixNorm" value="svd"> Orthonormalize (SVD)</label>
+                                                            <label><input type="radio" name="matrixNorm" value="godot"> Orthonormalize (Godot Style)</label>
                                                       </div>
                                                 </div>
                                           </div>
@@ -503,7 +498,7 @@
             </div>
             </div>
             
-
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
             <script type="module" src="js/main.js"></script>
       </body>
 

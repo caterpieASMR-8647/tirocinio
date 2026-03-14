@@ -125,7 +125,6 @@ control1.addEventListener( 'objectChange', () => {
 
 let control2 = new TransformControls( currentCamera, renderer.domElement );
 control2.showX = control2.showY = control2.showZ = false;
-// control2.showHelper = false;
 control2.addEventListener( 'change', render );
 control2.addEventListener( 'dragging-changed', function (event) {
     orbit.enabled = ! event.value;
@@ -535,17 +534,17 @@ function createInitialMeshes(  ) {
     scene.add( helper2 );
 
     // hides helper
-    helper1.traverse(( child ) => {
-        if ( child.isTransformControlsPlane ) {
-            child.visible = false;
-        }
-    });
+    // helper1.traverse(( child ) => {
+    //     if ( child.isTransformControlsPlane ) {
+    //         child.visible = false;
+    //     }
+    // });
 
-    helper2.traverse(( child ) => {
-        if ( child.isTransformControlsPlane ) {
-            child.visible = false;
-        }
-    });
+    // helper2.traverse(( child ) => {
+    //     if ( child.isTransformControlsPlane ) {
+    //         child.visible = false;
+    //     }
+    // });
 }
 
 function createAnimationMesh() {
@@ -943,16 +942,36 @@ function smoothCameraTransition ( finalPosition ) {
 }
 
 // Toggles Gizmos On/Off
-function toggleGizmo(  ) {
+function toggleGizmo( selectedButton ) {
     // control.enabled = ! control.enabled;
-    showGizmo = ! showGizmo;
-    gizmoButton.classList.toggle( 'active' );
-    [ gizmoTranslate, gizmoRotate, gizmoScale ].forEach( button => {
-        button.classList.toggle( "hidden" );
-    });
+    if ( selectedButton === 'none' || selectedButton.classList.contains( 'active' ) ) {
+        [ gizmoTranslate, gizmoRotate, gizmoScale ].forEach( button => {
+            button.classList.remove( 'active' );
+        });
+        showGizmo = false;
+        control1.showX = control1.showY = control1.showZ = false;
+        control2.showX = control2.showY = control2.showZ = false;
 
-    control1.showX = control1.showY = control1.showZ = ! control1.showX;
-    control2.showX = control2.showY = control2.showZ = ! control2.showX;
+        return;
+    }
+    if ( ! gizmoTranslate.classList.contains( 'active' ) && ! gizmoRotate.classList.contains( 'active' ) && ! gizmoScale.classList.contains( 'active' ) ) {
+        selectedButton.classList.add( 'active' );
+
+        showGizmo = true;
+        control1.showX = control1.showY = control1.showZ = true;
+        control2.showX = control2.showY = control2.showZ = true;
+
+        return;
+    }
+
+    [ gizmoTranslate, gizmoRotate, gizmoScale ].forEach( button => {
+        button.classList.remove( 'active' );
+    });
+    selectedButton.classList.add( 'active' );
+
+    showGizmo = true;
+    control1.showX = true; control1.showY = true; control1.showZ = true;
+    control2.showX = control2.showY = control2.showZ = true;
 }
 
 // Transformation Matrix 
@@ -985,7 +1004,6 @@ const playButton = document.getElementById( 'playButton' );
 const reverseButton = document.getElementById( 'reverseButton' );
 const boomerangButton = document.getElementById( 'boomerangButton' );
 const progressBar = document.getElementById( 'progressBar' );
-const gizmoButton = document.getElementById( 'gizmoToggle' );
 const perspectiveButton = document.getElementById( 'perspectiveChange' );
 const resetButtons = document.querySelectorAll( 'button[data-target][data-action]' );
 const legendToggle = document.getElementById( 'legendToggle' );
@@ -1052,7 +1070,7 @@ function playAnim (  ) {
         stillshotMeshes.forEach( m => {
             setMeshTransparency( m, true );
         });
-        if ( showGizmo ) toggleGizmo();
+        if ( showGizmo ) toggleGizmo( 'none' );
         
         control1.enabled = false;
         control2.enabled = false;
@@ -1125,22 +1143,21 @@ perspectiveButton.addEventListener('click', (e) => {
 const gizmoTranslate = document.getElementById( 'gizmoTransl' );
 const gizmoRotate = document.getElementById( 'gizmoRot' );
 const gizmoScale = document.getElementById( 'gizmoScale' );
-gizmoButton.addEventListener('click', (e) => {
-    e.target.blur();
-    toggleGizmo();
-});
 gizmoTranslate.addEventListener( 'click', (e) =>{
     e.target.blur();
+    toggleGizmo( gizmoTranslate );
     control1.setMode( 'translate' );
     control2.setMode( 'translate' );
 });
 gizmoRotate.addEventListener( 'click', (e) =>{
     e.target.blur();
+    toggleGizmo( gizmoRotate );
     control1.setMode( 'rotate' );
     control2.setMode( 'rotate' );
 });
 gizmoScale.addEventListener( 'click', (e) =>{
     e.target.blur();
+    toggleGizmo( gizmoScale );
     control1.setMode( 'scale' );
     control2.setMode( 'scale' );
 });
@@ -1734,7 +1751,7 @@ function applyPlayTransparency() {
     stillshotMeshes.forEach( m => {
         setMeshTransparency( m, true );
     });
-    if ( showGizmo ) toggleGizmo();
+    if ( showGizmo ) toggleGizmo( 'none' );
 }
 
 // Mode tab switching
@@ -2272,12 +2289,6 @@ document.querySelectorAll( 'input[name="matrixNorm"]' ).forEach(( elem ) => {
         matrixNormMode = e.target.value;
     });
 });
-let matrixPolarDecomp = false;
-const svdCheckbox = document.getElementById( 'matrixPolarDecomp' );
-svdCheckbox.addEventListener( 'change', ( e ) => {
-    e.target.blur();
-    matrixPolarDecomp = e.target.checked;
-});
 
 function normalizeMatrixColumns( matrix ) {
     // column 0 (m0, m1, m2)
@@ -2328,38 +2339,54 @@ function normalizeMatrixRows( matrix ) {
     // row 3 (translation) no normalization
 }
 // polar decomposition extracts the pure rotation from the 3x3 R+S matrix
-function polarDecomposition(matrix) {
-    // Estrai la matrice 3×3 (ignora traslazione)
+function orthonormSVD(matrix) {
+    // Extract the 3×3 upper-left block from the 4×4 matrix
     const M = [
         [matrix.m0, matrix.m4, matrix.m8],
         [matrix.m1, matrix.m5, matrix.m9],
         [matrix.m2, matrix.m6, matrix.m10]
     ];
 
-    // Calcola M^T × M
-    const MTM = multiplyMatrix3x3Transpose(M, M);
+    // Perform SVD: M = U × Σ × V^T
+    const svd = numeric.svd(M);
+    const U = svd.U;  // 3×3 left singular vectors
+    const V = svd.V;  // 3×3 right singular vectors
 
-    // Trova autovalori e autovettori di M^T × M (eigendecomposition)
-    const eigen = eigenDecomposition3x3(MTM);
+    // Compute pure rotation: R = U × V^T
+    const VT = numeric.transpose(V);
+    const R = numeric.dot(U, VT);
 
-    // Calcola Σ^(-1/2) dalla radice quadrata degli autovalori
-    const sqrtInvEigenvalues = [
-        1.0 / Math.sqrt(eigen.values[0]),
-        1.0 / Math.sqrt(eigen.values[1]),
-        1.0 / Math.sqrt(eigen.values[2])
-    ];
+    // Write the pure rotation back into the matrix
+    // Keep translation (m12, m13, m14) unchanged
+    matrix.m0  = R[0][0];  matrix.m4 = R[0][1];  matrix.m8  = R[0][2];
+    matrix.m1  = R[1][0];  matrix.m5 = R[1][1];  matrix.m9  = R[1][2];
+    matrix.m2  = R[2][0];  matrix.m6 = R[2][1];  matrix.m10 = R[2][2];
+}
+function orthonormGodot(matrix) {
+    // Extract column vectors from 3×3 rotation part
+    const x = new THREE.Vector3( matrix.m0, matrix.m1, matrix.m2 );
+    const y = new THREE.Vector3( matrix.m4, matrix.m5, matrix.m6 );
+    const z = new THREE.Vector3( matrix.m8, matrix.m9, matrix.m10 );
 
-    // Costruisci V × Σ^(-1/2) × V^T
-    const V = eigen.vectors;
-    const VSinvVT = constructRotationFromEigen(V, sqrtInvEigenvalues);
+    // Gram-Schmidt Process:
+    
+    // Step 1: Normalize X
+    x.normalize();
 
-    // R = M × (M^T × M)^(-1/2)
-    const R = multiplyMatrix3x3(M, VSinvVT);
+    // Step 2: Make Y orthogonal to X, then normalize
+    y.sub( x.clone().multiplyScalar( x.dot( y ) ) );
+    y.normalize();
 
-    // Scrivi R nella matrice risultato (mantieni traslazione)
-    matrix.m0 = R[0][0]; matrix.m4 = R[0][1]; matrix.m8 = R[0][2];
-    matrix.m1 = R[1][0]; matrix.m5 = R[1][1]; matrix.m9 = R[1][2];
-    matrix.m2 = R[2][0]; matrix.m6 = R[2][1]; matrix.m10 = R[2][2];
+    // Step 3: Make Z orthogonal to both X and Y, then normalize
+    z.sub( x.clone().multiplyScalar( x.dot( z ) ) );
+    z.sub( y.clone().multiplyScalar( y.dot( z ) ) );
+    z.normalize();
+
+    // Write orthonormalized vectors back to matrix
+    // Keep translation (m12, m13, m14) unchanged
+    matrix.m0 = x.x;  matrix.m4 = y.x;  matrix.m8  = z.x;
+    matrix.m1 = x.y;  matrix.m5 = y.y;  matrix.m9  = z.y;
+    matrix.m2 = x.z;  matrix.m6 = y.z;  matrix.m10 = z.z;
 }
 
 // Interpolates linearly between two matrices
@@ -2386,11 +2413,8 @@ function mixMatrixTransform( encodedA, encodedB, t ) {
     // normalization
     if ( matrixNormMode === 'columns' ) normalizeMatrixColumns( result ) ;
     else if ( matrixNormMode === 'rows' ) normalizeMatrixRows( result );
-
-    // polar decomposition via SVD
-    // if ( matrixPolarDecomp ) {
-    //     polarDecomposition( result );
-    // }
+    else if ( matrixNormMode === 'svd' ) orthonormSVD( result );
+    else if ( matrixNormMode === 'godot' ) orthonormGodot( result );
 
     return result;
 }
