@@ -753,6 +753,7 @@ function animateCameraTransition( fromCamera, toCamera, duration, onComplete ) {
             toCamera.lookAt(orbit.target);
         }
 
+        orbit.update();
         render();
 
         if (transitionProgress < 1) {
@@ -797,7 +798,7 @@ function changeCamera(  ) {
         currentComposer = newComposer;
     }
 
-    // Starts Animation with Callback
+    // Starts Animation with Callback, and executes this function after completion
     animateCameraTransition( oldCamera, newCamera, transitionDuration, () => {
         if ( currentCamera.isPerspectiveCamera ) {
             currentCamera = newCamera;
@@ -806,12 +807,94 @@ function changeCamera(  ) {
         
         // Updates Controls AFTER Animation
         orbit.object = currentCamera;
+
+        const obj1 = control1.object;
+        const obj2 = control2.object;
+        
+        control1.detach();
+        control2.detach();
+
         control1.camera = currentCamera;
         control2.camera = currentCamera;
         interactionManager.camera = currentCamera;
+
+        control1.attach(obj1);
+        control2.attach(obj2);
+
+        smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
+
+        interactionManager.update();
+        control1.update();
+        control2.update();
         
-        console.log( "Transizione completata - Persp: ", cameraPersp.zoom, "~ Ortho: ", cameraOrtho.zoom );
+        orbit.update();
+        
+        // resets x and z from the objects euler angles
+        keepOnlyY();
+        // changes hidden and active tabs
+        switchTabMode();
+        
+        render();
     });
+
+}
+function switchTabMode() {
+    const activeTab = document.querySelector('.tab.active');
+    if (!activeTab) return;
+    
+    let currentTab = activeTab.dataset.tab;
+    
+    // Mapping per tab che hanno nomi diversi tra gruppi
+    if (currentTab === 'axisangle') currentTab = 'euler';
+    if (currentTab === 'dualquat') currentTab = 'quat';
+    
+    const currentGroup = activeTab.dataset.group;
+    
+    // Toggle hidden su tutte le tab
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('hidden');
+    });
+    
+    // Trova la corrispondente tab nell'altro gruppo
+    const newGroup = currentGroup === 'main' ? 'alt' : 'main';
+    let newActiveTab = document.querySelector(`.tab[data-tab="${currentTab}"][data-group="${newGroup}"]`);
+    
+    // Fallback: se non esiste, prendi la prima visibile del nuovo gruppo
+    if (!newActiveTab) {
+        newActiveTab = document.querySelector(`.tab[data-group="${newGroup}"]:not(.hidden)`);
+    }
+    
+    // Attiva la nuova tab (usando la funzione unificata)
+    if (newActiveTab) {
+        activateTab(newActiveTab);
+    }
+}
+function keepOnlyY() {
+    // Get current transforms
+    const encodedStart = encodeEuler( startMesh.matrix );
+    const encodedEnd = encodeEuler( endMesh.matrix );
+    
+    // Set X and Z rotations to 0, keep Y rotation
+    encodedStart.rotation_x = 0;
+    encodedStart.rotation_z = 0;
+    
+    encodedEnd.rotation_x = 0;
+    encodedEnd.rotation_z = 0;
+    
+    // Apply back to meshes
+    const matrixStart = decodeEuler( encodedStart );
+    const matrixEnd = decodeEuler( encodedEnd );
+    
+    startMesh.setRotationFromMatrix( matrixStart );
+    endMesh.setRotationFromMatrix( matrixEnd );
+
+    startMesh.updateMatrixWorld();
+    endMesh.updateMatrixWorld();
+    
+    // Update display
+    displayTransformation( startMesh, endMesh, animationMesh, progress );
+    updateStillshot();
+    render();
 }
 
 // Used for toggling highlight on active view button
@@ -1126,6 +1209,9 @@ progressBar.addEventListener('input', (e) => {
 
 perspectiveButton.addEventListener('click', (e) => {
     e.target.blur();
+    changePerspective();
+});
+function changePerspective() {
     if ( isTransitioning ) return;
     if ( currentCamera.isPerspectiveCamera && ! topViewButton.classList.contains( 'active' ) ) {
         smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
@@ -1143,7 +1229,7 @@ perspectiveButton.addEventListener('click', (e) => {
         button.classList.toggle( 'hidden' );
     });
     changeCamera();
-});
+}
 
 const gizmoTranslate = document.getElementById( 'gizmoTransl' );
 const gizmoRotate = document.getElementById( 'gizmoRot' );
@@ -1767,41 +1853,45 @@ const tabs = document.querySelectorAll( '.tab' );
 // Select all tab content boxes
 const tabContents = document.querySelectorAll( '.tabContent' );
 const presetSetups = document.querySelectorAll( '.presetSetup' );
-tabs.forEach( tab => {
-    tab.addEventListener( 'click', () => {
-
-        // Remove active class from all tabs 
-        tabs.forEach( t => t.classList.remove( 'active' ) );
-
-        // Set this tab active 
-        tab.classList.add( 'active' );
-
-        const target = tab.dataset.tab;
-        currentTransformMode = target;
-
-        sidePanel.className = target;
-
-        // Show only matching content 
-        tabContents.forEach( box => {
-            if ( box.classList.contains( 'noTabHide' ) ) return;
-            if ( box.dataset.tab === target ) {
-                box.classList.remove( 'hidden' );
-            } else {
-                box.classList.add( 'hidden' );
-            }
-        } );
-
-        // Show only matching setup
-        presetSetups.forEach( setup => {
-            setup.classList.add( 'hidden' );
-        });
-
-        const activeSetup = document.getElementById( `${target}Setup` );
-        if ( activeSetup ) {
-            activeSetup.classList.remove( 'hidden' );
-        }
-    } );
+// Event listener per click sulle tab
+tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        activateTab(tab);
+    });
 });
+
+function activateTab(tabElement) {
+    // Remove active from all tabs
+    tabs.forEach(t => t.classList.remove('active'));
+    
+    // Set this tab active
+    tabElement.classList.add('active');
+    
+    const target = tabElement.dataset.tab;
+    currentTransformMode = target;
+    
+    sidePanel.className = target;
+    
+    // Show only matching content
+    tabContents.forEach(box => {
+        if (box.classList.contains('noTabHide')) return;
+        if (box.dataset.tab === target) {
+            box.classList.remove('hidden');
+        } else {
+            box.classList.add('hidden');
+        }
+    });
+    
+    // Show only matching setup
+    presetSetups.forEach(setup => {
+        setup.classList.add('hidden');
+    });
+    
+    const activeSetup = document.getElementById(`${target}Setup`);
+    if (activeSetup) {
+        activeSetup.classList.remove('hidden');
+    }
+}
 
 // ######################### ENCODE AND DECODE FUNCTIONS ######################### //
 
@@ -1848,6 +1938,99 @@ function extractTRSFromMatrix( matrix, orderTRS ) {
         rotation : rot4,
         scale : s
     };
+}
+// function to extract euler angles with repeated axes
+function extractEulerRepeated(matrix, order) {
+    const m = matrix.elements;
+    
+    // Matrix elements (column-major):
+    // m[0] m[4] m[8]   = R00 R01 R02
+    // m[1] m[5] m[9]   = R10 R11 R12
+    // m[2] m[6] m[10]  = R20 R21 R22
+
+    let rx, ry, rz;
+
+    switch(order) {
+        case 'XYX':
+            ry = Math.acos(Math.max(-1, Math.min(1, m[0])));
+            
+            if (Math.abs(Math.sin(ry)) > 1e-6) {
+                rx = Math.atan2(m[1], -m[2]);
+                rz = Math.atan2(m[4], m[8]);
+            } else {
+                // Gimbal lock
+                rx = Math.atan2(-m[6], m[5]);
+                rz = 0;
+            }
+            break;
+
+        case 'XZX':
+            ry = Math.acos(Math.max(-1, Math.min(1, m[0])));
+            
+            if (Math.abs(Math.sin(ry)) > 1e-6) {
+                rx = Math.atan2(m[2], m[1]);
+                rz = Math.atan2(m[8], -m[4]);
+            } else {
+                rx = Math.atan2(m[9], m[5]);
+                rz = 0;
+            }
+            break;
+
+        case 'YXY':
+            ry = Math.acos(Math.max(-1, Math.min(1, m[5])));
+            
+            if (Math.abs(Math.sin(ry)) > 1e-6) {
+                rx = Math.atan2(m[4], m[6]);
+                rz = Math.atan2(m[1], -m[9]);
+            } else {
+                rx = Math.atan2(-m[8], m[0]);
+                rz = 0;
+            }
+            break;
+
+        case 'YZY':
+            ry = Math.acos(Math.max(-1, Math.min(1, m[5])));
+            
+            if (Math.abs(Math.sin(ry)) > 1e-6) {
+                rx = Math.atan2(m[6], -m[4]);
+                rz = Math.atan2(m[9], m[1]);
+            } else {
+                rx = Math.atan2(m[2], m[10]);
+                rz = 0;
+            }
+            break;
+
+        case 'ZXZ':
+            ry = Math.acos(Math.max(-1, Math.min(1, m[10])));
+            
+            if (Math.abs(Math.sin(ry)) > 1e-6) {
+                rx = Math.atan2(m[8], -m[9]);
+                rz = Math.atan2(m[2], m[6]);
+            } else {
+                rx = Math.atan2(-m[4], m[0]);
+                rz = 0;
+            }
+            break;
+
+        case 'ZYZ':
+            ry = Math.acos(Math.max(-1, Math.min(1, m[10])));
+            
+            if (Math.abs(Math.sin(ry)) > 1e-6) {
+                rx = Math.atan2(m[9], m[8]);
+                rz = Math.atan2(m[6], -m[2]);
+            } else {
+                rx = Math.atan2(m[1], m[5]);
+                rz = 0;
+            }
+            break;
+
+        default:
+            rx = 0;
+            ry = 0;
+            rz = 0;
+    }
+
+    return { x: rx, y: ry, z: rz };
 }
 
 // Function to check if axis is negated ( to preserve it, despite matrix )
@@ -1931,17 +2114,29 @@ function encodeMatrix( matrix ) {
 }
 function encodeEuler( matrix ) {
     const transform = extractTRSFromMatrix( matrix, eulerTRSOrder );
+    let rx, ry, rz;
 
-    let resultEuler = new THREE.Euler();    
-    resultEuler.setFromRotationMatrix( transform.rotation, eulerRotationOrder, false );
+    if ( isOrderRepeated ) {
+        const angles = extractEulerRepeated(transform.rotation, eulerRotationOrder);
+        rx = angles.x;
+        ry = angles.y;
+        rz = angles.z;
+    }
+    else {
+        const resultEuler = new THREE.Euler();  
+        resultEuler.setFromRotationMatrix( transform.rotation, eulerRotationOrder, false );
+        rx = resultEuler.x;
+        ry = resultEuler.y;
+        rz = resultEuler.z;
+    }
     
     return {
         translation_x : transform.translation.x,
         translation_y : transform.translation.y,
         translation_z : transform.translation.z,
-        rotation_x : resultEuler.x, 
-        rotation_y : resultEuler.y, 
-        rotation_z : resultEuler.z,
+        rotation_x : rx, 
+        rotation_y : ry, 
+        rotation_z : rz,
         scale: transform.scale
     }
 }
@@ -2096,6 +2291,63 @@ function makeMatrixFromOrder( translation, rotation, scale, orderTRS ) {
     }
     return result;
 }
+function makeRotationFromEulerRepeated(rx, ry, rz, order) {
+    const result = new THREE.Matrix4();
+
+    // For repeated orders:
+    // rx = first angle (first axis)
+    // ry = second angle (central axis)
+    // rz = third angle (first axis repeated)
+
+    switch(order) {
+        case 'XYX':
+            // X(rx) * Y(ry) * X(rz)
+            result.makeRotationX(rx)
+                  .multiply(new THREE.Matrix4().makeRotationY(ry))
+                  .multiply(new THREE.Matrix4().makeRotationX(rz));
+            break;
+            
+        case 'XZX':
+            // X(rx) * Z(ry) * X(rz)
+            result.makeRotationX(rx)
+                  .multiply(new THREE.Matrix4().makeRotationZ(ry))
+                  .multiply(new THREE.Matrix4().makeRotationX(rz));
+            break;
+            
+        case 'YXY':
+            // Y(rx) * X(ry) * Y(rz)
+            result.makeRotationY(rx)
+                  .multiply(new THREE.Matrix4().makeRotationX(ry))
+                  .multiply(new THREE.Matrix4().makeRotationY(rz));
+            break;
+            
+        case 'YZY':
+            // Y(rx) * Z(ry) * Y(rz)
+            result.makeRotationY(rx)
+                  .multiply(new THREE.Matrix4().makeRotationZ(ry))
+                  .multiply(new THREE.Matrix4().makeRotationY(rz));
+            break;
+            
+        case 'ZXZ':
+            // Z(rx) * X(ry) * Z(rz)
+            result.makeRotationZ(rx)
+                  .multiply(new THREE.Matrix4().makeRotationX(ry))
+                  .multiply(new THREE.Matrix4().makeRotationZ(rz));
+            break;
+            
+        case 'ZYZ':
+            // Z(rx) * Y(ry) * Z(rz)
+            result.makeRotationZ(rx)
+                  .multiply(new THREE.Matrix4().makeRotationY(ry))
+                  .multiply(new THREE.Matrix4().makeRotationZ(rz));
+            break;
+            
+        default:
+            result.makeRotationFromEuler(new THREE.Euler(rx, ry, rz, order));
+    }
+
+    return result;
+}
 
 function decode( encodedTransform ) {
     switch ( currentTransformMode ) {
@@ -2125,12 +2377,23 @@ function decodeMatrix( encodedTransform ) {
     return m;
 }
 function decodeEuler( encodedTransform ) {
-    let rotation = new THREE.Matrix4();
-    rotation.makeRotationFromEuler( 
-        new THREE.Euler( encodedTransform.rotation_x,
-        encodedTransform.rotation_y, encodedTransform.rotation_z,
-        eulerRotationOrder
-    ) );
+    let rotation;
+    
+    if ( isOrderRepeated ) {
+        rotation = makeRotationFromEulerRepeated(
+            encodedTransform.rotation_x,
+            encodedTransform.rotation_y, encodedTransform.rotation_z,
+            eulerRotationOrder
+        );
+    }
+    else {
+        rotation = new THREE.Matrix4();
+        rotation.makeRotationFromEuler( 
+            new THREE.Euler( encodedTransform.rotation_x,
+            encodedTransform.rotation_y, encodedTransform.rotation_z,
+            eulerRotationOrder
+        ) );
+    }
 
     let translation = new THREE.Matrix4();
     translation.makeTranslation( 
@@ -2440,8 +2703,11 @@ eulerSPCheckbox.addEventListener( 'change', (e) => {
 });
 const eulerRotationOrderSelector = document.getElementById( 'eulerRotationOrder' );
 let eulerRotationOrder = 'XYZ';
+let isOrderRepeated = false;
 eulerRotationOrderSelector.addEventListener( 'change', () => {
     eulerRotationOrder = eulerRotationOrderSelector.value;
+    if ( ['XYX', 'XZX', 'YXY', 'YZY', 'ZXZ', 'ZYZ'].includes( eulerRotationOrder ) ) isOrderRepeated = true;
+    else isOrderRepeated = false;
 });
 let eulerScaleMode = 'arithmetic';
 document.querySelectorAll('input[name="eulerScale"]').forEach( ( elem ) => {
@@ -2500,6 +2766,12 @@ let axisAngleTRSOrder = 'SRT';
 axisAngleTransformOrder.addEventListener( 'change', ( e ) => {
     axisAngleTRSOrder = axisAngleTransformOrder.value;
 });
+let axisangleType = 'axisangle';
+document.querySelectorAll('input[name="axisangleType"]').forEach( ( elem ) => {
+    elem.addEventListener( 'change', ( event ) => {
+        axisangleType = event.target.value;
+    });
+});
 const axisangleSPAxisCheckbox = document.getElementById( 'axisangleSPAxis' );
 const axisangleSPAngleCheckbox  = document.getElementById( 'axisangleSPAngle' );
 let axisangleSPAxis = false;
@@ -2551,31 +2823,70 @@ function mixAxisAngleTransform( a, b, t ) {
 
     let angleA = a.angle;
     let angleB = b.angle;
-
+    
     // ========== SHORTEST PATH per Axis ==========
     if ( axisangleSPAxis ) {
-        // Se gli assi puntano in direzioni opposte, inverti uno dei due
+        // is axes point to opposite directions, negate one and fix angle
         if ( axisA.dot( axisB ) < 0 ) {
-            // Inverti axisB e aggiusta l'angolo
             axisB.negate();
             angleB = - angleB;
         }
     }
-
+    
     // ========== SHORTEST PATH per Angle ==========
     if ( axisangleSPAngle ) {
         const a0 = normalizeAngle0To2PI( angleA );
         const b0 = normalizeAngle0To2PI( angleB );
         let delta = shortestAngleDelta( a0, b0 );
         
-        // Ricalcola angleA e angleB per usare lo shortest path
+        // recompute angleA and angleB to use sp
         if ( delta > Math.PI ) delta -= Math.PI * 2;
         else if ( delta < -Math.PI ) delta += Math.PI * 2;
         
         angleB = angleA + delta;
     }
+    else if ( axisangleSPAxis ) {
+        angleB = normalizeAngle0To2PI( angleB );
+    }
+    
+    // ========== INTERPOLATION ==========
+    
+    // ========== Axis Per Angle Computation ==========
 
-    // ========== INETERPOLATION ==========
+    if ( axisangleType === 'axisPerangle' ) {
+
+        // NOW convert to axis*angle representation
+        let vecA = axisA.clone().multiplyScalar( angleA );
+        let vecB = axisB.clone().multiplyScalar( angleB );
+
+        // Linear interpolation of the rotation vectors
+        const axisAngle = new THREE.Vector3();
+        axisAngle.lerpVectors( vecA, vecB, t );
+
+        // Extract axis and angle from result
+        const angle = axisAngle.length();
+        const axis = axisAngle.clone();
+        
+        if ( angle > 1e-6 ) {
+            axis.normalize();
+        } else {
+            // Near-zero rotation, keep valid axis
+            axis.set( 0, 1, 0 );
+        }
+
+        return {
+            translation_x: tx,
+            translation_y: ty,
+            translation_z: tz,
+            axis_x: axis.x,
+            axis_y: axis.y,
+            axis_z: axis.z,
+            angle: angle,
+            scale: scale
+        };
+    }
+
+    // ========== Axis - Angle Computation ==========
 
     let axis = new THREE.Vector3();
 
@@ -3005,10 +3316,14 @@ function updateTabElements( mode, encodedA, encodedB, encodedMix, resultMatrix, 
     const tabSetM = document.getElementById( `${mode}SetM` );
     const tabInterpTitle  = document.getElementById( `${mode}InterpTitle` );
 
-    if ( tabA )   tabA.innerHTML   = buildSummaryHTML( 'Start', encodedA, mode );
-    if ( tabB )   tabB.innerHTML   = buildSummaryHTML( 'End', encodedB, mode );
-    if ( tabMix ) tabMix.innerHTML = buildSummaryHTML( `Mix (t=${t.toFixed(2)})`, encodedMix, mode );
-    if ( tabSetM ) tabSetM.innerHTML = buildMatrixHTML( resultMatrix );
+    // determines if active tab is main or alt
+    const activeTab = document.querySelector('.tab.active');
+    const isAltMode = activeTab && activeTab.dataset.group === 'alt';
+
+    if ( tabA )   tabA.innerHTML   = buildSummaryHTML( 'Start', encodedA, mode, isAltMode );
+    if ( tabB )   tabB.innerHTML   = buildSummaryHTML( 'End', encodedB, mode, isAltMode );
+    if ( tabMix ) tabMix.innerHTML = buildSummaryHTML( `Mix (t=${t.toFixed(2)})`, encodedMix, mode, isAltMode );
+    if ( tabSetM ) tabSetM.innerHTML = buildMatrixHTML( resultMatrix, isAltMode );
 
     if ( tabInterpTitle ) {
         tabInterpTitle.innerHTML = `<b>Interpolation (t=${t.toFixed(2)}):</b><br>`;
@@ -3021,18 +3336,18 @@ function buildMatrixHTML( matrix ) {
     // return `<b>Set Matrix:</b><br>${formatMatrix( matrix )}`;
 }
 // Builds the HTML summary for encoded data based on mode
-function buildSummaryHTML( label, encoded, mode ) {
+function buildSummaryHTML( label, encoded, mode, isAltMode = false ) {
     let html = ``;
     // let html = `<b>${label}:</b><br>`;
     
     switch ( mode ) {
         case 'matrix':
-            html += formatEncodedMatrix( encoded );
+            html += formatEncodedMatrix( encoded, isAltMode );
             break;
             
         case 'euler':
-            html += formatTranslation( encoded );
-            html += formatEulerRotation( encoded );
+            html += formatTranslation( encoded, isAltMode );
+            html += formatEulerRotation( encoded, isAltMode );
             html += formatScale( encoded );
             break;
             
@@ -3043,8 +3358,8 @@ function buildSummaryHTML( label, encoded, mode ) {
             break;
             
         case 'quat':
-            html += formatTranslation( encoded );
-            html += formatQuaternion( encoded );
+            html += formatTranslation( encoded, isAltMode );
+            html += formatQuaternion( encoded, isAltMode );
             html += formatScale( encoded );
             break;
             
@@ -3059,21 +3374,34 @@ function buildSummaryHTML( label, encoded, mode ) {
 
 // ========== FORMATTING FUNCTIONS ==========
 
-function formatTranslation( encoded ) {
-    const tx = cut( encoded.translation_x );
-    const ty = cut( encoded.translation_y );
-    const tz = cut( encoded.translation_z );
-    return `transl = (${tx}, ${ty}, ${tz})<br>`;
+function formatTranslation( encoded, isAltMode = false ) {
+    if ( isAltMode ) {
+        const tx = cut(encoded.translation_x);
+        const tz = cut(encoded.translation_z);
+        return `transl = (${tx}, ${tz})<br>`;
+    }    
+    else {
+        const tx = cut( encoded.translation_x );
+        const ty = cut( encoded.translation_y );
+        const tz = cut( encoded.translation_z );
+        return `transl = (${tx}, ${ty}, ${tz})<br>`;
+    }
 }
 
-function formatEulerRotation( encoded ) {
-    const degX = THREE.MathUtils.radToDeg( encoded.rotation_x );
-    const degY = THREE.MathUtils.radToDeg( encoded.rotation_y );
-    const degZ = THREE.MathUtils.radToDeg( encoded.rotation_z );
-    if ( eulerRotationOrder === 'ZXY' ) {
-        return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>x: roll   y: pitch   z: yaw<br>`;
+function formatEulerRotation( encoded, isAltMode = false ) {
+    if ( isAltMode ) {
+        const degY = THREE.MathUtils.radToDeg(encoded.rotation_y);
+        return `angle = ${cut(degY, 1)}°<br>`;
     }
-    return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>`;
+    else {
+        const degX = THREE.MathUtils.radToDeg( encoded.rotation_x );
+        const degY = THREE.MathUtils.radToDeg( encoded.rotation_y );
+        const degZ = THREE.MathUtils.radToDeg( encoded.rotation_z );
+        if ( eulerRotationOrder === 'ZXY' ) {
+            return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>x: roll   y: pitch   z: yaw<br>`;
+        }
+        return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>`;
+    }
 }
 
 function formatAxisAngle( encoded ) {
@@ -3086,18 +3414,26 @@ function formatAxisAngle( encoded ) {
     return html;
 }
 
-function formatQuaternion( encoded ) {
+function formatQuaternion( encoded, isAltMode = false ) {
     const qx = cut( encoded.quat_x, 2, true );
     const qy = cut( encoded.quat_y, 2, true );
     const qz = cut( encoded.quat_z, 2, true );
     const qw = cut( encoded.quat_w, 2, true );
     // return `quat = ${qx}i + ${qy}j + ${qz}k + ${qw}<br>`;
     // let str = encoded.quat_x >= 0 ? `quat =   ${qx}i` : `quat = - ${cut(Math.abs(encoded.quat_y))}i`
-    let str = `quat = ${qx}i`;
-    str += encoded.quat_y >= 0 ? ` + ${qy}j` : ` - ${cut(Math.abs(encoded.quat_y))}j`;
-    str += encoded.quat_z >= 0 ? ` + ${qz}k` : ` - ${cut(Math.abs(encoded.quat_z))}k`;
-    str += encoded.quat_w >= 0 ? ` + ${qw}` : ` - ${cut(Math.abs(encoded.quat_w))}`;
-    
+    let str = ``;
+    if ( isAltMode ) {
+        str += `complex = ${qx}i`;
+        str += encoded.quat_z >= 0 ? ` + ${qz}k` : ` - ${cut(Math.abs(encoded.quat_z))}j`;
+        str += encoded.quat_w >= 0 ? ` + ${qw}` : ` - ${cut(Math.abs(encoded.quat_w))}`;
+    }
+    else {
+        str += `quat = ${qx}i`;
+        str += encoded.quat_y >= 0 ? ` + ${qy}j` : ` - ${cut(Math.abs(encoded.quat_y))}j`;
+        str += encoded.quat_z >= 0 ? ` + ${qz}k` : ` - ${cut(Math.abs(encoded.quat_z))}k`;
+        str += encoded.quat_w >= 0 ? ` + ${qw}` : ` - ${cut(Math.abs(encoded.quat_w))}`;
+    }
+
     return str + '<br>';
 }
 
@@ -3136,24 +3472,42 @@ function formatScale( encoded ) {
 }
 
 // Format encoded matrix (object with m0-m15)
-function formatEncodedMatrix( encoded ) {
-    // Construct array from encoded object
-    const e = [
-        encoded.m0,  encoded.m1,  encoded.m2,  encoded.m3,
-        encoded.m4,  encoded.m5,  encoded.m6,  encoded.m7,
-        encoded.m8,  encoded.m9,  encoded.m10, encoded.m11,
-        encoded.m12, encoded.m13, encoded.m14, encoded.m15
-    ].map( n => cutFixed( n ) );
-    
+function formatEncodedMatrix( encoded, isAltMode = false ) {
     let html = '';
     
-    // Display matrix in row-major order (more readable)
-    for ( let r = 0; r < 4; r++ ) {
-        const row = [];
-        for ( let c = 0; c < 4; c++ ) {
-            row.push( e[ c * 4 + r ] ); // column-major → row-major
+    if ( isAltMode ) {
+        const e = [
+            encoded.m0,  encoded.m1,  encoded.m3,
+            encoded.m4,  encoded.m5,  encoded.m7,
+            encoded.m12,  encoded.m13,  encoded.m15
+        ].map(n => cutFixed(n));
+        
+        // Display 3×3 matrix in row-major order
+        for (let r = 0; r < 3; r++) {
+            const row = [];
+            for (let c = 0; c < 3; c++) {
+                row.push(e[c * 3 + r]); // column-major → row-major
+            }
+            html += `[${row.join(' ')}  ]<br>`;
         }
-        html += `[${row.join(' ')}  ]<br>`;
+    }
+    else {
+        // Construct array from encoded object
+        const e = [
+            encoded.m0,  encoded.m1,  encoded.m2,  encoded.m3,
+            encoded.m4,  encoded.m5,  encoded.m6,  encoded.m7,
+            encoded.m8,  encoded.m9,  encoded.m10, encoded.m11,
+            encoded.m12, encoded.m13, encoded.m14, encoded.m15
+        ].map( n => cutFixed( n ) );
+        
+        // Display matrix in row-major order (more readable)
+        for ( let r = 0; r < 4; r++ ) {
+            const row = [];
+            for ( let c = 0; c < 4; c++ ) {
+                row.push( e[ c * 4 + r ] ); // column-major → row-major
+            }
+            html += `[${row.join(' ')}  ]<br>`;
+        }
     }
     
     return html;
@@ -3234,7 +3588,7 @@ window.addEventListener( 'keydown', function(event) {
 
         // Change Camera ~ Perspective / Orthogonal
         case 'c': 
-            changeCamera();
+            changePerspective();
             break;
 
         // Front View

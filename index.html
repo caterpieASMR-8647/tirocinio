@@ -76,7 +76,10 @@
 
                         <!-- CAMERA SECTION -->
                         <div class="panelSection">
-                              <div class="panelTitle">Camera</div>
+                              <div class="panelTitle" style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="width: 60%;">Camera</span>
+                                    <span style="width: 40%;">Mode</span>
+                              </div>
 
                               <div class="row">
                                     <div class="subSection" style="width: 60%;">
@@ -91,9 +94,9 @@
                                           </div>
                                     </div>
                                     <div class="subSection" style="width: 40%;">
-                                          <div class="subTitle">View</div>
+                                          <!-- <div class="subTitle">View</div> -->
                                           <div class="buttonRow">
-                                                <button id="perspectiveChange">2D</button>
+                                                <button id="perspectiveChange" style=" font-size: 1.2em; padding: 10px;">2D</button>
                                           </div>
                                     </div>
                               </div>
@@ -180,15 +183,18 @@
                               <div class="panelTitle"> Transform Representation</div>
 
                               <div id="modeTabs">
-                                    <div class="tab active" data-tab="matrix">Matrix</div>
-                                    <div class="tab" data-tab="euler">Euler Angles</div>
-                                    <div class="tab" data-tab="axisangle">Axis-Angle</div>
-                                    <div class="tab" data-tab="quat">Quaternion</div>
-                                    <div class="tab" data-tab="dualquat">Dual Quaternion</div>
+                                    <div class="tab active" data-tab="matrix" data-group="main">Matrix</div>
+                                    <div class="tab" data-tab="euler" data-group="main">Euler Angles</div>
+                                    <div class="tab" data-tab="axisangle" data-group="main">Axis-Angle</div>
+                                    <div class="tab" data-tab="quat" data-group="main">Quaternion</div>
+                                    <div class="tab" data-tab="dualquat" data-group="main">Dual Quaternion</div>
+
+                                    <div class="tab hidden" data-tab="matrix" data-group="alt">Matrix</div>
+                                    <div class="tab hidden" data-tab="euler" data-group="alt">Angle</div>
+                                    <div class="tab hidden" data-tab="quat" data-group="alt">Complex Numbers</div>
                               </div>
 
                               <div id="modeContent">
-                                    <!-- You will fill this later -->
                                     <div class="tabContent" data-tab="matrix">
                                           <div class="tabMid">
                                                 <div class="tabVar">
@@ -238,6 +244,29 @@
                                                       </div>
                                                       <div class="modEntry">
                                                             <div class="inline">
+                                                                  <label>Rotation Order:</label>
+                                                                  <select id="eulerRotationOrder">
+                                                                        <optgroup label="Standard (Non-Repeated)">
+                                                                              <option value="XYZ">XYZ</option>
+                                                                              <option value="XZY">XZY</option>
+                                                                              <option value="YXZ">YXZ</option>
+                                                                              <option value="YZX">YZX</option>
+                                                                              <option value="ZXY">ZXY (Nautical)</option>
+                                                                              <option value="ZYX">ZYX</option>
+                                                                        </optgroup>
+                                                                        <optgroup label="Repeated Axes">
+                                                                              <option value="XYX">XYX</option>
+                                                                              <option value="XZX">XZX</option>
+                                                                              <option value="YXY">YXY</option>
+                                                                              <option value="YZY">YZY</option>
+                                                                              <option value="ZXZ">ZXZ</option>
+                                                                              <option value="ZYZ">ZYZ</option>
+                                                                        </optgroup>
+                                                                  </select>
+                                                            </div>
+                                                      </div>
+                                                      <div class="lastModEntry">
+                                                            <div class="inline">
                                                                   <label>Transform Order:</label>
                                                                   <select id="eulerTransformOrder">
                                                                         <option value="SRT">Translate → Rotate → Scale (Default)</option>
@@ -246,19 +275,6 @@
                                                                         <option value="TSR">Rotate → Scale → Translate</option>
                                                                         <option value="RTS">Scale → Translate → Rotate</option>
                                                                         <option value="TRS">Scale → Rotate → Translate</option>
-                                                                  </select>
-                                                            </div>
-                                                      </div>
-                                                      <div class="lastModEntry">
-                                                            <div class="inline">
-                                                                  <label>Rotation Order:</label>
-                                                                  <select id="eulerRotationOrder">
-                                                                        <option value="XYZ">XYZ</option>
-                                                                        <option value="XZY">XZY</option>
-                                                                        <option value="YXZ">YXZ</option>
-                                                                        <option value="YZX">YZX</option>
-                                                                        <option value="ZXY">ZXY (Nautical)</option>
-                                                                        <option value="ZYX">ZYX</option>
                                                                   </select>
                                                             </div>
                                                       </div>
@@ -299,6 +315,10 @@
                                                 <div class="tabVar">
                                                       <div class="modTitle">
                                                             <b>Variants:</b><br>
+                                                      </div>
+                                                      <div class="modEntry">
+                                                            <input type="radio" name="axisangleType" value="axisangle" checked>Axis &mdash; Angle
+                                                            <input type="radio" name="axisangleType" value="axisPerangle">Axis &Cross; Angle
                                                       </div>
                                                       <div class="lastModEntry">
                                                             <div class="inline">
@@ -471,7 +491,7 @@
                               </div>
                         </div>
 
-                        <!-- LEGEND SECTION -->
+                        <!-- ABOUT SECTION -->
                         <div class="panelSection" style="padding: 0px; margin: 0px; border: 0px;">
                               <div class="panelTitle toggleable">
                                     <button id="legendToggle">About</button>

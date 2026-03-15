@@ -414,6 +414,7 @@ html, body {
 #sidePanel button:hover,
 #sidePanel select:hover {
   background: #333;
+  transform: scale(1.05);
 }
 #sidePanel button.active{
   background: #666;
