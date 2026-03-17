@@ -654,17 +654,6 @@ html, body {
   font-family: monospace;
 }
 
-
-
-
-
-
-
-
-
-
-
-
 /* Style for the selected option */
 select#eulerOrderSelector option:checked {
     background-color: #999;
@@ -676,4 +665,8 @@ select#eulerOrderSelector optgroup {
     font-weight: bold;
     /* color: #555; */
     padding: 4px 0;
+}
+
+a {
+  color: rgb(0, 204, 255);
 }

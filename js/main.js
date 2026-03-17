@@ -516,6 +516,12 @@ function createInitialMeshes(  ) {
 
                 render();
             });
+            document.addEventListener( 'keypress', () => {
+                displayTransformation( startMesh, endMesh, animationMesh, progress );
+                updateStillshot();
+
+                render();
+            });
 
             interactionManager.add( myMesh2 );
             scene.add( myMesh2 );
@@ -834,9 +840,11 @@ function changeCamera(  ) {
         // changes hidden and active tabs
         switchTabMode();
         
+        displayTransformation( startMesh, endMesh, animationMesh, progress );
+        updateStillshot();
+
         render();
     });
-
 }
 function switchTabMode() {
     const activeTab = document.querySelector('.tab.active');
@@ -1217,11 +1225,11 @@ function changePerspective() {
         smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
         setTimeout( () => {
             perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '3D' : '2D';
+            [ frontViewButton, leftViewButton, rightViewButton, botViewButton, behindViewButton ].forEach( button => {
+                button.classList.toggle( 'hidden' );
+            });
             changeCamera();
         }, smoothCameraDuration * 1010 );
-        [ frontViewButton, leftViewButton, rightViewButton, botViewButton, behindViewButton ].forEach( button => {
-            button.classList.toggle( 'hidden' );
-        });
         return;
     }
     perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '3D' : '2D';
