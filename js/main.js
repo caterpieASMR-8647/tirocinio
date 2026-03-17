@@ -1550,7 +1550,7 @@ function updateTransformation() {
                 animDirection = -1;
             }
         }
-        if ( progress < 0 ) {
+        else if ( progress < 0 ) {
             progress = 0
             if ( ! isPlaying ) {
                 isPlaying = false;
@@ -3303,6 +3303,15 @@ function displayTransformation( meshA, meshB, animationMesh, t ) {
     // ========== APPLY TO ANIMATION MESH ==========
     animationMesh.matrix.copy( resultMatrix );
     commitMatrix( animationMesh );
+
+    if ( ( progress == 0 || progress == 1 ) && scrubTransparencyTimeout == null ) {
+        animationMesh.visible = false;
+    }
+    else {
+        if ( animationMesh.visible != true ) {
+            animationMesh.visible = true
+        }
+    }
 
     // ========== UPDATE UI ==========
     updateTabElements( mode, encodedA, encodedB, encodedMix, resultMatrix, t );
