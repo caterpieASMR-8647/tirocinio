@@ -803,6 +803,9 @@ function changeCamera(  ) {
         currentCamera = newCamera;
         currentComposer = newComposer;
     }
+    if ( newCamera.isOrthographicCamera ) {
+        eulerRotationOrderSelector.value = 'ZXY';
+    }
 
     // Starts Animation with Callback, and executes this function after completion
     animateCameraTransition( oldCamera, newCamera, transitionDuration, () => {
@@ -1224,7 +1227,7 @@ function changePerspective() {
     if ( currentCamera.isPerspectiveCamera && ! topViewButton.classList.contains( 'active' ) ) {
         smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
         setTimeout( () => {
-            perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '3D' : '2D';
+            perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '2D' : '3D';
             [ frontViewButton, leftViewButton, rightViewButton, botViewButton, behindViewButton ].forEach( button => {
                 button.classList.toggle( 'hidden' );
             });
@@ -1232,7 +1235,7 @@ function changePerspective() {
         }, smoothCameraDuration * 1010 );
         return;
     }
-    perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '3D' : '2D';
+    perspectiveButton.textContent = currentCamera.isPerspectiveCamera ? '2D' : '3D';
     [ frontViewButton, leftViewButton, rightViewButton, botViewButton, behindViewButton ].forEach( button => {
         button.classList.toggle( 'hidden' );
     });
@@ -2710,7 +2713,7 @@ eulerSPCheckbox.addEventListener( 'change', (e) => {
     eulerSP = eulerSPCheckbox.checked;
 });
 const eulerRotationOrderSelector = document.getElementById( 'eulerRotationOrder' );
-let eulerRotationOrder = 'XYZ';
+let eulerRotationOrder = 'ZXY';
 let isOrderRepeated = false;
 eulerRotationOrderSelector.addEventListener( 'change', () => {
     eulerRotationOrder = eulerRotationOrderSelector.value;
@@ -3415,7 +3418,7 @@ function formatEulerRotation( encoded, isAltMode = false ) {
         const degY = THREE.MathUtils.radToDeg( encoded.rotation_y );
         const degZ = THREE.MathUtils.radToDeg( encoded.rotation_z );
         if ( eulerRotationOrder === 'ZXY' ) {
-            return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>x: roll   y: pitch   z: yaw<br>`;
+            return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>x: pitch   y: yaw   z: roll<br>`;
         }
         return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>`;
     }

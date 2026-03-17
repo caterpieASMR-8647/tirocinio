@@ -96,7 +96,7 @@
                                     <div class="subSection" style="width: 40%;">
                                           <!-- <div class="subTitle">View</div> -->
                                           <div class="buttonRow">
-                                                <button id="perspectiveChange" style=" font-size: 1.2em; padding: 10px;">2D</button>
+                                                <button id="perspectiveChange" style=" font-size: 1.2em; padding: 10px;">3D</button>
                                           </div>
                                     </div>
                               </div>
@@ -202,7 +202,7 @@
                                                             <b>Variants:</b><br>
                                                       </div>
                                                       <div class="lastModEntry">
-                                                            No Variants Avaliable
+                                                            None
                                                       </div>
                                                 </div>
                                           </div>
@@ -251,7 +251,7 @@
                                                                               <option value="XZY">XZY</option>
                                                                               <option value="YXZ">YXZ</option>
                                                                               <option value="YZX">YZX</option>
-                                                                              <option value="ZXY">ZXY (Nautical)</option>
+                                                                              <option value="ZXY" selected>ZXY (Nautical)</option>
                                                                               <option value="ZYX">ZYX</option>
                                                                         </optgroup>
                                                                         <optgroup label="Repeated Axes">
@@ -439,8 +439,8 @@
                                                             <div class="inline">
                                                                   <label>Transform Order:</label>
                                                                   <select id="dualquatTransformOrder">
-                                                                        <option value="STR">Translate + Rotate → Scale (Default)</option>
-                                                                        <option value="TRS">Scale → Translate + Rotate</option>
+                                                                        <option value="STR">Rototranslate → Scale (Default)</option>
+                                                                        <option value="TRS">Scale → Rototranslate</option>
                                                                   </select>
                                                             </div>
                                                       </div>
