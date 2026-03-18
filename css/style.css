@@ -561,25 +561,6 @@ html, body {
   white-space: normal;
   overflow: hidden;
 }
-/* Tab content result boxes */
-.tabMesh, .tabMix, .tabSetM{
-  /* flex: 1 1 auto; */
-  text-align: center;
-  width: 50%;
-  background-color: rgba(25, 25, 25, 0.85);
-  border: 1px solid #555;
-  border-radius: 6px;
-  padding: 6px 0px;
-  color: white;
-  font-family: monospace;
-  font-variant-numeric: tabular-nums;
-  white-space: pre;
-  font-size: 13px;
-  line-height: 1.3em;
-  overflow-x: fit-content;
-  word-break:keep-all;
-  transition: background 0.2s ease, transform 0.2s ease;
-}
 .tabTop, .tabMid, .tabMod, .tabBot {
   max-width: 100%;
 }
@@ -612,6 +593,25 @@ html, body {
   overflow: hidden;
 }
 
+/* Tab content result boxes */
+.tabMesh, .tabMix, .tabSetM{
+  /* flex: 1 1 auto; */
+  /* text-align: center; */
+  width: 50%;
+  background-color: rgba(25, 25, 25, 0.85);
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: white;
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+  font-size: 13px;
+  line-height: 1.3em;
+  overflow-x: fit-content;
+  word-break:keep-all;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
 .tabMesh b, .tabMix b, .tabSetM b {
     color: #ddd; /* evidenzia le label A/B/Mix */
 }

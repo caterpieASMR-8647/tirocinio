@@ -139,7 +139,6 @@
                                                 <div class="presetSetup hidden" id="axisangleSetup">
                                                       <button data-preset="axisangle.axisAmbiguity">Axis Ambiguity</button>
                                                       <button data-preset="axisangle.oppositeAxes">Opposite Axes</button>
-                                                      <button data-preset="axisangle.nonGeodesic">Non-Geodesic Path</button>
                                                 </div>
                                                 <div class="presetSetup hidden" id="quatSetup">
                                                       <button data-preset="quat.sp">Shortest Path</button>
@@ -269,12 +268,12 @@
                                                             <div class="inline">
                                                                   <label>Transform Order:</label>
                                                                   <select id="eulerTransformOrder">
-                                                                        <option value="SRT">Translate → Rotate → Scale (Default)</option>
-                                                                        <option value="RST">Translate → Scale → Rotate</option>
-                                                                        <option value="STR">Rotate → Translate → Scale</option>
-                                                                        <option value="TSR">Rotate → Scale → Translate</option>
-                                                                        <option value="RTS">Scale → Translate → Rotate</option>
-                                                                        <option value="TRS">Scale → Rotate → Translate</option>
+                                                                        <option value="SRT">Scale → Rotate → Translate (Default)</option>
+                                                                        <option value="RST">Rotate → Scale → Translate</option>
+                                                                        <option value="STR">Scale → Translate → Rotate</option>
+                                                                        <option value="TSR">Translate → Scale → Rotate</option>
+                                                                        <option value="RTS">Rotate → Translate → Scale</option>
+                                                                        <option value="TRS">Translate → Rotate → Scale</option>
                                                                   </select>
                                                             </div>
                                                       </div>
@@ -324,12 +323,12 @@
                                                             <div class="inline">
                                                                   <label>Transform Order:</label>
                                                                   <select id="axisangleTransformOrder">
-                                                                        <option value="SRT">Translate → Rotate → Scale (Default)</option>
-                                                                        <option value="RST">Translate → Scale → Rotate</option>
-                                                                        <option value="STR">Rotate → Translate → Scale</option>
-                                                                        <option value="TSR">Rotate → Scale → Translate</option>
-                                                                        <option value="RTS">Scale → Translate → Rotate</option>
-                                                                        <option value="TRS">Scale → Rotate → Translate</option>
+                                                                        <option value="SRT">Scale → Rotate → Translate (Default)</option>
+                                                                        <option value="RST">Rotate → Scale → Translate</option>
+                                                                        <option value="STR">Scale → Translate → Rotate</option>
+                                                                        <option value="TSR">Translate → Scale → Rotate</option>
+                                                                        <option value="RTS">Rotate → Translate → Scale</option>
+                                                                        <option value="TRS">Translate → Rotate → Scale</option>
                                                                   </select>
                                                             </div>
                                                       </div>
@@ -382,12 +381,12 @@
                                                             <div class="inline">
                                                                   <label>Transform Order:</label>
                                                                   <select id="quatTransformOrder">
-                                                                        <option value="SRT">Translate → Rotate → Scale (Default)</option>
-                                                                        <option value="RST">Translate → Scale → Rotate</option>
-                                                                        <option value="STR">Rotate → Translate → Scale</option>
-                                                                        <option value="TSR">Rotate → Scale → Translate</option>
-                                                                        <option value="RTS">Scale → Translate → Rotate</option>
-                                                                        <option value="TRS">Scale → Rotate → Translate</option>
+                                                                        <option value="SRT">Scale → Rotate → Translate (Default)</option>
+                                                                        <option value="RST">Rotate → Scale → Translate</option>
+                                                                        <option value="STR">Scale → Translate → Rotate</option>
+                                                                        <option value="TSR">Translate → Scale → Rotate</option>
+                                                                        <option value="RTS">Rotate → Translate → Scale</option>
+                                                                        <option value="TRS">Translate → Rotate → Scale</option>
                                                                   </select>
                                                             </div>
                                                       </div>
@@ -439,8 +438,8 @@
                                                             <div class="inline">
                                                                   <label>Transform Order:</label>
                                                                   <select id="dualquatTransformOrder">
-                                                                        <option value="STR">Rototranslate → Scale (Default)</option>
-                                                                        <option value="TRS">Scale → Rototranslate</option>
+                                                                        <option value="SRT">Rototranslate → Scale (Default)</option>
+                                                                        <option value="RTS">Scale → Rototranslate</option>
                                                                   </select>
                                                             </div>
                                                       </div>

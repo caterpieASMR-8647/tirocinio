@@ -1232,6 +1232,7 @@ function changePerspective() {
                 button.classList.toggle( 'hidden' );
             });
             changeCamera();
+            return;
         }, smoothCameraDuration * 1010 );
         return;
     }
@@ -1451,26 +1452,6 @@ const transformPresets = {
             endMesh.matrixWorldNeedsUpdate = true;
 
             smoothCameraTransition( new THREE.Vector3( 0, 2, 0 ) );
-        },
-        nonGeodesic: () => {
-            resetMesh( startMesh );
-            resetMesh( endMesh );
-
-            startMesh.quaternion.setFromAxisAngle(
-                new THREE.Vector3( 1, 0, 0 ),
-                THREE.MathUtils.degToRad( 90 )
-            );
-            endMesh.quaternion.setFromAxisAngle(
-                new THREE.Vector3( 0, 1, 0 ),
-                THREE.MathUtils.degToRad( 90 )
-            );
-            startMesh.position.set( 0, -1, 0 );
-            endMesh.position.set( 0, 1, 0 );
-
-            startMesh.updateMatrix();
-            endMesh.updateMatrix();
-            startMesh.matrixWorldNeedsUpdate = true;
-            endMesh.matrixWorldNeedsUpdate = true;
         }
     },
     quat: {
@@ -3077,7 +3058,7 @@ function mixQuaternionTransform( a, b, t ) {
 // ##### DUAL QUATERNIONS ##### //
 
 const dualquatTransformOrder = document.getElementById( 'dualquatTransformOrder' );
-let dualquatTRSOrder = 'STR';
+let dualquatTRSOrder = 'SRT';
 dualquatTransformOrder.addEventListener( 'change', ( e ) => {
     dualquatTRSOrder = dualquatTransformOrder.value;
 });
@@ -3356,37 +3337,94 @@ function buildMatrixHTML( matrix ) {
     // return `<b>Set Matrix:</b><br>${formatMatrix( matrix )}`;
 }
 // Builds the HTML summary for encoded data based on mode
+// function buildSummaryHTML( label, encoded, mode, isAltMode = false ) {
+//     let html = ``;
+//     // let html = `<b>${label}:</b><br>`;
+    
+//     switch ( mode ) {
+//         case 'matrix':
+//             html += formatEncodedMatrix( encoded, isAltMode );
+//             break;
+            
+//         case 'euler':
+//             html += formatTranslation( encoded, isAltMode );
+//             html += formatEulerRotation( encoded, isAltMode );
+//             html += formatScale( encoded );
+//             break;
+            
+//         case 'axisangle':
+//             html += formatTranslation( encoded );
+//             html += formatAxisAngle( encoded );
+//             html += formatScale( encoded );
+//             break;
+            
+//         case 'quat':
+//             html += formatTranslation( encoded, isAltMode );
+//             html += formatQuaternion( encoded, isAltMode );
+//             html += formatScale( encoded );
+//             break;
+            
+//         case 'dualquat':
+//             html += formatDualQuaternion( encoded );
+//             html += formatScale( encoded );
+//             break;
+//     }
+    
+//     return html;
+// }
 function buildSummaryHTML( label, encoded, mode, isAltMode = false ) {
     let html = ``;
-    // let html = `<b>${label}:</b><br>`;
     
-    switch ( mode ) {
+    switch (mode) {
         case 'matrix':
             html += formatEncodedMatrix( encoded, isAltMode );
             break;
             
         case 'euler':
-            html += formatTranslation( encoded, isAltMode );
-            html += formatEulerRotation( encoded, isAltMode );
-            html += formatScale( encoded );
+            html += formatByTRSOrder( encoded, eulerTRSOrder, 'euler', isAltMode );
             break;
             
         case 'axisangle':
-            html += formatTranslation( encoded );
-            html += formatAxisAngle( encoded );
-            html += formatScale( encoded );
+            html += formatByTRSOrder( encoded, axisAngleTRSOrder, 'axisangle', isAltMode );
             break;
             
         case 'quat':
-            html += formatTranslation( encoded, isAltMode );
-            html += formatQuaternion( encoded, isAltMode );
-            html += formatScale( encoded );
+            html += formatByTRSOrder( encoded, quatTRSOrder, 'quat', isAltMode );
             break;
             
         case 'dualquat':
-            html += formatDualQuaternion( encoded );
-            html += formatScale( encoded );
+            html += formatByTRSOrder( encoded, dualquatTRSOrder, 'dualquat', isAltMode );
             break;
+    }
+    
+    return html;
+}
+// Helper function formats according to TRS order
+function formatByTRSOrder( encoded, trsOrder, mode, isAltMode = false ) {
+    let html = '';
+    
+    for ( let i = trsOrder.length; i >= 0; i-- ) {
+        const component = trsOrder[i];
+        
+        switch ( component ) {
+            case 'T':
+                html += formatTranslation( encoded, isAltMode );
+                break;
+            case 'R':
+                if ( mode === 'euler' ) {
+                    html += formatEulerRotation( encoded, isAltMode );
+                } else if ( mode === 'axisangle' ) {
+                    html += formatAxisAngle( encoded, isAltMode );
+                } else if ( mode === 'quat' ) {
+                    html += formatQuaternion( encoded, isAltMode );
+                } else if ( mode === 'dualquat' ) {
+                    html += formatDualQuaternion( encoded );
+                }
+                break;
+            case 'S':
+                html += formatScale( encoded );
+                break;
+        }
     }
     
     return html;
@@ -3398,29 +3436,36 @@ function formatTranslation( encoded, isAltMode = false ) {
     if ( isAltMode ) {
         const tx = cut(encoded.translation_x);
         const tz = cut(encoded.translation_z);
-        return `transl = (${tx}, ${tz})<br>`;
+        return ` transl : (${tx}, ${tz})<br>`;
     }    
     else {
         const tx = cut( encoded.translation_x );
         const ty = cut( encoded.translation_y );
         const tz = cut( encoded.translation_z );
-        return `transl = (${tx}, ${ty}, ${tz})<br>`;
+        return ` transl : (${tx}, ${ty}, ${tz})<br>`;
     }
 }
 
 function formatEulerRotation( encoded, isAltMode = false ) {
     if ( isAltMode ) {
         const degY = THREE.MathUtils.radToDeg(encoded.rotation_y);
-        return `angle = ${cut(degY, 1)}°<br>`;
+        return `  angle : ${cut(degY, 1)}°<br>`;
     }
     else {
         const degX = THREE.MathUtils.radToDeg( encoded.rotation_x );
         const degY = THREE.MathUtils.radToDeg( encoded.rotation_y );
         const degZ = THREE.MathUtils.radToDeg( encoded.rotation_z );
-        if ( eulerRotationOrder === 'ZXY' ) {
-            return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>x: pitch   y: yaw   z: roll<br>`;
+        
+        if ( ['XYX', 'XZX', 'YXY', 'YZY', 'ZXZ', 'ZYZ'].includes( eulerRotationOrder ) ) {
+            const axis1 = eulerRotationOrder[0];
+            const axis2 = eulerRotationOrder[1];
+            
+            return `    rot : ${axis1.toLowerCase()}=${cut(degX, 1)}°, ${axis2.toLowerCase()}=${cut(degY, 1)}°, ${axis1.toLowerCase()}=${cut(degZ, 1)}°<br>`;
         }
-        return `rot = x: ${cut(degX, 1)}°, y: ${cut(degY, 1)}°, z: ${cut(degZ, 1)}°<br>`;
+        if ( eulerRotationOrder === 'ZXY' ) {
+            return `    rot : x=${cut(degX, 1)}°, y=${cut(degY, 1)}°, z=${cut(degZ, 1)}°<br>x: pitch   y: yaw   z: roll<br>`;
+        }
+        return `    rot : x=${cut(degX, 1)}°, y=${cut(degY, 1)}°, z=${cut(degZ, 1)}°<br>`;
     }
 }
 
@@ -3429,8 +3474,8 @@ function formatAxisAngle( encoded ) {
     const ay = cut( encoded.axis_y );
     const az = cut( encoded.axis_z );
     const deg = THREE.MathUtils.radToDeg( encoded.angle );
-    let html = `axis = (${ax}, ${ay}, ${az})<br>`;
-    html += `angle = ${cut(deg, 1)}°<br>`;
+    let html = `   axis : (${ax}, ${ay}, ${az})<br>`;
+    html += `  angle : ${cut(deg, 1)}°<br>`;
     return html;
 }
 
@@ -3443,15 +3488,17 @@ function formatQuaternion( encoded, isAltMode = false ) {
     // let str = encoded.quat_x >= 0 ? `quat =   ${qx}i` : `quat = - ${cut(Math.abs(encoded.quat_y))}i`
     let str = ``;
     if ( isAltMode ) {
-        str += `complex = ${qx}i`;
-        str += encoded.quat_z >= 0 ? ` + ${qz}k` : ` - ${cut(Math.abs(encoded.quat_z))}j`;
-        str += encoded.quat_w >= 0 ? ` + ${qw}` : ` - ${cut(Math.abs(encoded.quat_w))}`;
+        str += `complex :`;
+        str += encoded.quat_x >= 0 ? ` +${qx}i` : ` -${cut(Math.abs(encoded.quat_x))}i`;
+        str += encoded.quat_z >= 0 ? ` +${qz}k` : ` -${cut(Math.abs(encoded.quat_z))}k`;
+        str += encoded.quat_w >= 0 ? ` +${qw}` : ` -${cut(Math.abs(encoded.quat_w))}`;
     }
     else {
-        str += `quat = ${qx}i`;
-        str += encoded.quat_y >= 0 ? ` + ${qy}j` : ` - ${cut(Math.abs(encoded.quat_y))}j`;
-        str += encoded.quat_z >= 0 ? ` + ${qz}k` : ` - ${cut(Math.abs(encoded.quat_z))}k`;
-        str += encoded.quat_w >= 0 ? ` + ${qw}` : ` - ${cut(Math.abs(encoded.quat_w))}`;
+        str += `   quat :`;
+        str += encoded.quat_x >= 0 ? ` +${qx}i` : ` -${cut(Math.abs(encoded.quat_x))}i`;
+        str += encoded.quat_y >= 0 ? ` +${qy}j` : ` -${cut(Math.abs(encoded.quat_y))}j`;
+        str += encoded.quat_z >= 0 ? ` +${qz}k` : ` -${cut(Math.abs(encoded.quat_z))}k`;
+        str += encoded.quat_w >= 0 ? ` +${qw}` : ` -${cut(Math.abs(encoded.quat_w))}`;
     }
 
     return str + '<br>';
@@ -3471,16 +3518,18 @@ function formatDualQuaternion( encoded ) {
     // return html;
 
     // Real quaternion
-    let realStr = `real = ${rx}i`;
-    realStr += encoded.real_y >= 0 ? ` + ${ry}j` : ` - ${cut(Math.abs(encoded.real_y))}j`;
-    realStr += encoded.real_z >= 0 ? ` + ${rz}k` : ` - ${cut(Math.abs(encoded.real_z))}k`;
-    realStr += encoded.real_w >= 0 ? ` + ${rw}` : ` - ${cut(Math.abs(encoded.real_w))}`;
+    let realStr = `   real :`;
+    realStr += encoded.real_x >= 0 ? ` +${rx}i` : ` -${cut(Math.abs(encoded.real_x))}i`;
+    realStr += encoded.real_y >= 0 ? ` +${ry}j` : ` -${cut(Math.abs(encoded.real_y))}j`;
+    realStr += encoded.real_z >= 0 ? ` +${rz}k` : ` -${cut(Math.abs(encoded.real_z))}k`;
+    realStr += encoded.real_w >= 0 ? ` +${rw}` : ` -${cut(Math.abs(encoded.real_w))}`;
     
     // Dual quaternion
-    let dualStr = `dual = ${dx}i`;
-    dualStr += encoded.dual_y >= 0 ? ` + ${dy}j` : ` - ${cut(Math.abs(encoded.dual_y))}j`;
-    dualStr += encoded.dual_z >= 0 ? ` + ${dz}k` : ` - ${cut(Math.abs(encoded.dual_z))}k`;
-    dualStr += encoded.dual_w >= 0 ? ` + ${dw}` : ` - ${cut(Math.abs(encoded.dual_w))}`;
+    let dualStr = `   dual :`;
+    dualStr += encoded.dual_x >= 0 ? ` +${dx}i` : ` -${cut(Math.abs(encoded.dual_x))}i`;
+    dualStr += encoded.dual_y >= 0 ? ` +${dy}j` : ` -${cut(Math.abs(encoded.dual_y))}j`;
+    dualStr += encoded.dual_z >= 0 ? ` +${dz}k` : ` -${cut(Math.abs(encoded.dual_z))}k`;
+    dualStr += encoded.dual_w >= 0 ? ` +${dw}` : ` -${cut(Math.abs(encoded.dual_w))}`;
     
     return realStr + '<br>' + dualStr + '<br>';
 }
@@ -3488,7 +3537,7 @@ function formatDualQuaternion( encoded ) {
 const crossProductUnicode = '\u{2A2F}';
 function formatScale( encoded ) {
     const s = cut( encoded.scale );
-    return `scale = ${crossProductUnicode}${s}<br>`;
+    return `  scale : ${crossProductUnicode}${s}<br>`;
 }
 
 // Format encoded matrix (object with m0-m15)
