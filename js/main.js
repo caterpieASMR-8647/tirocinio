@@ -3422,7 +3422,7 @@ function formatByTRSOrder( encoded, trsOrder, mode, isAltMode = false ) {
                 }
                 break;
             case 'S':
-                html += formatScale( encoded );
+                html += formatScale( encoded, isAltMode );
                 break;
         }
     }
@@ -3436,20 +3436,20 @@ function formatTranslation( encoded, isAltMode = false ) {
     if ( isAltMode ) {
         const tx = cut(encoded.translation_x);
         const tz = cut(encoded.translation_z);
-        return ` transl : (${tx}, ${tz})<br>`;
+        return `transl : (${tx}, ${tz})<br>`;
     }    
     else {
         const tx = cut( encoded.translation_x );
         const ty = cut( encoded.translation_y );
         const tz = cut( encoded.translation_z );
-        return ` transl : (${tx}, ${ty}, ${tz})<br>`;
+        return `transl : (${tx}, ${ty}, ${tz})<br>`;
     }
 }
 
 function formatEulerRotation( encoded, isAltMode = false ) {
     if ( isAltMode ) {
         const degY = THREE.MathUtils.radToDeg(encoded.rotation_y);
-        return `  angle : ${cut(degY, 1)}°<br>`;
+        return ` angle : ${cut(degY, 1)}°<br>`;
     }
     else {
         const degX = THREE.MathUtils.radToDeg( encoded.rotation_x );
@@ -3460,12 +3460,12 @@ function formatEulerRotation( encoded, isAltMode = false ) {
             const axis1 = eulerRotationOrder[0];
             const axis2 = eulerRotationOrder[1];
             
-            return `    rot : ${axis1.toLowerCase()}=${cut(degX, 1)}°, ${axis2.toLowerCase()}=${cut(degY, 1)}°, ${axis1.toLowerCase()}=${cut(degZ, 1)}°<br>`;
+            return `   rot : ${axis1.toLowerCase()}=${cut(degX, 1)}°, ${axis2.toLowerCase()}=${cut(degY, 1)}°, ${axis1.toLowerCase()}=${cut(degZ, 1)}°<br>`;
         }
         if ( eulerRotationOrder === 'ZXY' ) {
-            return `    rot : x=${cut(degX, 1)}°, y=${cut(degY, 1)}°, z=${cut(degZ, 1)}°<br>x: pitch   y: yaw   z: roll<br>`;
+            return `   rot : x=${cut(degX, 1)}°, y=${cut(degY, 1)}°, z=${cut(degZ, 1)}°<br>x: pitch   y: yaw   z: roll<br>`;
         }
-        return `    rot : x=${cut(degX, 1)}°, y=${cut(degY, 1)}°, z=${cut(degZ, 1)}°<br>`;
+        return `   rot : x=${cut(degX, 1)}°, y=${cut(degY, 1)}°, z=${cut(degZ, 1)}°<br>`;
     }
 }
 
@@ -3474,8 +3474,8 @@ function formatAxisAngle( encoded ) {
     const ay = cut( encoded.axis_y );
     const az = cut( encoded.axis_z );
     const deg = THREE.MathUtils.radToDeg( encoded.angle );
-    let html = `   axis : (${ax}, ${ay}, ${az})<br>`;
-    html += `  angle : ${cut(deg, 1)}°<br>`;
+    let html = `  axis : (${ax}, ${ay}, ${az})<br>`;
+    html += ` angle : ${cut(deg, 1)}°<br>`;
     return html;
 }
 
@@ -3494,7 +3494,7 @@ function formatQuaternion( encoded, isAltMode = false ) {
         str += encoded.quat_w >= 0 ? ` +${qw}` : ` -${cut(Math.abs(encoded.quat_w))}`;
     }
     else {
-        str += `   quat :`;
+        str += `  quat :`;
         str += encoded.quat_x >= 0 ? ` +${qx}i` : ` -${cut(Math.abs(encoded.quat_x))}i`;
         str += encoded.quat_y >= 0 ? ` +${qy}j` : ` -${cut(Math.abs(encoded.quat_y))}j`;
         str += encoded.quat_z >= 0 ? ` +${qz}k` : ` -${cut(Math.abs(encoded.quat_z))}k`;
@@ -3518,14 +3518,14 @@ function formatDualQuaternion( encoded ) {
     // return html;
 
     // Real quaternion
-    let realStr = `   real :`;
+    let realStr = `  real :`;
     realStr += encoded.real_x >= 0 ? ` +${rx}i` : ` -${cut(Math.abs(encoded.real_x))}i`;
     realStr += encoded.real_y >= 0 ? ` +${ry}j` : ` -${cut(Math.abs(encoded.real_y))}j`;
     realStr += encoded.real_z >= 0 ? ` +${rz}k` : ` -${cut(Math.abs(encoded.real_z))}k`;
     realStr += encoded.real_w >= 0 ? ` +${rw}` : ` -${cut(Math.abs(encoded.real_w))}`;
     
     // Dual quaternion
-    let dualStr = `   dual :`;
+    let dualStr = `  dual :`;
     dualStr += encoded.dual_x >= 0 ? ` +${dx}i` : ` -${cut(Math.abs(encoded.dual_x))}i`;
     dualStr += encoded.dual_y >= 0 ? ` +${dy}j` : ` -${cut(Math.abs(encoded.dual_y))}j`;
     dualStr += encoded.dual_z >= 0 ? ` +${dz}k` : ` -${cut(Math.abs(encoded.dual_z))}k`;
@@ -3535,9 +3535,14 @@ function formatDualQuaternion( encoded ) {
 }
 
 const crossProductUnicode = '\u{2A2F}';
-function formatScale( encoded ) {
+function formatScale( encoded, isAltMode = false ) {
     const s = cut( encoded.scale );
-    return `  scale : ${crossProductUnicode}${s}<br>`;
+    if ( isAltMode ) {
+        return `  scale : ${crossProductUnicode}${s}<br>`;
+    }
+    else {
+        return ` scale : ${crossProductUnicode}${s}<br>`;
+    }
 }
 
 // Format encoded matrix (object with m0-m15)
